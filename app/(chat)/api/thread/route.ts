@@ -1,13 +1,10 @@
 import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
-import { z } from "zod";
 
 import { geminiProModel } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
-import { getChatById, createMessage } from "@/db/queries";
+import { getChatById, createMessage, getUserByEmail } from "@/db/queries";
 import { appConfig } from "@/lib/config";
-import { generateUUID } from "@/lib/utils";
-import { getSessionUserId } from "@/lib/get-session-user-id";
-import { Message as DbMessage, Chat } from "@/db/models";
+import { Message as DbMessage } from "@/db/models";
 import { ensureConnection } from "@/db/connection";
 
 export async function POST(request: Request) {
@@ -15,10 +12,12 @@ export async function POST(request: Request) {
     messages,
     parentMessageId,
     mainChatId,
+    selectedText,
   }: {
     messages: Array<Message>;
     parentMessageId: string;
     mainChatId: string;
+    selectedText?: string;
   } = await request.json();
 
   const session = await auth();
@@ -35,8 +34,13 @@ export async function POST(request: Request) {
   if (coreMessages.length > 0) {
     const userMsg = coreMessages[coreMessages.length - 1];
 
-    // Extract the actual ID string from the user object
-    const userId = getSessionUserId(session)!;
+    // Get the actual user document to ensure we have the MongoDB ObjectId
+    const user = await getUserByEmail(session.user.email!);
+    if (!user) {
+      return new Response("User not found", { status: 401 });
+    }
+
+    const userId = (user as any)._id.toString();
 
     const toPlainText = (content: any): string => {
       if (typeof content === "string") return content;
@@ -100,13 +104,9 @@ export async function POST(request: Request) {
   const result = await streamText({
     model: geminiProModel,
     system: `You are ${appConfig.getModelIdentity()} You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
-    
-    IMPORTANT: You are responding in a reply thread. Only answer based on the user's follow-up question.`,
+
+    IMPORTANT: You are responding in a reply thread.${selectedText ? `\n\nThe user has selected the following text from the parent message and is asking about it:\n"${selectedText}"\n\nFocus your response on this selected text and the user's question about it.` : " Only answer based on the user's follow-up question."}`,
     messages: fullContext,
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: "stream-text-thread",
-    },
     onFinish: async ({ responseMessages }) => {
       // Persist AI response(s)
       const toPlainText = (content: any): string => {

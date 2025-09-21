@@ -1,14 +1,13 @@
 import { NextRequest } from "next/server";
 
 import { auth } from "@/app/(auth)/auth";
-import { getThreadCountByParentMessage, getChatById } from "@/db/queries";
+import { getThreadCountByParentMessage, getChatById, getUserByEmail } from "@/db/queries";
 import {
   createUnauthorizedResponse,
   createBadRequestResponse,
   createJsonResponse,
   createInternalErrorResponse,
 } from "@/lib/api-responses";
-import { getSessionUserId } from "@/lib/get-session-user-id";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -17,8 +16,13 @@ export async function GET(request: NextRequest) {
     return createUnauthorizedResponse();
   }
 
-  const userId = getSessionUserId(session);
-  if (!userId) return createUnauthorizedResponse();
+  // Get the actual user document to ensure we have the MongoDB ObjectId
+  const user = await getUserByEmail(session.user.email!);
+  if (!user) {
+    return createUnauthorizedResponse();
+  }
+
+  const userId = (user as any)._id.toString();
 
   const { searchParams } = new URL(request.url);
   const parentMessageId = searchParams.get("parentMessageId");

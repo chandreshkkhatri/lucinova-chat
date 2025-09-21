@@ -12,7 +12,7 @@ import { useTextAnnotations } from "./use-text-annotations";
 interface EnhancedMessageProps {
   message: Message;
   onAnnotationReply?: (question: string, text: string) => void;
-  onAskTara?: () => void;
+  onAskTara?: (selectedText: string) => void;
 }
 
 export function EnhancedMessage({
@@ -30,6 +30,7 @@ export function EnhancedMessage({
     y: 0,
   });
   const [hasSelection, setHasSelection] = useState(false);
+  const [capturedText, setCapturedText] = useState<string>('');
 
   const {
     annotations,
@@ -62,13 +63,17 @@ export function EnhancedMessage({
       // Ensure selection is inside this message container
       const range = sel.getRangeAt(0);
       const container = containerRef.current;
-      if (!container) return;
-      const common = range.commonAncestorContainer as Node;
-      if (
-        !container.contains(
-          common.nodeType === 1 ? common : (common.parentNode as Node)
-        )
-      ) {
+      if (!container) {
+        return;
+      }
+
+      // Check if selection overlaps with our container (more permissive)
+      const startContainer = range.startContainer;
+      const endContainer = range.endContainer;
+      const startInContainer = container.contains(startContainer.nodeType === 1 ? startContainer : startContainer.parentNode);
+      const endInContainer = container.contains(endContainer.nodeType === 1 ? endContainer : endContainer.parentNode);
+
+      if (!startInContainer && !endInContainer) {
         setChipVisible(false);
         setHasSelection(false);
         return;
@@ -81,16 +86,29 @@ export function EnhancedMessage({
       const x = selRect.left - contRect.left + selRect.width / 2;
       const y = selRect.bottom - contRect.top + 8; // 8px gap
       setChipPos({ x, y });
+      setCapturedText(text); // Capture the selected text
       setChipVisible(true);
       setHasSelection(true);
     };
 
     const handleSelectionChange = () => {
       const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0 || sel.toString().trim().length === 0) {
+      const text = sel?.toString().trim() || '';
+      if (!sel || sel.rangeCount === 0 || text.length === 0) {
         setChipVisible(false);
         setHasSelection(false);
+        return;
       }
+
+      // On mobile, selectionchange might be the primary way to detect selection completion
+      // Add a small delay to ensure selection is stable
+      setTimeout(() => {
+        const currentSel = window.getSelection();
+        const currentText = currentSel?.toString().trim() || '';
+        if (currentText.length >= 2 && currentSel && currentSel.rangeCount > 0) {
+          handleSelectionEnd(new Event('selectionchange') as any);
+        }
+      }, 100);
     };
 
     const handleScrollOrClick = (e: Event) => {
@@ -143,16 +161,42 @@ export function EnhancedMessage({
       {chipVisible && (
         <button
           type="button"
-          onClick={() => {
-            onAskTara?.();
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAskTara?.(capturedText);
             setChipVisible(false);
+            setCapturedText('');
             // Clear selection so UX feels done
             try {
               window.getSelection()?.removeAllRanges();
             } catch {}
           }}
-          className="absolute -translate-x-1/2 z-10 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:scale-[0.98] transition"
-          style={{ left: chipPos.x, top: chipPos.y }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAskTara?.(capturedText);
+            setChipVisible(false);
+            setCapturedText('');
+            // Clear selection so UX feels done
+            try {
+              window.getSelection()?.removeAllRanges();
+            } catch {}
+          }}
+          className="absolute -translate-x-1/2 px-3 py-2 text-sm rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-[0.98] transition cursor-pointer select-none touch-manipulation"
+          style={{
+            left: chipPos.x,
+            top: chipPos.y,
+            pointerEvents: 'auto',
+            userSelect: 'none',
+            zIndex: 9999,
+            position: 'absolute',
+            minHeight: '44px', // iOS minimum touch target
+            minWidth: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
         >
           <span className="inline-flex items-center gap-1">
             <Sparkles className="size-3 text-white/90" />

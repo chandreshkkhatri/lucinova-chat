@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { MenuIcon } from "./icons";
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "../ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export function MobileMenuButton({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +19,10 @@ export function MobileMenuButton({ children }: { children: React.ReactNode }) {
         </button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-72">
+        <VisuallyHidden>
+          <SheetTitle>Navigation Menu</SheetTitle>
+          <SheetDescription>Access site navigation and features</SheetDescription>
+        </VisuallyHidden>
         {children}
       </SheetContent>
     </Sheet>

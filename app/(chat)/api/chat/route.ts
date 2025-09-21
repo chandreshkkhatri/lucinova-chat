@@ -1,5 +1,4 @@
 import { convertToCoreMessages, Message, streamText } from "ai";
-import { z } from "zod";
 
 import { geminiProModel } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
@@ -12,8 +11,6 @@ import {
   createUser,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
-import { generateUUID } from "@/lib/utils";
-import { getSessionUserId } from "@/lib/get-session-user-id";
 import { Chat } from "@/db/models";
 import { generateText } from "ai";
 import { ensureConnection } from "@/db/connection";
@@ -32,11 +29,13 @@ export async function POST(request: Request) {
     (message) => message.content.length > 0
   );
 
-  const userId = getSessionUserId(session);
-
-  if (!userId) {
-    return new Response("Unauthorized", { status: 401 });
+  // Get the actual user document to ensure we have the MongoDB ObjectId
+  const user = await getUserByEmail(session.user.email!);
+  if (!user) {
+    return new Response("User not found", { status: 401 });
   }
+
+  const userId = (user as any)._id.toString();
 
   /**
    * Ensure that a Chat document exists for this conversation.
@@ -84,7 +83,7 @@ export async function POST(request: Request) {
     model: geminiProModel,
     system: `You are ${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
     messages: coreMessages,
-    onFinish: async ({ usage, finishReason, responseMessages }) => {
+    onFinish: async ({ responseMessages }) => {
       // Persist AI response messages
       const currentChat = await getChatById({ id });
       if (currentChat) {
@@ -121,10 +120,6 @@ export async function POST(request: Request) {
         }
       }
     },
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: "stream-text",
-    },
   });
 
   return result.toDataStreamResponse({});
@@ -138,7 +133,13 @@ export async function PUT(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const userId = getSessionUserId(session);
+  // Get the actual user document to ensure we have the MongoDB ObjectId
+  const user = await getUserByEmail(session.user.email!);
+  if (!user) {
+    return new Response("User not found", { status: 401 });
+  }
+
+  const userId = (user as any)._id.toString();
 
   const chat = await getChatById({ id });
 
@@ -173,7 +174,13 @@ export async function DELETE(request: Request) {
       return new Response("Chat not found", { status: 404 });
     }
 
-    const userId = getSessionUserId(session);
+    // Get the actual user document to ensure we have the MongoDB ObjectId
+    const user = await getUserByEmail(session.user.email!);
+    if (!user) {
+      return new Response("User not found", { status: 401 });
+    }
+
+    const userId = (user as any)._id.toString();
 
     if ((chat as any).userId.toString() !== userId) {
       return new Response("Unauthorized", { status: 401 });
