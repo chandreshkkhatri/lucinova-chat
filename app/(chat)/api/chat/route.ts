@@ -121,10 +121,6 @@ export async function POST(request: Request) {
         }
       }
     },
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: "stream-text",
-    },
   });
 
   return result.toDataStreamResponse({});

@@ -103,10 +103,6 @@ export async function POST(request: Request) {
     
     IMPORTANT: You are responding in a reply thread. Only answer based on the user's follow-up question.`,
     messages: fullContext,
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: "stream-text-thread",
-    },
     onFinish: async ({ responseMessages }) => {
       // Persist AI response(s)
       const toPlainText = (content: any): string => {
