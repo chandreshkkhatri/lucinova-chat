@@ -14,7 +14,6 @@ import { fetcher } from "@/lib/utils";
 
 import {
   InfoIcon,
-  MenuIcon,
   MoreHorizontalIcon,
   PencilEditIcon,
   TrashIcon,
@@ -36,19 +35,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../ui/sheet";
 import { Input } from "../ui/input";
 
-export const History = ({ user }: { user: User | undefined }) => {
+export const History = ({ user, inSheet = false }: { user: User | undefined; inSheet?: boolean }) => {
   const { id } = useParams();
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
 
   const {
     data: history,
@@ -130,18 +121,16 @@ export const History = ({ user }: { user: User | undefined }) => {
     setShowDeleteDialog(false);
   };
 
+  // If in sheet (mobile), always show the sidebar
+  // If not in sheet (desktop), only show when screen is large
+  const containerClasses = inSheet
+    ? "flex w-full bg-gray-50 dark:bg-gray-900 h-full flex-col"
+    : "hidden lg:flex w-64 bg-gray-50 dark:bg-gray-900 h-full border-r border-gray-200 dark:border-gray-700 flex-col";
+
   return (
     <>
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-[4.5rem] left-4 z-40 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
-      >
-        <MenuIcon size={20} />
-      </button>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:flex w-64 bg-gray-50 dark:bg-gray-900 h-full border-r border-gray-200 dark:border-gray-700 flex-col">
+      {/* Single sidebar component that works for both mobile and desktop */}
+      <div className={containerClasses}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Chats</h1>
@@ -274,84 +263,6 @@ export const History = ({ user }: { user: User | undefined }) => {
           </div>
         </div>
       </div>
-
-      {/* Mobile sidebar sheet */}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent side="left" className="w-[280px] sm:w-[350px] p-0">
-          <div className="h-full flex flex-col">
-            <SheetHeader className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <SheetTitle>Chats</SheetTitle>
-              <SheetDescription>
-                {history === undefined
-                  ? "Loading chats..."
-                  : `${history.length} conversations`}
-              </SheetDescription>
-            </SheetHeader>
-
-            {/* New Chat Button */}
-            {user && (
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  asChild
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Link href="/">
-                    <PencilEditIcon size={14} />
-                    <span className="ml-2">New Chat</span>
-                  </Link>
-                </Button>
-              </div>
-            )}
-
-            {/* Chat List */}
-            <div className="flex-1 overflow-y-auto p-2">
-              {!user ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm text-center p-4">
-                  <InfoIcon size={32} />
-                  <p className="mt-2">Please log in to see your chat history.</p>
-                </div>
-              ) : null}
-
-              {!isLoading && history?.length === 0 && user ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm text-center p-4">
-                  <InfoIcon size={32} />
-                  <p className="mt-2">You have no saved chats.</p>
-                </div>
-              ) : null}
-
-              <div className="space-y-1">
-                {history &&
-                  history.map((chat) => (
-                    <div
-                      key={(chat as any)._id.toString()}
-                      className={cx(
-                        "group flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
-                        { "bg-gray-100 dark:bg-gray-800": (chat as any)._id.toString() === id }
-                      )}
-                    >
-                      <Button
-                        variant="ghost"
-                        className="flex-1 justify-start p-0 h-auto font-normal text-left"
-                        asChild
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <Link
-                          href={`/chat/${(chat as any)._id.toString()}`}
-                          className="block truncate"
-                        >
-                          <div className="text-sm font-medium truncate">
-                            {chat.title || "Untitled Chat"}
-                          </div>
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
