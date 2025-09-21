@@ -37,7 +37,8 @@ export const {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        // MongoDB documents have _id field, not id
+        token.id = (user as any)._id?.toString() || user.id;
       }
 
       return token;

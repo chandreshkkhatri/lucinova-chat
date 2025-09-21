@@ -1,13 +1,10 @@
 import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
-import { z } from "zod";
 
 import { geminiProModel } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
-import { getChatById, createMessage } from "@/db/queries";
+import { getChatById, createMessage, getUserByEmail } from "@/db/queries";
 import { appConfig } from "@/lib/config";
-import { generateUUID } from "@/lib/utils";
-import { getSessionUserId } from "@/lib/get-session-user-id";
-import { Message as DbMessage, Chat } from "@/db/models";
+import { Message as DbMessage } from "@/db/models";
 import { ensureConnection } from "@/db/connection";
 
 export async function POST(request: Request) {
@@ -37,8 +34,13 @@ export async function POST(request: Request) {
   if (coreMessages.length > 0) {
     const userMsg = coreMessages[coreMessages.length - 1];
 
-    // Extract the actual ID string from the user object
-    const userId = getSessionUserId(session)!;
+    // Get the actual user document to ensure we have the MongoDB ObjectId
+    const user = await getUserByEmail(session.user.email!);
+    if (!user) {
+      return new Response("User not found", { status: 401 });
+    }
+
+    const userId = (user as any)._id.toString();
 
     const toPlainText = (content: any): string => {
       if (typeof content === "string") return content;

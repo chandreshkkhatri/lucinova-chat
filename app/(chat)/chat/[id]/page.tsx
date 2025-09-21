@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/app/(auth)/auth";
 import { Chat as PreviewChat } from "@/components/custom/chat";
-import { getChatById, getMessages } from "@/db/queries";
+import { getChatById, getMessages, getUserByEmail } from "@/db/queries";
 
 export async function generateMetadata({
   params,
@@ -75,13 +75,19 @@ export default async function Page({ params }: { params: any }) {
   // verify access
   const session = await auth();
 
-  // Extract the actual ID string from the user object
-  const userId =
-    typeof session?.user?.id === "object"
-      ? (session.user.id as any).id
-      : session?.user?.id;
+  if (!session?.user) {
+    notFound();
+  }
 
-  if (!session?.user || userId !== (chatFromDb as any).userId.toString()) {
+  // Get the actual user document to ensure we have the MongoDB ObjectId
+  const user = await getUserByEmail(session.user.email!);
+  if (!user) {
+    notFound();
+  }
+
+  const userId = (user as any)._id.toString();
+
+  if (userId !== (chatFromDb as any).userId.toString()) {
     notFound();
   }
 
