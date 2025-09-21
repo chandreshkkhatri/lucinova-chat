@@ -17,7 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
 
 import { EnhancedMessage } from "./enhanced-message";
@@ -108,8 +113,8 @@ export function Chat({
             <Avatar className="size-8 shrink-0">
               <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                 <Image
-                  src="/images/karmalok-logo.png"
-                  alt="Karmalok"
+                  src="/images/delibration-logo.png"
+                  alt="Delibration"
                   width={24}
                   height={24}
                   className="size-full object-contain"
@@ -273,15 +278,15 @@ export function Chat({
               <div className="text-center max-w-md">
                 <div className="size-16 mx-auto mb-4 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3">
                   <Image
-                    src="/images/karmalok-logo.png"
-                    alt="Karmalok"
+                    src="/images/delibration-logo.png"
+                    alt="Delibration"
                     width={40}
                     height={40}
                     className="size-full object-contain"
                   />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Welcome to Karmalok
+                  Welcome to Delibration
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
                   Think in threads, learn in layers.
@@ -333,8 +338,8 @@ export function Chat({
                 <Avatar className="size-8 shrink-0">
                   <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                     <Image
-                      src="/images/karmalok-logo.png"
-                      alt="Karmalok"
+                      src="/images/delibration-logo.png"
+                      alt="Delibration"
                       width={24}
                       height={24}
                       className="size-full object-contain"

@@ -8,10 +8,10 @@ import { ThemeProvider } from "@/components/custom/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://karmalok.vercel.app"), // Update this to your actual domain
+  metadataBase: new URL("https://delibration.vercel.app"), // Update this to your actual domain
   title: {
-    default: "Karmalok - AI-Powered Chat Assistant",
-    template: "%s | Karmalok",
+    default: "Delibration - AI-Powered Chat Assistant",
+    template: "%s | Delibration",
   },
   description:
     "Advanced AI chatbot powered by Google Gemini. Get intelligent responses, have natural conversations, and boost your productivity with our cutting-edge chat assistant.",
@@ -23,9 +23,9 @@ export const metadata: Metadata = {
     "conversational AI",
     "productivity tool",
   ],
-  authors: [{ name: "Karmalok Team" }],
-  creator: "Karmalok",
-  publisher: "Karmalok",
+  authors: [{ name: "Delibration Team" }],
+  creator: "Delibration",
+  publisher: "Delibration",
   robots: {
     index: true,
     follow: true,
@@ -40,27 +40,27 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://karmalok.vercel.app",
-    title: "Karmalok - AI-Powered Chat Assistant",
+    url: "https://delibration.vercel.app",
+    title: "Delibration - AI-Powered Chat Assistant",
     description:
       "Advanced AI chatbot powered by Google Gemini. Get intelligent responses, have natural conversations, and boost your productivity.",
-    siteName: "Karmalok",
+    siteName: "Delibration",
     images: [
       {
         url: "/images/og-image.png", // We'll create this
         width: 1200,
         height: 630,
-        alt: "Karmalok - AI Chat Assistant",
+        alt: "Delibration - AI Chat Assistant",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Karmalok - AI-Powered Chat Assistant",
+    title: "Delibration - AI-Powered Chat Assistant",
     description:
       "Advanced AI chatbot powered by Google Gemini. Get intelligent responses and boost your productivity.",
     images: ["/images/twitter-image.png"], // We'll create this
-    creator: "@karmalok", // Update with your Twitter handle
+    creator: "@delibration", // Update with your Twitter handle
   },
   verification: {
     google: "your-google-verification-code", // Add your Google Search Console verification
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     yahoo: "your-yahoo-verification-code", // Optional
   },
   alternates: {
-    canonical: "https://karmalok.vercel.app",
+    canonical: "https://delibration.vercel.app",
   },
 };
 
