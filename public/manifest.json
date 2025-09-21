@@ -1,6 +1,6 @@
 {
-    "name": "Karmalok App - AI Chat Assistant",
-    "short_name": "Karmalok App",
+    "name": "Delibration - AI Chat Assistant",
+    "short_name": "Delibration",
     "description": "Advanced AI chatbot powered by Google Gemini",
     "start_url": "/",
     "display": "standalone",

@@ -4,10 +4,10 @@ export function StructuredData() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Karmalok",
+    name: "Delibration",
     description:
       "Advanced AI chatbot powered by Google Gemini. Get intelligent responses, have natural conversations, and boost your productivity.",
-    url: "https://karmalok.vercel.app",
+    url: "https://delibration.vercel.app",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Any",
     offers: {
@@ -17,7 +17,7 @@ export function StructuredData() {
     },
     creator: {
       "@type": "Organization",
-      name: "Karmalok Team",
+      name: "Delibration Team",
     },
     featureList: [
       "AI-powered conversations",
@@ -26,7 +26,7 @@ export function StructuredData() {
       "Conversation history",
       "Multi-modal support",
     ],
-    screenshot: "https://karmalok.vercel.app/images/demo-thumbnail.png",
+    screenshot: "https://delibration.vercel.app/images/demo-thumbnail.png",
   };
 
   return (

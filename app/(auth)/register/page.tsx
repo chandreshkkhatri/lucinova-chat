@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -55,8 +55,8 @@ export default function Page() {
             <div className="flex flex-col items-center gap-3">
               <div className="size-16 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-lg border border-gray-200 dark:border-gray-700 p-3">
                 <Image
-                  src="/images/karmalok-logo.png"
-                  alt="Karmalok"
+                  src="/images/delibration-logo.png"
+                  alt="Delibration"
                   width={48}
                   height={48}
                   className="size-full object-contain"
@@ -64,7 +64,7 @@ export default function Page() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Join Karmalok
+                  Join Delibration
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Think in threads, learn in layers
