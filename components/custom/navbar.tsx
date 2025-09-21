@@ -4,6 +4,8 @@ import Link from "next/link";
 import { auth, signOut } from "@/app/(auth)/auth";
 
 import { ThemeToggle } from "./theme-toggle";
+import { MobileMenuButton } from "./mobile-menu-button";
+import { History } from "./history";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -18,24 +20,33 @@ export const Navbar = async () => {
   return (
     <>
       <div className="bg-white dark:bg-gray-950 fixed top-0 left-0 right-0 h-16 px-4 flex items-center justify-between z-30 border-b border-gray-200 dark:border-gray-800">
-        <Link
-          href="/"
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-          prefetch={false}
-        >
-          <div className="h-12 w-12 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-2">
-            <Image
-              src="/images/karmalok-logo.png"
-              height={100}
-              width={100}
-              alt="Karmalok logo"
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:inline">
-            Karmalok
-          </span>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Mobile menu button - only show when user is logged in */}
+          {session && (
+            <MobileMenuButton>
+              <History user={session.user} inSheet={true} />
+            </MobileMenuButton>
+          )}
+
+          <Link
+            href="/"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            prefetch={false}
+          >
+            <div className="h-12 w-12 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-2">
+              <Image
+                src="/images/karmalok-logo.png"
+                height={100}
+                width={100}
+                alt="Karmalok logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:inline">
+              Karmalok
+            </span>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-4">
           <Link

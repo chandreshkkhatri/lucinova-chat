@@ -2,25 +2,20 @@
 
 import { Attachment, Message } from "ai";
 import { useChat } from "ai/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
 import { useThreadCount } from "@/components/custom/use-thread-count";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { appConfig } from "@/lib/config";
 
-import { ThreadView } from "./thread-view";
 import { EnhancedMessage } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
+import { ThreadView } from "./thread-view";
 
 export function Chat({
   id,
@@ -67,9 +62,6 @@ export function Chat({
   const [activeThread, setActiveThread] = useState<{
     parentMessage: Message;
   } | null>(null);
-  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(
-    new Set()
-  );
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.0-flash");
 
@@ -87,17 +79,7 @@ export function Chat({
     }
   };
 
-  const toggleThreadExpansion = (messageId: string) => {
-    setExpandedThreads((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  };
+  // Removed collapsible thread preview behavior – clicking the count will open the thread modal
 
   const MessageComponent = ({
     message,
@@ -106,13 +88,12 @@ export function Chat({
     message: Message;
     showReply?: boolean;
   }) => {
-    const { threadCount } = useThreadCount(message.id, id);
-    const isExpanded = expandedThreads.has(message.id);
+  const { threadCount } = useThreadCount(message.id, id);
 
     return (
       <div className="group relative">
         <div
-          className={`flex gap-2 p-3 ${
+          className={`flex gap-2 p-2 sm:p-3 ${
             message.role === "user" ? "justify-end" : ""
           }`}
         >
@@ -124,14 +105,14 @@ export function Chat({
                   alt="Karmalok"
                   width={24}
                   height={24}
-                  className="w-full h-full object-contain"
+                  className="size-full object-contain"
                 />
               </AvatarFallback>
             </Avatar>
           )}
 
           <div
-            className={`flex-1 max-w-[85%] sm:max-w-2xl ${
+            className={`flex-1 max-w-[90%] sm:max-w-[85%] md:max-w-2xl ${
               message.role === "user" ? "text-right" : ""
             }`}
           >
@@ -154,26 +135,22 @@ export function Chat({
               </div>
             </div>
 
-            {/* Actions - only show on desktop */}
+            {/* Actions - now visible on both mobile and desktop */}
             {showReply && !isThread && message.role === "assistant" && (
-              <div className="hidden sm:flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="flex items-center gap-1 mt-2 opacity-100 transition-opacity duration-200">
                 {threadCount > 0 && (
                   <button
-                    onClick={() => toggleThreadExpansion(message.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-all duration-200"
+                    onClick={() => handleStartThread(message.id)}
+                    className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-all duration-200"
                   >
-                    <ChevronRight
-                      className={`size-3 transition-transform duration-200 ${
-                        isExpanded ? "rotate-90" : ""
-                      }`}
-                    />
-                    <span>{threadCount} thread{threadCount === 1 ? '' : 's'}</span>
+                    <ChevronRight className="size-3" />
+                    <span>{threadCount} message{threadCount === 1 ? '' : 's'}</span>
                   </button>
                 )}
 
                 <button
                   onClick={() => handleStartThread(message.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200"
                 >
                   <Reply className="size-3" />
                   <span>Reply</span>
@@ -191,24 +168,7 @@ export function Chat({
           )}
         </div>
 
-        {/* Thread preview with animation */}
-        <div 
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            isExpanded && threadCount > 0 && !isThread ? "max-h-32 opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="ml-12 pl-4 border-l-2 border-blue-200 dark:border-blue-800">
-            <div className="py-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/20 dark:to-transparent rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Reply className="size-3 text-blue-500" />
-                  <p className="font-medium text-gray-700 dark:text-gray-300">Thread ({threadCount} {threadCount === 1 ? 'reply' : 'replies'})</p>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 italic">Click reply to continue in thread...</p>
-              </div>
-            </div>
-          </div>
-        </div>
+  {/* Collapsible thread preview removed as per requirements */}
       </div>
     );
   };
@@ -227,12 +187,12 @@ export function Chat({
       >
         {/* Model Selector Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-          <div className="flex items-center h-10 lg:h-auto">
-            <div className="ml-14 lg:ml-0">
+          <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
+            <div className="">
               <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-[180px] sm:w-[200px] h-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm sm:text-base">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blue-500" />
+                    <Sparkles className="size-4 text-blue-500" />
                     <SelectValue placeholder="Select a model" />
                   </div>
                 </SelectTrigger>
@@ -243,7 +203,7 @@ export function Chat({
                     disabled={!isPro}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Tara 2.5 Flash</span>
+                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
                       <Crown className="size-3 text-yellow-500" />
                       {!isPro && <span className="text-xs text-gray-500 ml-1">Pro</span>}
                     </div>
@@ -253,7 +213,7 @@ export function Chat({
                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Tara 2.0 Flash</span>
+                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.0-flash")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem
@@ -261,7 +221,7 @@ export function Chat({
                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Tara 1.5 Flash</span>
+                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-1.5-flash")}</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -385,16 +345,29 @@ export function Chat({
         </div>
       </div>
 
-      {/* Thread Sidebar */}
+      {/* Thread Sidebar - Mobile Modal or Desktop Sidebar */}
       {!isThread && activeThread && (
-        <div className="hidden lg:block h-full overflow-hidden border-l border-gray-200 dark:border-gray-700 w-96">
-          <ThreadView
-            parentMessage={activeThread.parentMessage}
-            mainChatId={id}
-            onClose={handleCloseThread}
-            className="size-full"
-          />
-        </div>
+        <>
+          {/* Mobile: Full screen modal */}
+          <div className="fixed inset-0 z-50 lg:hidden bg-white dark:bg-gray-900">
+            <ThreadView
+              parentMessage={activeThread.parentMessage}
+              mainChatId={id}
+              onClose={handleCloseThread}
+              className="size-full"
+            />
+          </div>
+
+          {/* Desktop: Sidebar */}
+          <div className="hidden lg:block h-full overflow-hidden border-l border-gray-200 dark:border-gray-700 w-96">
+            <ThreadView
+              parentMessage={activeThread.parentMessage}
+              mainChatId={id}
+              onClose={handleCloseThread}
+              className="size-full"
+            />
+          </div>
+        </>
       )}
     </div>
   );

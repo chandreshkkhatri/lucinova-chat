@@ -4,19 +4,18 @@ import { z } from "zod";
 import { geminiProModel } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { getChatById, createMessage } from "@/db/queries";
+import { appConfig } from "@/lib/config";
 import { generateUUID } from "@/lib/utils";
+import { getSessionUserId } from "@/lib/get-session-user-id";
 import { Message as DbMessage, Chat } from "@/db/models";
 import { ensureConnection } from "@/db/connection";
-import { getSessionUserId } from "@/lib/get-session-user-id";
 
 export async function POST(request: Request) {
   const {
-    id,
     messages,
     parentMessageId,
     mainChatId,
   }: {
-    id: string;
     messages: Array<Message>;
     parentMessageId: string;
     mainChatId: string;
@@ -100,7 +99,7 @@ export async function POST(request: Request) {
 
   const result = await streamText({
     model: geminiProModel,
-    system: `You are Tara, a helpful AI assistant created by Karmalok. You are powered by advanced AI technology but should identify yourself as Tara, not as Gemini or any other AI model. You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
+    system: `You are ${appConfig.getModelIdentity()} You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
     
     IMPORTANT: You are responding in a reply thread. Only answer based on the user's follow-up question.`,
     messages: fullContext,

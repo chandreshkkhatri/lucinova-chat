@@ -176,7 +176,7 @@ export function MultimodalInput({
         placeholder="Type your message..."
         value={input}
         onChange={handleInput}
-        className="min-h-[48px] overflow-hidden resize-none rounded-2xl text-base bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 pr-24 py-3 px-4 shadow-sm"
+        className="min-h-[44px] sm:min-h-[48px] overflow-hidden resize-none rounded-2xl text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 pr-20 sm:pr-24 py-2.5 sm:py-3 px-3 sm:px-4 shadow-sm"
         rows={1}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
@@ -191,9 +191,9 @@ export function MultimodalInput({
         }}
       />
 
-      <div className="absolute bottom-2 right-2 flex items-center gap-2">
+      <div className="absolute bottom-2 right-2 flex items-center gap-1 sm:gap-2">
         <Button
-          className="rounded-full size-8 p-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
+          className="rounded-full size-7 sm:size-8 p-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
           onClick={(event) => {
             event.preventDefault();
             fileInputRef.current?.click();
@@ -206,7 +206,7 @@ export function MultimodalInput({
 
         {isLoading ? (
           <Button
-            className="rounded-full size-8 p-0 bg-red-500 hover:bg-red-600 text-white shadow-lg"
+            className="rounded-full size-7 sm:size-8 p-0 bg-red-500 hover:bg-red-600 text-white shadow-lg"
             onClick={(event) => {
               event.preventDefault();
               stop();
@@ -216,7 +216,7 @@ export function MultimodalInput({
           </Button>
         ) : (
           <Button
-            className="rounded-full size-8 p-0 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-full size-7 sm:size-8 p-0 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={(event) => {
               event.preventDefault();
               submitForm();

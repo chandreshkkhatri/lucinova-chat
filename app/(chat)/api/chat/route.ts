@@ -11,6 +11,7 @@ import {
   getUserByEmail,
   createUser,
 } from "@/db/queries";
+import { appConfig } from "@/lib/config";
 import { generateUUID } from "@/lib/utils";
 import { getSessionUserId } from "@/lib/get-session-user-id";
 import { Chat } from "@/db/models";
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 
   const result = await streamText({
     model: geminiProModel,
-    system: `You are Tara, a helpful AI assistant created by Karmalok. You are powered by advanced AI technology but should identify yourself as Tara, not as Gemini or any other AI model. You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
+    system: `You are ${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
     messages: coreMessages,
     onFinish: async ({ usage, finishReason, responseMessages }) => {
       // Persist AI response messages
