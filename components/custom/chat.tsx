@@ -10,7 +10,14 @@ import { useState } from "react";
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
 import { useThreadCount } from "@/components/custom/use-thread-count";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
 
 import { EnhancedMessage } from "./enhanced-message";
@@ -88,7 +95,7 @@ export function Chat({
     message: Message;
     showReply?: boolean;
   }) => {
-  const { threadCount } = useThreadCount(message.id, id);
+    const { threadCount } = useThreadCount(message.id, id);
 
     return (
       <div className="group relative">
@@ -130,6 +137,7 @@ export function Chat({
                     onAnnotationReply={(question, text) => {
                       console.log("Annotation reply:", question, text);
                     }}
+                    onAskTara={() => handleStartThread(message.id)}
                   />
                 </div>
               </div>
@@ -144,17 +152,28 @@ export function Chat({
                     className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-all duration-200"
                   >
                     <ChevronRight className="size-3" />
-                    <span>{threadCount} message{threadCount === 1 ? '' : 's'}</span>
+                    <span>
+                      {threadCount} message{threadCount === 1 ? "" : "s"}
+                    </span>
                   </button>
                 )}
 
-                <button
-                  onClick={() => handleStartThread(message.id)}
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200"
-                >
-                  <Reply className="size-3" />
-                  <span>Reply</span>
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => handleStartThread(message.id)}
+                        className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200"
+                      >
+                        <Reply className="size-3" />
+                        <span>Reply</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      Tip: Select text in a message to see “Ask Tara”.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
@@ -168,7 +187,7 @@ export function Chat({
           )}
         </div>
 
-  {/* Collapsible thread preview removed as per requirements */}
+        {/* Collapsible thread preview removed as per requirements */}
       </div>
     );
   };
@@ -199,13 +218,21 @@ export function Chat({
                 <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                   <SelectItem
                     value="gemini-2.5-flash"
-                    className={isPro ? "hover:bg-gray-100 dark:hover:bg-gray-700" : "opacity-50 cursor-not-allowed"}
+                    className={
+                      isPro
+                        ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                        : "opacity-50 cursor-not-allowed"
+                    }
                     disabled={!isPro}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
+                      <span className="font-medium">
+                        {appConfig.getModelDisplayName("gemini-2.5-flash")}
+                      </span>
                       <Crown className="size-3 text-yellow-500" />
-                      {!isPro && <span className="text-xs text-gray-500 ml-1">Pro</span>}
+                      {!isPro && (
+                        <span className="text-xs text-gray-500 ml-1">Pro</span>
+                      )}
                     </div>
                   </SelectItem>
                   <SelectItem
@@ -213,7 +240,9 @@ export function Chat({
                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.0-flash")}</span>
+                      <span className="font-medium">
+                        {appConfig.getModelDisplayName("gemini-2.0-flash")}
+                      </span>
                     </div>
                   </SelectItem>
                   <SelectItem
@@ -221,7 +250,9 @@ export function Chat({
                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-1.5-flash")}</span>
+                      <span className="font-medium">
+                        {appConfig.getModelDisplayName("gemini-1.5-flash")}
+                      </span>
                     </div>
                   </SelectItem>
                 </SelectContent>

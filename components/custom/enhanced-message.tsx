@@ -2,7 +2,8 @@
 
 import { Message } from "ai";
 import { AnimatePresence } from "framer-motion";
-import { useRef, useState, useCallback } from "react";
+import { Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import { AnnotationBubble } from "./annotation-bubble";
 import { Markdown } from "./markdown";
@@ -11,12 +12,25 @@ import { useTextAnnotations } from "./use-text-annotations";
 interface EnhancedMessageProps {
   message: Message;
   onAnnotationReply?: (question: string, text: string) => void;
+  onAskTara?: () => void;
 }
 
-export function EnhancedMessage({ message, onAnnotationReply }: EnhancedMessageProps) {
+export function EnhancedMessage({
+  message,
+  onAnnotationReply,
+  onAskTara,
+}: EnhancedMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [processingAnnotation, setProcessingAnnotation] = useState<string | null>(null);
-  
+  const [processingAnnotation, setProcessingAnnotation] = useState<
+    string | null
+  >(null);
+  const [chipVisible, setChipVisible] = useState(false);
+  const [chipPos, setChipPos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const [hasSelection, setHasSelection] = useState(false);
+
   const {
     annotations,
     activeAnnotation,
@@ -28,7 +42,94 @@ export function EnhancedMessage({ message, onAnnotationReply }: EnhancedMessageP
 
   // Removed custom selection context menu and its AI action handler
 
-  const activeAnnotationData = annotations.find(a => a.id === activeAnnotation);
+  // Minimal selection chip logic
+  useEffect(() => {
+    const handleSelectionEnd = (e: MouseEvent | TouchEvent) => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) {
+        setChipVisible(false);
+        setHasSelection(false);
+        return;
+      }
+
+      const text = sel.toString().trim();
+      if (text.length < 2) {
+        setChipVisible(false);
+        setHasSelection(false);
+        return;
+      }
+
+      // Ensure selection is inside this message container
+      const range = sel.getRangeAt(0);
+      const container = containerRef.current;
+      if (!container) return;
+      const common = range.commonAncestorContainer as Node;
+      if (
+        !container.contains(
+          common.nodeType === 1 ? common : (common.parentNode as Node)
+        )
+      ) {
+        setChipVisible(false);
+        setHasSelection(false);
+        return;
+      }
+
+      const selRect = range.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+
+      // Position chip centered below the selection inside container
+      const x = selRect.left - contRect.left + selRect.width / 2;
+      const y = selRect.bottom - contRect.top + 8; // 8px gap
+      setChipPos({ x, y });
+      setChipVisible(true);
+      setHasSelection(true);
+    };
+
+    const handleSelectionChange = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.toString().trim().length === 0) {
+        setChipVisible(false);
+        setHasSelection(false);
+      }
+    };
+
+    const handleScrollOrClick = (e: Event) => {
+      const target = e.target as Node | null;
+      if (
+        target &&
+        containerRef.current &&
+        containerRef.current.contains(target)
+      ) {
+        // allow interactions inside container; do not forcibly hide
+        return;
+      }
+      setChipVisible(false);
+    };
+
+    document.addEventListener("mouseup", handleSelectionEnd);
+    document.addEventListener("touchend", handleSelectionEnd, {
+      passive: true,
+    });
+    document.addEventListener("selectionchange", handleSelectionChange);
+    document.addEventListener("scroll", handleScrollOrClick, true);
+    document.addEventListener("mousedown", handleScrollOrClick);
+    document.addEventListener("touchstart", handleScrollOrClick, {
+      passive: true,
+    });
+
+    return () => {
+      document.removeEventListener("mouseup", handleSelectionEnd);
+      document.removeEventListener("touchend", handleSelectionEnd as any);
+      document.removeEventListener("selectionchange", handleSelectionChange);
+      document.removeEventListener("scroll", handleScrollOrClick, true);
+      document.removeEventListener("mousedown", handleScrollOrClick);
+      document.removeEventListener("touchstart", handleScrollOrClick as any);
+    };
+  }, []);
+
+  const activeAnnotationData = annotations.find(
+    (a) => a.id === activeAnnotation
+  );
 
   return (
     <div className="relative">
@@ -36,7 +137,29 @@ export function EnhancedMessage({ message, onAnnotationReply }: EnhancedMessageP
         <Markdown>{message.content}</Markdown>
       </div>
 
-  {/* Custom selection context menu removed as per requirements */}
+      {/* Custom selection context menu removed as per requirements */}
+
+      {/* Selection chip */}
+      {chipVisible && (
+        <button
+          type="button"
+          onClick={() => {
+            onAskTara?.();
+            setChipVisible(false);
+            // Clear selection so UX feels done
+            try {
+              window.getSelection()?.removeAllRanges();
+            } catch {}
+          }}
+          className="absolute -translate-x-1/2 z-10 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:scale-[0.98] transition"
+          style={{ left: chipPos.x, top: chipPos.y }}
+        >
+          <span className="inline-flex items-center gap-1">
+            <Sparkles className="size-3 text-white/90" />
+            Ask Tara
+          </span>
+        </button>
+      )}
 
       {/* Annotation Bubbles */}
       <AnimatePresence>
@@ -52,7 +175,10 @@ export function EnhancedMessage({ message, onAnnotationReply }: EnhancedMessageP
               setActiveAnnotation(null);
               removeAnnotation(activeAnnotationData.id);
             }}
-            isLoading={activeAnnotationData.isLoading || processingAnnotation === activeAnnotationData.id}
+            isLoading={
+              activeAnnotationData.isLoading ||
+              processingAnnotation === activeAnnotationData.id
+            }
           />
         )}
       </AnimatePresence>
