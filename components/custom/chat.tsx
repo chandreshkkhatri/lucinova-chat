@@ -38,6 +38,7 @@ export function Chat({
   className = "",
   onFinish,
   isPro = false,
+  selectedText,
 }: {
   id: string;
   initialMessages: Array<Message>;
@@ -47,6 +48,7 @@ export function Chat({
   className?: string;
   onFinish?: () => void;
   isPro?: boolean;
+  selectedText?: string;
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
@@ -55,7 +57,7 @@ export function Chat({
       id: chatIdForSubmit,
       body: {
         id: chatIdForSubmit,
-        ...(isThread && { parentMessageId, mainChatId }),
+        ...(isThread && { parentMessageId, mainChatId, selectedText }),
       },
       initialMessages,
       maxSteps: 10,
@@ -73,14 +75,15 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const [activeThread, setActiveThread] = useState<{
     parentMessage: Message;
+    selectedText?: string;
   } | null>(null);
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.0-flash");
 
-  const handleStartThread = (messageId: string) => {
+  const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
     if (parentMessage && !isThread) {
-      setActiveThread({ parentMessage });
+      setActiveThread({ parentMessage, selectedText });
     }
   };
 
@@ -140,9 +143,9 @@ export function Chat({
                   <EnhancedMessage
                     message={message}
                     onAnnotationReply={(question, text) => {
-                      console.log("Annotation reply:", question, text);
+                      // Handle annotation replies if needed
                     }}
-                    onAskTara={() => handleStartThread(message.id)}
+                    onAskTara={(selectedText) => handleStartThread(message.id, selectedText)}
                   />
                 </div>
               </div>
@@ -210,7 +213,8 @@ export function Chat({
         } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
       >
         {/* Model Selector Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
+        {!isThread && (
+          <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
           <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
             <div className="">
               <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -264,7 +268,8 @@ export function Chat({
               </Select>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Messages */}
         <div
@@ -276,48 +281,118 @@ export function Chat({
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center max-w-md">
-                <div className="size-16 mx-auto mb-4 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3">
-                  <Image
-                    src="/images/delibration-logo.png"
-                    alt="Delibration"
-                    width={40}
-                    height={40}
-                    className="size-full object-contain"
-                  />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Welcome to Delibration
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Think in threads, learn in layers.
-                </p>
-
-                {/* Quick suggestions */}
-                <div className="flex flex-col gap-2 mb-4">
-                  <button
-                    onClick={() => setInput("Tell me about yourself")}
-                    className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Tell me about yourself
+                {isThread && selectedText ? (
+                  // Thread with selected text - show query suggestions
+                  <>
+                    <div className="size-12 mx-auto mb-4 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
+                      <Sparkles className="size-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Ask about your selection
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+                      What would you like to know about the selected text?
                     </p>
-                  </button>
 
-                  <button
-                    onClick={() =>
-                      setInput("Help me write a professional email")
-                    }
-                    className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Help me write a professional email
+                    {/* Query suggestions for selected text */}
+                    <div className="flex flex-col gap-2 mb-4">
+                      <button
+                        onClick={() => setInput("Can you explain this in simpler terms?")}
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Can you explain this in simpler terms?
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => setInput("What are the key points here?")}
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          What are the key points here?
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => setInput("Can you provide more context about this?")}
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Can you provide more context about this?
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => setInput("How does this relate to the main topic?")}
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          How does this relate to the main topic?
+                        </p>
+                      </button>
+                    </div>
+                  </>
+                ) : isThread ? (
+                  // Regular thread - minimal content
+                  <>
+                    <div className="size-12 mx-auto mb-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                      <Reply className="size-6 text-gray-600 dark:text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Thread Discussion
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+                      Continue the conversation about the parent message.
                     </p>
-                  </button>
-                </div>
+                  </>
+                ) : (
+                  // Main chat - original welcome
+                  <>
+                    <div className="size-16 mx-auto mb-4 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3">
+                      <Image
+                        src="/images/delibration-logo.png"
+                        alt="Delibration"
+                        width={40}
+                        height={40}
+                        className="size-full object-contain"
+                      />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      Welcome to Delibration
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                      Think in threads, learn in layers.
+                    </p>
 
-                <div className="text-xs text-gray-400 dark:text-gray-500">
-                  Type your message below to start our conversation
-                </div>
+                    {/* Quick suggestions for main chat */}
+                    <div className="flex flex-col gap-2 mb-4">
+                      <button
+                        onClick={() => setInput("Tell me about yourself")}
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Tell me about yourself
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setInput("Help me write a professional email")
+                        }
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Help me write a professional email
+                        </p>
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
+                      Type your message below to start our conversation
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ) : (
@@ -388,6 +463,7 @@ export function Chat({
           <div className="fixed inset-0 z-50 lg:hidden bg-white dark:bg-gray-900">
             <ThreadView
               parentMessage={activeThread.parentMessage}
+              selectedText={activeThread.selectedText}
               mainChatId={id}
               onClose={handleCloseThread}
               className="size-full"
@@ -398,6 +474,7 @@ export function Chat({
           <div className="hidden lg:block h-full overflow-hidden border-l border-gray-200 dark:border-gray-700 w-96">
             <ThreadView
               parentMessage={activeThread.parentMessage}
+              selectedText={activeThread.selectedText}
               mainChatId={id}
               onClose={handleCloseThread}
               className="size-full"

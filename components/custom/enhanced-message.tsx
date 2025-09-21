@@ -12,7 +12,7 @@ import { useTextAnnotations } from "./use-text-annotations";
 interface EnhancedMessageProps {
   message: Message;
   onAnnotationReply?: (question: string, text: string) => void;
-  onAskTara?: () => void;
+  onAskTara?: (selectedText: string) => void;
 }
 
 export function EnhancedMessage({
@@ -143,16 +143,27 @@ export function EnhancedMessage({
       {chipVisible && (
         <button
           type="button"
-          onClick={() => {
-            onAskTara?.();
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const selection = window.getSelection();
+            const selectedText = selection?.toString().trim() || "";
+            onAskTara?.(selectedText);
             setChipVisible(false);
             // Clear selection so UX feels done
             try {
               window.getSelection()?.removeAllRanges();
             } catch {}
           }}
-          className="absolute -translate-x-1/2 z-10 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:scale-[0.98] transition"
-          style={{ left: chipPos.x, top: chipPos.y }}
+          className="absolute -translate-x-1/2 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-[0.98] transition cursor-pointer select-none"
+          style={{
+            left: chipPos.x,
+            top: chipPos.y,
+            pointerEvents: 'auto',
+            userSelect: 'none',
+            zIndex: 9999,
+            position: 'absolute'
+          }}
         >
           <span className="inline-flex items-center gap-1">
             <Sparkles className="size-3 text-white/90" />

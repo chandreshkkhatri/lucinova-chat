@@ -15,10 +15,12 @@ export async function POST(request: Request) {
     messages,
     parentMessageId,
     mainChatId,
+    selectedText,
   }: {
     messages: Array<Message>;
     parentMessageId: string;
     mainChatId: string;
+    selectedText?: string;
   } = await request.json();
 
   const session = await auth();
@@ -100,8 +102,8 @@ export async function POST(request: Request) {
   const result = await streamText({
     model: geminiProModel,
     system: `You are ${appConfig.getModelIdentity()} You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
-    
-    IMPORTANT: You are responding in a reply thread. Only answer based on the user's follow-up question.`,
+
+    IMPORTANT: You are responding in a reply thread.${selectedText ? `\n\nThe user has selected the following text from the parent message and is asking about it:\n"${selectedText}"\n\nFocus your response on this selected text and the user's question about it.` : " Only answer based on the user's follow-up question."}`,
     messages: fullContext,
     onFinish: async ({ responseMessages }) => {
       // Persist AI response(s)
