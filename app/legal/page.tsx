@@ -1,8 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Legal Documents",
-  description: "Access all legal documents including Terms and Conditions, Refund Policy, and other important information.",
+  title: "Legal",
+  description:
+    "Access all legal documents including Terms and Conditions, Refund Policy, and other important information.",
 };
 
 export default function LegalPage() {
@@ -15,7 +16,8 @@ export default function LegalPage() {
           </h1>
 
           <p className="text-gray-600 dark:text-gray-400 text-center mb-8">
-            Access all important legal documents and policies for Delibration services.
+            Access all important legal documents and policies for Delibration
+            services.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -25,7 +27,8 @@ export default function LegalPage() {
                 Terms and Conditions
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Review our terms of service that govern your use of Delibration's AI chat assistant.
+                Review our terms of service that govern your use of
+                Delibration's AI chat assistant.
               </p>
               <a
                 href="/legal/terms-and-conditions.pdf"
@@ -43,7 +46,8 @@ export default function LegalPage() {
                 Refund & Cancellation Policy
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Understand our refund and cancellation policies for subscription services.
+                Understand our refund and cancellation policies for subscription
+                services.
               </p>
               <a
                 href="/legal/refund-policy.pdf"
@@ -61,7 +65,8 @@ export default function LegalPage() {
                 Contact Us PDF
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Get in touch with our support team for any questions or assistance.
+                Get in touch with our support team for any questions or
+                assistance.
               </p>
               <a
                 href="/legal/contact-us.pdf"
@@ -79,7 +84,8 @@ export default function LegalPage() {
                 Privacy Policy
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Learn how we collect, use, and protect your personal information.
+                Learn how we collect, use, and protect your personal
+                information.
               </p>
               <a
                 href="/privacy"
@@ -92,7 +98,8 @@ export default function LegalPage() {
 
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              All documents are regularly updated. Last reviewed: {new Date().toLocaleDateString()}
+              All documents are regularly updated. Last reviewed:{" "}
+              {new Date().toLocaleDateString()}
             </p>
           </div>
         </div>

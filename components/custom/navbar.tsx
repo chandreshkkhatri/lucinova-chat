@@ -57,20 +57,6 @@ export const Navbar = async () => {
             >
               Pricing
             </Link>
-            <Link
-              href="/contact"
-              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-              prefetch={false}
-            >
-              Contact Us
-            </Link>
-            <Link
-              href="/legal"
-              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-              prefetch={false}
-            >
-              Legal
-            </Link>
           </div>
 
           {!session && <ThemeToggle />}
@@ -93,6 +79,14 @@ export const Navbar = async () => {
               >
                 <DropdownMenuItem disabled className="text-sm">
                   {session.user?.email}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="p-1">
+                  <Link
+                    href="/account"
+                    className="w-full text-left px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors block"
+                  >
+                    Account Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="focus:bg-gray-100 dark:focus:bg-gray-800 p-0">
                   <ThemeToggle inDropdown={true} />
