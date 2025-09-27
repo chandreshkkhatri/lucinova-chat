@@ -13,7 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { load } from '@cashfreepayments/cashfree-js';
+import {
+  load,
+  type CashfreeCheckoutOptions,
+} from "@cashfreepayments/cashfree-js";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -41,7 +44,7 @@ export function PaymentModal({
 
   useEffect(() => {
     // Update form when user data changes
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       customerName: userName || prev.customerName,
       customerEmail: userEmail || prev.customerEmail,
@@ -54,7 +57,11 @@ export function PaymentModal({
 
     try {
       // Validate form
-      if (!formData.customerName || !formData.customerEmail || !formData.customerPhone) {
+      if (
+        !formData.customerName ||
+        !formData.customerEmail ||
+        !formData.customerPhone
+      ) {
         toast.error("Please fill in all required fields");
         setIsLoading(false);
         return;
@@ -62,7 +69,7 @@ export function PaymentModal({
 
       // Validate phone number (basic validation for Indian numbers)
       const phoneRegex = /^[6-9]\d{9}$/;
-      if (!phoneRegex.test(formData.customerPhone.replace(/\D/g, ''))) {
+      if (!phoneRegex.test(formData.customerPhone.replace(/\D/g, ""))) {
         toast.error("Please enter a valid 10-digit Indian mobile number");
         setIsLoading(false);
         return;
@@ -83,23 +90,25 @@ export function PaymentModal({
 
       if (!orderResponse.ok) {
         const error = await orderResponse.json();
-        console.error('Order creation failed:', error);
-        throw new Error(error.details || error.error || "Failed to create payment order");
+        console.error("Order creation failed:", error);
+        throw new Error(
+          error.details || error.error || "Failed to create payment order"
+        );
       }
 
       const orderData = await orderResponse.json();
 
       // Initialize Cashfree SDK
       const cashfree = await load({
-        mode: orderData.environment === 'production' ? "production" : "sandbox"
+        mode: orderData.environment === "production" ? "production" : "sandbox",
       });
 
       // Close modal before opening payment
       onClose();
 
       // Prepare checkout options
-      const checkoutOptions = {
-        paymentSessionId: orderData.paymentSessionId,
+      const checkoutOptions: CashfreeCheckoutOptions = {
+        paymentSessionId: String(orderData.paymentSessionId),
         redirectTarget: "_modal",
         appearance: {
           theme: "light",
@@ -108,27 +117,31 @@ export function PaymentModal({
       };
 
       // Open Cashfree checkout
-      cashfree.checkout(checkoutOptions).then((result: any) => {
-        if (result.error) {
-          console.error("Payment failed:", result.error);
-          toast.error("Payment failed. Please try again.");
-        } else if (result.paymentDetails) {
-          console.log("Payment successful:", result.paymentDetails);
-          toast.success("Payment successful! Welcome to Pro plan!");
+      cashfree
+        .checkout(checkoutOptions)
+        .then((result: any) => {
+          if (result.error) {
+            console.error("Payment failed:", result.error);
+            toast.error("Payment failed. Please try again.");
+          } else if (result.paymentDetails) {
+            console.log("Payment successful:", result.paymentDetails);
+            toast.success("Payment successful! Welcome to Pro plan!");
 
-          // Redirect to success page
-          setTimeout(() => {
-            window.location.href = `/payment/success?order_id=${orderData.orderId}`;
-          }, 2000);
-        }
-      }).catch((error: any) => {
-        console.error("Checkout error:", error);
-        toast.error("Payment process interrupted");
-      });
-
+            // Redirect to success page
+            setTimeout(() => {
+              window.location.href = `/payment/success?order_id=${orderData.orderId}`;
+            }, 2000);
+          }
+        })
+        .catch((error: any) => {
+          console.error("Checkout error:", error);
+          toast.error("Payment process interrupted");
+        });
     } catch (error: any) {
       console.error("Payment initiation error:", error);
-      toast.error(error.message || "Failed to initiate payment. Please try again.");
+      toast.error(
+        error.message || "Failed to initiate payment. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -136,9 +149,9 @@ export function PaymentModal({
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow only numbers and format
-    const value = e.target.value.replace(/\D/g, '');
+    const value = e.target.value.replace(/\D/g, "");
     if (value.length <= 10) {
-      setFormData(prev => ({ ...prev, customerPhone: value }));
+      setFormData((prev) => ({ ...prev, customerPhone: value }));
     }
   };
 
@@ -148,7 +161,8 @@ export function PaymentModal({
         <DialogHeader>
           <DialogTitle>Complete Your Purchase</DialogTitle>
           <DialogDescription>
-            Subscribe to {planName} for ₹{(amount / 100).toLocaleString('en-IN')}/month
+            Subscribe to {planName} for ₹
+            {(amount / 100).toLocaleString("en-IN")}/month
           </DialogDescription>
         </DialogHeader>
 
@@ -160,7 +174,12 @@ export function PaymentModal({
               type="text"
               placeholder="Enter your full name"
               value={formData.customerName}
-              onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  customerName: e.target.value,
+                }))
+              }
               required
               disabled={isLoading}
             />
@@ -173,7 +192,12 @@ export function PaymentModal({
               type="email"
               placeholder="your@email.com"
               value={formData.customerEmail}
-              onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  customerEmail: e.target.value,
+                }))
+              }
               required
               disabled={isLoading}
             />
@@ -182,11 +206,7 @@ export function PaymentModal({
           <div className="space-y-2">
             <Label htmlFor="phone">Mobile Number</Label>
             <div className="flex gap-2">
-              <Input
-                className="w-20"
-                value="+91"
-                disabled
-              />
+              <Input className="w-20" value="+91" disabled />
               <Input
                 id="phone"
                 type="tel"
@@ -198,7 +218,9 @@ export function PaymentModal({
                 className="flex-1"
               />
             </div>
-            <p className="text-xs text-gray-500">Enter 10-digit Indian mobile number</p>
+            <p className="text-xs text-gray-500">
+              Enter 10-digit Indian mobile number
+            </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -208,7 +230,9 @@ export function PaymentModal({
             </div>
             <div className="flex justify-between text-sm mt-2">
               <span>Amount</span>
-              <span className="font-medium">₹{(amount / 100).toLocaleString('en-IN')}</span>
+              <span className="font-medium">
+                ₹{(amount / 100).toLocaleString("en-IN")}
+              </span>
             </div>
             <div className="flex justify-between text-sm mt-2">
               <span>Billing</span>
@@ -226,11 +250,7 @@ export function PaymentModal({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full"
-            >
+            <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
