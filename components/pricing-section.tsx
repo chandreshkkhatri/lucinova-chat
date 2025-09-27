@@ -36,11 +36,11 @@ export function PricingSection() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="size-5 text-green-600" />
               <span>Free access to notebook chat</span>
             </div>
             <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="size-5 text-green-600" />
               <span>Basic AI assistance</span>
             </div>
             {/* Removed: Community support */}
@@ -69,15 +69,15 @@ export function PricingSection() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="size-5 text-green-600" />
               <span>Everything in Basic</span>
             </div>
             <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="size-5 text-green-600" />
               <span>Access to premium models</span>
             </div>
             <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="size-5 text-green-600" />
               <span>Priority support</span>
             </div>
             {/* Removed: Advanced features */}
