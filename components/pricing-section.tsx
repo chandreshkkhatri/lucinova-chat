@@ -1,3 +1,6 @@
+import { Check } from "lucide-react";
+
+import { CashfreePaymentButton } from "@/components/cashfree-payment-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -7,10 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
-import { CashfreePaymentButton } from "@/components/cashfree-payment-button";
 
 export function PricingSection() {
+  const displayMode = process.env.NEXT_PUBLIC_MODEL_DISPLAY_MODE?.toLowerCase();
   return (
     <section className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-12">
@@ -41,10 +43,7 @@ export function PricingSection() {
               <Check className="h-5 w-5 text-green-600" />
               <span>Basic AI assistance</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
-              <span>Community support</span>
-            </div>
+            {/* Removed: Community support */}
           </CardContent>
           <CardFooter>
             <Button className="w-full bg-transparent" variant="outline">
@@ -81,10 +80,7 @@ export function PricingSection() {
               <Check className="h-5 w-5 text-green-600" />
               <span>Priority support</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Check className="h-5 w-5 text-green-600" />
-              <span>Advanced features</span>
-            </div>
+            {/* Removed: Advanced features */}
           </CardContent>
           <CardFooter>
             <CashfreePaymentButton

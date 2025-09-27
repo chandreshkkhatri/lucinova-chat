@@ -145,7 +145,9 @@ export function Chat({
                     onAnnotationReply={(question, text) => {
                       // Handle annotation replies if needed
                     }}
-                    onAskTara={(selectedText) => handleStartThread(message.id, selectedText)}
+                    onAskTara={(selectedText) =>
+                      handleStartThread(message.id, selectedText)
+                    }
                   />
                 </div>
               </div>
@@ -215,59 +217,52 @@ export function Chat({
         {/* Model Selector Header */}
         {!isThread && (
           <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-          <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
-            <div className="">
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm sm:text-base">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="size-4 text-blue-500" />
-                    <SelectValue placeholder="Select a model" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                  <SelectItem
-                    value="gemini-2.5-flash"
-                    className={
-                      isPro
-                        ? "hover:bg-gray-100 dark:hover:bg-gray-700"
-                        : "opacity-50 cursor-not-allowed"
-                    }
-                    disabled={!isPro}
-                  >
+            <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
+              <div className="">
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm sm:text-base">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {appConfig.getModelDisplayName("gemini-2.5-flash")}
-                      </span>
-                      <Crown className="size-3 text-yellow-500" />
-                      {!isPro && (
-                        <span className="text-xs text-gray-500 ml-1">Pro</span>
-                      )}
+                      <Sparkles className="size-4 text-blue-500" />
+                      <SelectValue placeholder="Select a model" />
                     </div>
-                  </SelectItem>
-                  <SelectItem
-                    value="gemini-2.0-flash"
-                    className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {appConfig.getModelDisplayName("gemini-2.0-flash")}
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem
-                    value="gemini-1.5-flash"
-                    className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {appConfig.getModelDisplayName("gemini-1.5-flash")}
-                      </span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                    <SelectItem
+                      value="gemini-2.5-flash"
+                      className={
+                        isPro
+                          ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                          : "opacity-50 cursor-not-allowed"
+                      }
+                      disabled={!isPro}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {appConfig.getModelDisplayName("gemini-2.5-flash")}
+                        </span>
+                        <Crown className="size-3 text-yellow-500" />
+                        {!isPro && (
+                          <span className="text-xs text-gray-500 ml-1">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                    <SelectItem
+                      value="gemini-2.0-flash"
+                      className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {appConfig.getModelDisplayName("gemini-2.0-flash")}
+                        </span>
+                      </div>
+                    </SelectItem>
+                    {/* Removed gemini-1.5-flash option */}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
           </div>
         )}
 
@@ -297,7 +292,9 @@ export function Chat({
                     {/* Query suggestions for selected text */}
                     <div className="flex flex-col gap-2 mb-4">
                       <button
-                        onClick={() => setInput("Can you explain this in simpler terms?")}
+                        onClick={() =>
+                          setInput("Can you explain this in simpler terms?")
+                        }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -306,7 +303,9 @@ export function Chat({
                       </button>
 
                       <button
-                        onClick={() => setInput("What are the key points here?")}
+                        onClick={() =>
+                          setInput("What are the key points here?")
+                        }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -315,7 +314,9 @@ export function Chat({
                       </button>
 
                       <button
-                        onClick={() => setInput("Can you provide more context about this?")}
+                        onClick={() =>
+                          setInput("Can you provide more context about this?")
+                        }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -324,7 +325,9 @@ export function Chat({
                       </button>
 
                       <button
-                        onClick={() => setInput("How does this relate to the main topic?")}
+                        onClick={() =>
+                          setInput("How does this relate to the main topic?")
+                        }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
