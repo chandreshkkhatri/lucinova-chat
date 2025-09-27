@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import { CashfreePaymentButton } from "@/components/cashfree-payment-button";
 
 export function PricingSection() {
   return (
@@ -63,7 +64,7 @@ export function PricingSection() {
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
             <div className="mt-4">
-              <span className="text-4xl font-bold">$25</span>
+              <span className="text-4xl font-bold">₹2,000</span>
               <span className="text-muted-foreground ml-2">per month</span>
             </div>
           </CardHeader>
@@ -86,7 +87,12 @@ export function PricingSection() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full">Coming soon</Button>
+            <CashfreePaymentButton
+              amount={200000} // Amount in paise (2000 INR = 200000 paise)
+              planName="Pro Plan - Monthly"
+              buttonText="Subscribe for ₹2,000/month"
+              className="w-full"
+            />
           </CardFooter>
         </Card>
       </div>
