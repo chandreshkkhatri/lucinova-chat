@@ -49,13 +49,29 @@ export const Navbar = async () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link
-            href="/pricing"
-            className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-            prefetch={false}
-          >
-            Pricing
-          </Link>
+          <div className="hidden md:flex items-center gap-4">
+            <Link
+              href="/pricing"
+              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+              prefetch={false}
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/contact"
+              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+              prefetch={false}
+            >
+              Contact Us
+            </Link>
+            <Link
+              href="/legal"
+              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+              prefetch={false}
+            >
+              Legal
+            </Link>
+          </div>
 
           {!session && <ThemeToggle />}
 
