@@ -18,6 +18,33 @@ interface AccountClientProps {
 export default function AccountClient({ user }: AccountClientProps) {
   const [activeSection, setActiveSection] = useState("account");
   const router = useRouter();
+  const [payments, setPayments] = useState<any[] | null>(null);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  async function fetchBilling() {
+    try {
+      setLoadingPayments(true);
+      const res = await fetch("/api/payment/history", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch payments");
+      const data = await res.json();
+      setPayments(data.payments || []);
+    } catch (e) {
+      setPayments([]);
+    } finally {
+      setLoadingPayments(false);
+    }
+  }
+
+  // Auto-load when switching to Billing tab
+  if (
+    typeof window !== "undefined" &&
+    activeSection === "billing" &&
+    payments === null &&
+    !loadingPayments
+  ) {
+    // fire-and-forget
+    fetchBilling();
+  }
 
   const menuItems = [
     {
@@ -34,7 +61,7 @@ export default function AccountClient({ user }: AccountClientProps) {
       id: "billing",
       label: "Billing History",
       icon: Receipt,
-      disabled: true,
+      disabled: !user?.email,
     },
     {
       id: "delete",
@@ -124,12 +151,7 @@ export default function AccountClient({ user }: AccountClientProps) {
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
               Billing History
             </h2>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-500 dark:text-gray-400">
-                Billing history feature coming soon. You&apos;ll be able to view
-                and download your invoices here.
-              </p>
-            </div>
+            <BillingHistory payments={payments} loading={loadingPayments} />
           </div>
         );
 
@@ -247,5 +269,105 @@ export default function AccountClient({ user }: AccountClientProps) {
         </div>
       </footer>
     </main>
+  );
+}
+
+function BillingHistory({
+  payments,
+  loading,
+}: {
+  payments: any[] | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+        <p className="text-gray-600 dark:text-gray-400">Loading payments…</p>
+      </div>
+    );
+  }
+
+  if (!payments || payments.length === 0) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+        <p className="text-gray-600 dark:text-gray-400">
+          No billing history yet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+          <thead className="bg-gray-50 dark:bg-gray-800/60">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Order ID
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Plan
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Amount
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Environment
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+            {payments.map((p) => {
+              const date = p.createdAt ? new Date(p.createdAt) : null;
+              const amount = Number(p.amount ?? 0);
+              const idShort = String(p.orderId || "").slice(-8);
+              return (
+                <tr
+                  key={p.orderId}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                >
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    {date ? date.toLocaleString("en-IN") : "-"}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700 dark:text-gray-300">
+                    {p.orderId}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    {p.planName || "-"}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    ₹{amount.toLocaleString("en-IN")}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-xs">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${
+                        String(p.status).toUpperCase().includes("SUCCESS") ||
+                        String(p.status).toUpperCase().includes("PAID")
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          : String(p.status).toUpperCase().includes("FAILED")
+                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                      }`}
+                    >
+                      {String(p.status).replaceAll("_", " ")}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    {p.environment || "-"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

@@ -97,6 +97,14 @@ export async function recordPaymentOnce({
   return doc;
 }
 
+export async function getPaymentsByEmail(email: string, limit = 50) {
+  await ensureConnection();
+  return Payment.find({ customerEmail: email })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+}
+
 // Chat functions
 export async function createChat(
   userId: string,
