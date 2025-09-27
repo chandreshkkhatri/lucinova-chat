@@ -1,32 +1,18 @@
-import { Cashfree, CFEnvironment } from "cashfree-pg";
 import { NextRequest, NextResponse } from "next/server";
 
-// Guard against missing credentials early
-const CF_APP_ID = process.env.CASHFREE_APP_ID;
-const CF_SECRET = process.env.CASHFREE_SECRET_KEY;
-const IS_PROD = process.env.CASHFREE_ENVIRONMENT === "production";
+import { ensureCashfreeClient } from "@/lib/cashfree";
 
-// Create Cashfree instance (SDK v5 style)
-const cashfree = new Cashfree(
-  IS_PROD ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
-  CF_APP_ID || "",
-  CF_SECRET || ""
-);
+function jsonError(message: string, status = 400, details?: string | object) {
+  return NextResponse.json(
+    { error: message, ...(details ? { details } : {}) },
+    { status }
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
-    if (!CF_APP_ID || !CF_SECRET) {
-      console.error(
-        "Cashfree credentials missing. Check CASHFREE_APP_ID and CASHFREE_SECRET_KEY env vars."
-      );
-      return NextResponse.json(
-        {
-          error:
-            "Server payment configuration missing. Please try again later.",
-        },
-        { status: 500 }
-      );
-    }
+    const cf = ensureCashfreeClient();
+    if ("error" in cf) return jsonError(cf.error, 500);
 
     const { amount, customerName, customerEmail, customerPhone, planName } =
       await request.json();
@@ -66,7 +52,7 @@ export async function POST(request: NextRequest) {
     } as const;
 
     // Create order using SDK v5 method (no API version argument)
-    const response = await cashfree.PGCreateOrder(orderRequest);
+    const response = await cf.client.PGCreateOrder(orderRequest);
 
     if (!response?.data) {
       console.error("Cashfree response:", response);
@@ -78,17 +64,12 @@ export async function POST(request: NextRequest) {
       orderId: response.data.order_id,
       paymentSessionId: response.data.payment_session_id,
       orderAmount: response.data.order_amount,
-      environment: IS_PROD ? "production" : "sandbox",
+      environment: cf.environment,
     });
   } catch (error: any) {
-    console.error("Cashfree order creation error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to create payment order",
-        details:
-          error?.response?.data?.message || error?.message || "Unknown error",
-      },
-      { status: 500 }
-    );
+    const details =
+      error?.response?.data?.message || error?.message || "Unknown error";
+    console.error("Cashfree order creation error:", details);
+    return jsonError("Failed to create payment order", 500, details);
   }
 }
