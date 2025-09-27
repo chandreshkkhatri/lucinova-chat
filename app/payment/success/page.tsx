@@ -10,27 +10,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order_id");
-  const isDemo = searchParams.get("demo") === "true";
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (orderId) {
-      if (isDemo) {
-        // Mock order details for demo mode
-        setOrderDetails({
-          orderId: orderId,
-          orderAmount: 200000,
-          orderStatus: "PAID",
-          paymentStatus: "SUCCESS",
-          isDemo: true
-        });
-        setIsLoading(false);
-      } else {
-        fetchOrderDetails();
-      }
+      fetchOrderDetails();
     }
-  }, [orderId, isDemo]);
+  }, [orderId]);
 
   const fetchOrderDetails = async () => {
     try {
@@ -60,11 +47,6 @@ export default function PaymentSuccessPage() {
               <CardTitle className="mt-4 text-2xl">Payment Successful!</CardTitle>
               <CardDescription>
                 Thank you for subscribing to the Pro Plan
-                {orderDetails?.isDemo && (
-                  <span className="block mt-2 text-sm text-orange-600 dark:text-orange-400">
-                    (Demo Mode - Test Payment)
-                  </span>
-                )}
               </CardDescription>
             </>
           )}

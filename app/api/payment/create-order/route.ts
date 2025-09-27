@@ -1,55 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { Cashfree, CFEnvironment } from "cashfree-pg";
+import { NextRequest, NextResponse } from "next/server";
 
-// Initialize Cashfree
-const initializeCashfree = () => {
-  const { Cashfree, CFEnvironment } = require('cashfree-pg');
-  const cashfree = new Cashfree({
-    environment: process.env.CASHFREE_ENVIRONMENT === 'production'
-      ? CFEnvironment.PRODUCTION
-      : CFEnvironment.SANDBOX,
-    clientId: process.env.CASHFREE_APP_ID!,
-    clientSecret: process.env.CASHFREE_SECRET_KEY!,
-  });
-  return cashfree;
-};
+// Guard against missing credentials early
+const CF_APP_ID = process.env.CASHFREE_APP_ID;
+const CF_SECRET = process.env.CASHFREE_SECRET_KEY;
+const IS_PROD = process.env.CASHFREE_ENVIRONMENT === "production";
+
+// Create Cashfree instance (SDK v5 style)
+const cashfree = new Cashfree(
+  IS_PROD ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
+  CF_APP_ID || "",
+  CF_SECRET || ""
+);
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, customerName, customerEmail, customerPhone, planName } = await request.json();
+    if (!CF_APP_ID || !CF_SECRET) {
+      console.error(
+        "Cashfree credentials missing. Check CASHFREE_APP_ID and CASHFREE_SECRET_KEY env vars."
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Server payment configuration missing. Please try again later.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const { amount, customerName, customerEmail, customerPhone, planName } =
+      await request.json();
 
     // Validate required fields
     if (!amount || !customerName || !customerEmail || !customerPhone) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
     // Create unique order ID
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const orderId = `order_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
 
-    // Check if using demo/test credentials (for development purposes)
-    const isDemo = process.env.CASHFREE_APP_ID?.startsWith('TEST') &&
-                   process.env.CASHFREE_SECRET_KEY?.startsWith('TEST');
-
-    if (isDemo) {
-      // Return a mock successful response for demo purposes
-      console.log('Demo mode: Creating mock order for testing');
-      return NextResponse.json({
-        success: true,
-        orderId: orderId,
-        paymentSessionId: `session_${Date.now()}`,
-        orderAmount: amount,
-        environment: process.env.CASHFREE_ENVIRONMENT,
-        isDemo: true
-      });
-    }
-
-    // Production mode: Use actual Cashfree API
-    const cashfree = initializeCashfree();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const orderRequest = {
-      order_amount: amount,
+      order_amount: amount / 100, // our UI sends paise; SDK expects rupees
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
@@ -59,19 +57,20 @@ export async function POST(request: NextRequest) {
         customer_phone: customerPhone,
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/success?order_id=${orderId}`,
-        notify_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/payment/webhook`,
-        payment_methods: "cc,dc,upi,nb,wallet"
+        return_url: `${appUrl}/payment/success?order_id={order_id}`,
+        notify_url: `${appUrl}/api/payment/webhook`,
+        // Allowed values: cc, dc, ppc, ccc, emi, paypal, upi, nb, app, paylater
+        payment_methods: "cc,dc,upi,nb",
       },
-      order_note: `Payment for ${planName || 'Pro Plan'}`,
-    };
+      order_note: `Payment for ${planName || "Pro Plan"}`,
+    } as const;
 
-    // Create order
-    const response = await cashfree.PGCreateOrder("2022-09-01", orderRequest);
+    // Create order using SDK v5 method (no API version argument)
+    const response = await cashfree.PGCreateOrder(orderRequest);
 
     if (!response?.data) {
-      console.error('Cashfree response:', response);
-      throw new Error('Failed to create order');
+      console.error("Cashfree response:", response);
+      throw new Error("Failed to create order");
     }
 
     return NextResponse.json({
@@ -79,15 +78,15 @@ export async function POST(request: NextRequest) {
       orderId: response.data.order_id,
       paymentSessionId: response.data.payment_session_id,
       orderAmount: response.data.order_amount,
-      environment: process.env.CASHFREE_ENVIRONMENT
+      environment: IS_PROD ? "production" : "sandbox",
     });
-
   } catch (error: any) {
-    console.error('Cashfree order creation error:', error);
+    console.error("Cashfree order creation error:", error);
     return NextResponse.json(
       {
-        error: 'Failed to create payment order',
-        details: error?.message || 'Unknown error'
+        error: "Failed to create payment order",
+        details:
+          error?.response?.data?.message || error?.message || "Unknown error",
       },
       { status: 500 }
     );

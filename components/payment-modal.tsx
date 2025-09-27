@@ -89,20 +89,7 @@ export function PaymentModal({
 
       const orderData = await orderResponse.json();
 
-      // Check if this is demo mode
-      if (orderData.isDemo) {
-        console.log("Demo mode: Simulating payment success");
-        onClose();
-        toast.success("Demo payment successful! (This is a test simulation)");
-
-        // Redirect to success page after a short delay
-        setTimeout(() => {
-          window.location.href = `/payment/success?order_id=${orderData.orderId}&demo=true`;
-        }, 2000);
-        return;
-      }
-
-      // Production mode: Initialize Cashfree SDK
+      // Initialize Cashfree SDK
       const cashfree = await load({
         mode: orderData.environment === 'production' ? "production" : "sandbox"
       });
