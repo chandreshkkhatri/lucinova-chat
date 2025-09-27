@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { User, CreditCard, Trash2, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, CreditCard, Trash2, Receipt } from "lucide-react";
+import { useState } from "react";
 
 interface AccountClientProps {
   user: {
     email?: string | null;
     name?: string | null;
+    plan?: "free" | "pro";
+    isPro?: boolean;
+    currentPeriodEnd?: string | Date | null;
   };
 }
 
@@ -72,7 +75,23 @@ export default function AccountClient({ user }: AccountClientProps) {
                   <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
                     Current Plan
                   </label>
-                  <p className="text-gray-600 dark:text-gray-400">Free Plan</p>
+                  {user.isPro ? (
+                    <div className="text-gray-600 dark:text-gray-400">
+                      <p>Pro Plan</p>
+                      {user.currentPeriodEnd && (
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                          Renews on{" "}
+                          {new Date(user.currentPeriodEnd).toLocaleDateString(
+                            "en-IN"
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Free Plan
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -107,8 +126,8 @@ export default function AccountClient({ user }: AccountClientProps) {
             </h2>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
               <p className="text-gray-500 dark:text-gray-400">
-                Billing history feature coming soon. You'll be able to view and
-                download your invoices here.
+                Billing history feature coming soon. You&apos;ll be able to view
+                and download your invoices here.
               </p>
             </div>
           </div>
@@ -150,7 +169,7 @@ export default function AccountClient({ user }: AccountClientProps) {
 
           <div className="flex flex-col md:flex-row gap-8">
             {/* Sidebar Navigation */}
-            <div className="md:w-64 flex-shrink-0">
+            <div className="md:w-64 shrink-0">
               <nav className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4">
                 <ul className="space-y-1">
                   {menuItems.map((item) => {
@@ -170,7 +189,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                               : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                           }`}
                         >
-                          <Icon className="w-5 h-5" />
+                          <Icon className="size-5" />
                           <span className="text-sm font-medium">
                             {item.label}
                           </span>

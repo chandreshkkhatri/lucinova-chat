@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 
+import { auth } from "@/app/(auth)/auth";
 import { Chat } from "@/components/custom/chat";
+import { getUserByEmail } from "@/db/queries";
 import { generateUUID } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -22,5 +24,13 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const id = generateUUID();
-  return <Chat key={id} id={id} initialMessages={[]} />;
+  let isPro = false;
+  const session = await auth();
+  if (session?.user?.email) {
+    try {
+      const dbUser: any = await getUserByEmail(session.user.email);
+      isPro = !!dbUser?.isPro;
+    } catch {}
+  }
+  return <Chat key={id} id={id} initialMessages={[]} isPro={isPro} />;
 }

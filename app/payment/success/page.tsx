@@ -6,7 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -38,12 +44,16 @@ export default function PaymentSuccessPage() {
             <>
               <Loader2 className="size-12 animate-spin mx-auto text-gray-400" />
               <CardTitle className="mt-4">Processing Payment...</CardTitle>
-              <CardDescription>Please wait while we confirm your payment</CardDescription>
+              <CardDescription>
+                Please wait while we confirm your payment
+              </CardDescription>
             </>
           ) : (
             <>
               <CheckCircle className="size-12 text-green-500 mx-auto" />
-              <CardTitle className="mt-4 text-2xl">Payment Successful!</CardTitle>
+              <CardTitle className="mt-4 text-2xl">
+                Payment Successful!
+              </CardTitle>
               <CardDescription>
                 Thank you for subscribing to the Pro Plan
               </CardDescription>
@@ -54,23 +64,36 @@ export default function PaymentSuccessPage() {
           {!isLoading && orderDetails && (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Order ID</span>
-                <span className="text-sm font-medium">{orderDetails.orderId}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Order ID
+                </span>
+                <span className="text-sm font-medium">
+                  {orderDetails.orderId}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</span>
-                <span className="text-sm font-medium">₹{Number(orderDetails.orderAmount).toLocaleString('en-IN')}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Amount Paid
+                </span>
+                <span className="text-sm font-medium">
+                  ₹{Number(orderDetails.orderAmount).toLocaleString("en-IN")}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                <span className="text-sm font-medium text-green-600">{orderDetails.orderStatus}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Status
+                </span>
+                <span className="text-sm font-medium text-green-600">
+                  {orderDetails.orderStatus}
+                </span>
               </div>
             </div>
           )}
 
           <div className="space-y-2 pt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              You now have access to all Pro features. A confirmation email has been sent to your registered email address.
+              You now have access to all Pro features. A confirmation email has
+              been sent to your registered email address.
             </p>
 
             <div className="flex gap-2">

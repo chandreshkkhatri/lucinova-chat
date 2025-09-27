@@ -1,5 +1,8 @@
 import { Metadata } from "next";
+
 import { auth } from "@/app/(auth)/auth";
+import { getUserByEmail } from "@/db/queries";
+
 import AccountClient from "./account-client";
 
 export const metadata: Metadata = {
@@ -9,6 +12,19 @@ export const metadata: Metadata = {
 
 export default async function AccountPage() {
   const session = await auth();
+  const baseUser = session?.user || ({} as any);
 
-  return <AccountClient user={session?.user || {}} />;
+  // Enrich with subscription info from DB (best-effort)
+  if (baseUser?.email) {
+    try {
+      const dbUser: any = await getUserByEmail(baseUser.email);
+      if (dbUser && !Array.isArray(dbUser)) {
+        baseUser.plan = dbUser.plan || "free";
+        baseUser.isPro = !!dbUser.isPro;
+        baseUser.currentPeriodEnd = dbUser.currentPeriodEnd || null;
+      }
+    } catch {}
+  }
+
+  return <AccountClient user={baseUser} />;
 }

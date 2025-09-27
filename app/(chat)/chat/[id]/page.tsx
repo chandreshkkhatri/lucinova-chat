@@ -110,6 +110,7 @@ export default async function Page({ params }: { params: any }) {
       initialMessages={uiMessages}
       isThread={isThread}
       mainChatId={id}
+      isPro={!!(user as any).isPro}
     />
   );
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureConnection } from "./connection";
-import { User, Chat, Message } from "./models";
+import { User, Chat, Message, Payment } from "./models";
 
 // Re-export types for external use
 export { Chat } from "./models";
@@ -15,12 +15,86 @@ export async function createUser(
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
-  const finalDisplayName = displayName || email.split('@')[0];
-  return User.create({ email, password, displayName: finalDisplayName, avatarUrl, isBot });
+  const finalDisplayName = displayName || email.split("@")[0];
+  return User.create({
+    email,
+    password,
+    displayName: finalDisplayName,
+    avatarUrl,
+    isBot,
+  });
 }
 export async function getUserByEmail(email: string) {
   await ensureConnection();
   return User.findOne({ email }).lean();
+}
+
+// Subscription helpers
+export async function activateProSubscriptionByEmail(
+  email: string,
+  periodInDays = 30,
+  provider: "cashfree" | "manual" = "cashfree"
+) {
+  await ensureConnection();
+  const now = new Date();
+  const currentPeriodEnd = new Date(
+    now.getTime() + periodInDays * 24 * 60 * 60 * 1000
+  );
+  const update = {
+    plan: "pro" as const,
+    isPro: true,
+    proSince: now,
+    currentPeriodEnd,
+    subscriptionProvider: provider,
+    subscriptionStatus: "active" as const,
+  };
+  const user = await User.findOneAndUpdate({ email }, update, {
+    new: true,
+  }).lean();
+  return user;
+}
+
+export async function recordPaymentOnce({
+  orderId,
+  status,
+  amount,
+  currency = "INR",
+  customerEmail,
+  customerName,
+  environment,
+  planName,
+  raw,
+}: {
+  orderId: string;
+  status: string;
+  amount: number;
+  currency?: string;
+  customerEmail?: string;
+  customerName?: string;
+  environment?: "production" | "sandbox";
+  planName?: string;
+  raw?: any;
+}) {
+  await ensureConnection();
+  // Idempotent create-or-update by orderId
+  const doc = await Payment.findOneAndUpdate(
+    { orderId },
+    {
+      $setOnInsert: { orderId },
+      $set: {
+        status,
+        amount,
+        currency,
+        customerEmail,
+        customerName,
+        environment,
+        planName,
+        raw,
+      },
+    },
+    { upsert: true, new: true }
+  ).lean();
+  return doc;
 }
 
 // Chat functions
@@ -48,9 +122,7 @@ export async function createChat(
 }
 export async function getChatsByUserId(userId: string) {
   await ensureConnection();
-  const chats = await Chat.find({ userId })
-    .sort({ lastMsgAt: -1 })
-    .lean();
+  const chats = await Chat.find({ userId }).sort({ lastMsgAt: -1 }).lean();
 
   // Ensure each chat has an `id` field (lean documents don\'t include the virtual by default)
   return chats.map((chat: any) => ({
