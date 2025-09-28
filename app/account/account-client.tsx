@@ -9,6 +9,7 @@ interface AccountClientProps {
   user: {
     email?: string | null;
     name?: string | null;
+    phone?: string | null;
     plan?: "free" | "pro";
     isPro?: boolean;
     currentPeriodEnd?: string | Date | null;
@@ -88,16 +89,22 @@ export default function AccountClient({ user }: AccountClientProps) {
                     {user.email || "No email provided"}
                   </p>
                 </div>
-                {user.name && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
-                      Name
-                    </label>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {user.name}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                    Name
+                  </label>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {user.name || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                    Phone Number
+                  </label>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {user.phone || "Not provided"}
+                  </p>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
                     Current Plan

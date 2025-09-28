@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { appConfig } from "@/lib/config";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export function PaymentModal({
   userName = "",
   userPhone = "",
 }: PaymentModalProps) {
+  const currency = appConfig.pricing.currency;
+  const symbol = appConfig.getCurrencySymbol(currency);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     customerName: userName,
@@ -165,8 +168,11 @@ export function PaymentModal({
         <DialogHeader>
           <DialogTitle>Complete Your Purchase</DialogTitle>
           <DialogDescription>
-            Subscribe to {planName} for ₹
-            {(amount / 100).toLocaleString("en-IN")}/month
+            Subscribe to {planName} for {symbol}
+            {(amount / 100).toLocaleString(
+              currency === "INR" ? "en-IN" : undefined
+            )}
+            /month
           </DialogDescription>
         </DialogHeader>
 
@@ -235,7 +241,10 @@ export function PaymentModal({
             <div className="flex justify-between text-sm mt-2">
               <span>Amount</span>
               <span className="font-medium">
-                ₹{(amount / 100).toLocaleString("en-IN")}
+                {symbol}
+                {(amount / 100).toLocaleString(
+                  currency === "INR" ? "en-IN" : undefined
+                )}
               </span>
             </div>
             <div className="flex justify-between text-sm mt-2">

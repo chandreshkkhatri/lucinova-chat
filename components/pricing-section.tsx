@@ -10,9 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { appConfig } from "@/lib/config";
 
 export function PricingSection() {
   const displayMode = process.env.NEXT_PUBLIC_MODEL_DISPLAY_MODE?.toLowerCase();
+  const priceRupees = appConfig.pricing.proMonthlyRupees;
+  const pricePaise = Math.round(priceRupees * 100);
+  const currency = appConfig.pricing.currency;
+  const symbol = appConfig.getCurrencySymbol(currency);
   return (
     <section className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-12">
@@ -63,7 +68,12 @@ export function PricingSection() {
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
             <div className="mt-4">
-              <span className="text-4xl font-bold">₹2,000</span>
+              <span className="text-4xl font-bold">
+                {symbol}
+                {priceRupees.toLocaleString(
+                  currency === "INR" ? "en-IN" : undefined
+                )}
+              </span>
               <span className="text-muted-foreground ml-2">per month</span>
             </div>
           </CardHeader>
@@ -84,9 +94,11 @@ export function PricingSection() {
           </CardContent>
           <CardFooter>
             <CashfreePaymentButton
-              amount={200000} // Amount in paise (2000 INR = 200000 paise)
+              amount={pricePaise}
               planName="Pro Plan - Monthly"
-              buttonText="Subscribe for ₹2,000/month"
+              buttonText={`Subscribe for ${symbol}${priceRupees.toLocaleString(
+                currency === "INR" ? "en-IN" : undefined
+              )}/month`}
               className="w-full"
             />
           </CardFooter>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { ensureCashfreeClient } from "@/lib/cashfree";
+import { appConfig } from "@/lib/config";
 
 function jsonError(message: string, status = 400, details?: string | object) {
   return NextResponse.json(
@@ -32,9 +33,17 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    // Normalize amount: client sends in paise by convention
+    const normalizedAmountRupees = Number(amount) / 100;
+    const currency = (
+      process.env.CURRENCY ||
+      appConfig.pricing.currency ||
+      "INR"
+    ).toUpperCase();
+
     const orderRequest = {
-      order_amount: amount / 100, // our UI sends paise; SDK expects rupees
-      order_currency: "INR",
+      order_amount: normalizedAmountRupees, // Cashfree SDK expects rupees
+      order_currency: currency,
       order_id: orderId,
       customer_details: {
         customer_id: `customer_${Date.now()}`,

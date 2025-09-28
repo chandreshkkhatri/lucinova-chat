@@ -36,4 +36,33 @@ export const appConfig = {
       : appConfig.modelNames.original;
     return nameMap[modelId] || modelId;
   },
+
+  // Pricing & currency configuration
+  pricing: {
+    // Public price (in rupees) for client-side display
+    proMonthlyRupees: Number(
+      process.env.NEXT_PUBLIC_PRO_MONTHLY_PRICE_INR ||
+        process.env.PRO_MONTHLY_PRICE_INR ||
+        2000
+    ),
+    // Currency code and symbol
+    currency: (process.env.NEXT_PUBLIC_CURRENCY || "INR").toUpperCase(),
+  },
+
+  // Helpers
+  getCurrencySymbol: (code?: string) => {
+    const c = (code || appConfig.pricing.currency).toUpperCase();
+    switch (c) {
+      case "INR":
+        return "₹";
+      case "USD":
+        return "$";
+      case "EUR":
+        return "€";
+      case "GBP":
+        return "£";
+      default:
+        return c + " ";
+    }
+  },
 };
