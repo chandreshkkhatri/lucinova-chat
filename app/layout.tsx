@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Toaster } from "sonner";
 
 import { Navbar } from "@/components/custom/navbar";
+import { ProfileGate } from "@/components/custom/profile-gate";
 import { StructuredData } from "@/components/custom/structured-data";
 import { ThemeProvider } from "@/components/custom/theme-provider";
 
@@ -93,6 +94,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <StructuredData />
+          <ProfileGate />
           <Toaster position="top-center" />
           <Navbar />
           {children}

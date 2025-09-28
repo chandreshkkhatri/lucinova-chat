@@ -4,6 +4,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
   email: string;
   displayName: string;
+  name?: string;
+  phone?: string;
   password?: string;
   avatarUrl?: string;
   isBot: boolean;
@@ -21,6 +23,8 @@ const userSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true },
     displayName: { type: String, required: true },
+    name: { type: String },
+    phone: { type: String },
     password: { type: String },
     avatarUrl: { type: String },
     isBot: { type: Boolean, default: false },

@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { load, type CashfreeCheckoutOptions } from "@cashfreepayments/cashfree-js";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,15 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import {
-  load,
-  type CashfreeCheckoutOptions,
-} from "@cashfreepayments/cashfree-js";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -25,6 +23,7 @@ interface PaymentModalProps {
   planName: string;
   userEmail?: string;
   userName?: string;
+  userPhone?: string;
 }
 
 export function PaymentModal({
@@ -34,12 +33,13 @@ export function PaymentModal({
   planName,
   userEmail = "",
   userName = "",
+  userPhone = "",
 }: PaymentModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     customerName: userName,
     customerEmail: userEmail,
-    customerPhone: "",
+    customerPhone: userPhone || "",
   });
 
   useEffect(() => {
@@ -48,8 +48,9 @@ export function PaymentModal({
       ...prev,
       customerName: userName || prev.customerName,
       customerEmail: userEmail || prev.customerEmail,
+      customerPhone: (userPhone || prev.customerPhone || "").replace(/\D/g, "")
     }));
-  }, [userName, userEmail]);
+  }, [userName, userEmail, userPhone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,7 +254,7 @@ export function PaymentModal({
             <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                   Processing...
                 </>
               ) : (

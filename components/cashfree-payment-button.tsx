@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+
 import { PaymentModal } from "@/components/payment-modal";
+import { Button } from "@/components/ui/button";
 
 interface CashfreePaymentButtonProps {
   amount: number;
@@ -15,6 +16,7 @@ interface UserSession {
   user?: {
     email?: string;
     name?: string;
+    phone?: string;
   };
 }
 
@@ -26,6 +28,7 @@ export function CashfreePaymentButton({
 }: CashfreePaymentButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const [profile, setProfile] = useState<{ name?: string; phone?: string } | null>(null);
 
   useEffect(() => {
     // Fetch user session data
@@ -38,6 +41,16 @@ export function CashfreePaymentButton({
       if (response.ok) {
         const session = await response.json();
         setUserSession(session);
+        // If logged in, try to fetch profile for prefill
+        if (session?.user?.email) {
+          try {
+            const profRes = await fetch('/api/user/profile');
+            if (profRes.ok) {
+              const data = await profRes.json();
+              setProfile({ name: data.user?.name, phone: data.user?.phone });
+            }
+          } catch {}
+        }
       }
     } catch (error) {
       console.log('No user session found');
@@ -63,7 +76,8 @@ export function CashfreePaymentButton({
         amount={amount}
         planName={planName}
         userEmail={userSession?.user?.email}
-        userName={userSession?.user?.name}
+        userName={profile?.name || userSession?.user?.name}
+        userPhone={profile?.phone}
       />
     </>
   );
