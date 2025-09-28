@@ -133,6 +133,5 @@ const paymentSchema = new Schema<IPayment>(
   },
   { timestamps: true }
 );
-paymentSchema.index({ orderId: 1 }, { unique: true });
 export const Payment =
   mongoose.models.Payment || mongoose.model<IPayment>("Payment", paymentSchema);

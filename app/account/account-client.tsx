@@ -22,6 +22,15 @@ export default function AccountClient({ user }: AccountClientProps) {
   const [payments, setPayments] = useState<any[] | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
+  const formatPhoneNumber = (value?: string | null) => {
+    if (!value) return null;
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 10) {
+      return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+    }
+    return value;
+  };
+
   async function fetchBilling() {
     try {
       setLoadingPayments(true);
@@ -99,6 +108,20 @@ export default function AccountClient({ user }: AccountClientProps) {
                     </p>
                   </div>
                 )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                    Phone Number
+                  </label>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {formatPhoneNumber(user.phone) || "Not provided"}
+                  </p>
+                  {!user.phone && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      Update your profile from the app menu to add a contact
+                      number.
+                    </p>
+                  )}
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
                     Current Plan

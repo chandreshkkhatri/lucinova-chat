@@ -26,7 +26,42 @@ export async function createUser(
 }
 export async function getUserByEmail(email: string) {
   await ensureConnection();
-  return User.findOne({ email }).lean();
+  const userDoc = await User.findOne({ email });
+  if (!userDoc) {
+    return null;
+  }
+
+  const now = new Date();
+  const currentPeriodEnd = userDoc.currentPeriodEnd;
+  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
+    let shouldUpdate = false;
+
+    if (userDoc.isPro) {
+      userDoc.isPro = false;
+      shouldUpdate = true;
+    }
+
+    if (userDoc.plan === "pro") {
+      userDoc.plan = "free";
+      shouldUpdate = true;
+    }
+
+    if (userDoc.subscriptionStatus === "active") {
+      userDoc.subscriptionStatus = "inactive";
+      shouldUpdate = true;
+    }
+
+    if (userDoc.currentPeriodEnd !== null) {
+      userDoc.currentPeriodEnd = null;
+      shouldUpdate = true;
+    }
+
+    if (shouldUpdate) {
+      await userDoc.save();
+    }
+  }
+
+  return userDoc.toObject();
 }
 
 // Subscription helpers
