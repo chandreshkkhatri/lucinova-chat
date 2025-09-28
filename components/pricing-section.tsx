@@ -13,7 +13,6 @@ import {
 import { appConfig } from "@/lib/config";
 
 export function PricingSection() {
-  const displayMode = process.env.NEXT_PUBLIC_MODEL_DISPLAY_MODE?.toLowerCase();
   const priceRupees = appConfig.pricing.proMonthlyRupees;
   const pricePaise = Math.round(priceRupees * 100);
   const currency = appConfig.pricing.currency;

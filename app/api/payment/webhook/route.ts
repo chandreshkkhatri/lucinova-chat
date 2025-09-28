@@ -39,13 +39,13 @@ export async function POST(request: NextRequest) {
 
     // Handle different event types
     switch (event.type) {
-      case "PAYMENT_SUCCESS":
+      case "PAYMENT_SUCCESS_WEBHOOK":
         await handlePaymentSuccess(event);
         break;
-      case "PAYMENT_FAILED":
+      case "PAYMENT_FAILED_WEBHOOK":
         await handlePaymentFailure(event);
         break;
-      case "PAYMENT_USER_DROPPED":
+      case "PAYMENT_USER_DROPPED_WEBHOOK":
         await handlePaymentDropped(event);
         break;
       default:
