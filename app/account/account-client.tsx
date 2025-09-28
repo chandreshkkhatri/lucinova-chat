@@ -89,22 +89,16 @@ export default function AccountClient({ user }: AccountClientProps) {
                     {user.email || "No email provided"}
                   </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
-                    Name
-                  </label>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {user.name || "Not provided"}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
-                    Phone Number
-                  </label>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {user.phone || "Not provided"}
-                  </p>
-                </div>
+                {user.name && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                      Name
+                    </label>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {user.name}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
                     Current Plan
@@ -114,7 +108,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                       <p>Pro Plan</p>
                       {user.currentPeriodEnd && (
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                          Renews on{" "}
+                          Plan expires{" "}
                           {new Date(user.currentPeriodEnd).toLocaleDateString(
                             "en-IN"
                           )}

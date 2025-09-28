@@ -65,18 +65,15 @@ export async function POST(request: NextRequest) {
 async function handlePaymentSuccess(event: any) {
   const data = event.data || {};
   const order = data.order || {};
+  const customerDetails = data.customer_details || {};
   const payment = data.payment || {};
   const orderId = order.order_id || payment.order_id;
   const amount = Number(
     order.order_amount ?? payment.payment_amount ?? payment.amount ?? 0
   );
   const currency = order.order_currency || payment.payment_currency || "INR";
-  const customerEmail =
-    order.customer_details?.customer_email ||
-    payment.customer_details?.customer_email;
-  const customerName =
-    order.customer_details?.customer_name ||
-    payment.customer_details?.customer_name;
+  const customerEmail = customerDetails.customer_email;
+  const customerName = customerDetails.customer_name;
   const planName = order.order_note;
   const environment =
     process.env.CASHFREE_ENVIRONMENT === "production"

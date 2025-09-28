@@ -37,9 +37,12 @@ export async function activateProSubscriptionByEmail(
 ) {
   await ensureConnection();
   const now = new Date();
-  const currentPeriodEnd = new Date(
-    now.getTime() + periodInDays * 24 * 60 * 60 * 1000
-  );
+  // Normalize plan start to start of today
+  now.setHours(0, 0, 0, 0);
+
+  // End date is periodInDays ahead
+  const currentPeriodEnd = new Date(now);
+  currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
   const update = {
     plan: "pro" as const,
     isPro: true,
