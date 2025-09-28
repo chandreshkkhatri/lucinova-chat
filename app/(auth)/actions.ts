@@ -1,6 +1,7 @@
 "use server";
 
 import { hash } from "bcrypt-ts";
+import { AuthError } from "next-auth";
 import { z } from "zod";
 
 import { createUser, getUserByEmail } from "@/db/queries";
@@ -26,14 +27,21 @@ export const login = async (
       password: formData.get("password"),
     });
 
-    await signIn("credentials", {
+    const result = await signIn("credentials", {
       email: validatedData.email,
       password: validatedData.password,
       redirect: false,
     });
 
+    if (result && "error" in result && result.error) {
+      return { status: "failed" };
+    }
+
     return { status: "success" };
   } catch (error) {
+    if (error instanceof AuthError) {
+      return { status: "failed" };
+    }
     if (error instanceof z.ZodError) {
       return { status: "invalid_data" };
     }
@@ -70,19 +78,26 @@ export const register = async (
     // Hash the password before storing
     const hashedPassword = await hash(validatedData.password, 10);
     await createUser(validatedData.email, hashedPassword);
-    
-    await signIn("credentials", {
+
+    const result = await signIn("credentials", {
       email: validatedData.email,
       password: validatedData.password,
       redirect: false,
     });
 
+    if (result && "error" in result && result.error) {
+      return { status: "failed" };
+    }
+
     return { status: "success" };
   } catch (error) {
+    if (error instanceof AuthError) {
+      return { status: "failed" };
+    }
     if (error instanceof z.ZodError) {
       return { status: "invalid_data" };
     }
-    
+
     console.error("Registration error:", error);
     return { status: "failed" };
   }
