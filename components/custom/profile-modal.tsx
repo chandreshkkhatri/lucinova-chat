@@ -123,7 +123,12 @@ export function ProfileModal({
           </div>
 
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={onClose} className="w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="w-full"
+            >
               Cancel
             </Button>
             <Button type="submit" className="w-full" disabled={loading}>

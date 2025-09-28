@@ -28,7 +28,10 @@ export function CashfreePaymentButton({
 }: CashfreePaymentButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
-  const [profile, setProfile] = useState<{ name?: string; phone?: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    name?: string;
+    phone?: string;
+  } | null>(null);
 
   useEffect(() => {
     // Fetch user session data
@@ -37,14 +40,14 @@ export function CashfreePaymentButton({
 
   const fetchUserSession = async () => {
     try {
-      const response = await fetch('/api/auth/session');
+      const response = await fetch("/api/auth/session");
       if (response.ok) {
         const session = await response.json();
         setUserSession(session);
         // If logged in, try to fetch profile for prefill
         if (session?.user?.email) {
           try {
-            const profRes = await fetch('/api/user/profile');
+            const profRes = await fetch("/api/user/profile");
             if (profRes.ok) {
               const data = await profRes.json();
               setProfile({ name: data.user?.name, phone: data.user?.phone });
@@ -53,7 +56,7 @@ export function CashfreePaymentButton({
         }
       }
     } catch (error) {
-      console.log('No user session found');
+      console.log("No user session found");
     }
   };
 
@@ -63,10 +66,7 @@ export function CashfreePaymentButton({
 
   return (
     <>
-      <Button
-        onClick={handleSubscribe}
-        className={className}
-      >
+      <Button onClick={handleSubscribe} className={className}>
         {buttonText}
       </Button>
 

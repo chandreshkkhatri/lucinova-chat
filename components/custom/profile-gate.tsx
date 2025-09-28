@@ -12,7 +12,9 @@ export function ProfileGate() {
     let ignore = false;
     async function check() {
       try {
-        const res = await fetch("/api/user/profile-status", { cache: "no-store" });
+        const res = await fetch("/api/user/profile-status", {
+          cache: "no-store",
+        });
         if (!res.ok) throw new Error("failed");
         const data = await res.json();
         if (!ignore) {

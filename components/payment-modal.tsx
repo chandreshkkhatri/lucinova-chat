@@ -1,6 +1,9 @@
 "use client";
 
-import { load, type CashfreeCheckoutOptions } from "@cashfreepayments/cashfree-js";
+import {
+  load,
+  type CashfreeCheckoutOptions,
+} from "@cashfreepayments/cashfree-js";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -48,7 +51,7 @@ export function PaymentModal({
       ...prev,
       customerName: userName || prev.customerName,
       customerEmail: userEmail || prev.customerEmail,
-      customerPhone: (userPhone || prev.customerPhone || "").replace(/\D/g, "")
+      customerPhone: (userPhone || prev.customerPhone || "").replace(/\D/g, ""),
     }));
   }, [userName, userEmail, userPhone]);
 
