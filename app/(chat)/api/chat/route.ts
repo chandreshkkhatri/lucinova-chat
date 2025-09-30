@@ -31,8 +31,8 @@ export async function POST(request: Request) {
   let userId: string | null = null;
 
   // Get user info for authenticated users
-  if (!isGuest) {
-    const user = await getUserByEmail(session.user.email!);
+  if (!isGuest && session?.user?.email) {
+    const user = await getUserByEmail(session.user.email);
     if (!user) {
       return new Response("User not found", { status: 401 });
     }
