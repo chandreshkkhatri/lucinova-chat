@@ -1,9 +1,10 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt } from "lucide-react";
+import { User, CreditCard, Trash2, Receipt, Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface AccountClientProps {
   user: {
@@ -61,6 +62,11 @@ export default function AccountClient({ user }: AccountClientProps) {
       id: "account",
       label: "Account Information",
       icon: User,
+    },
+    {
+      id: "security",
+      label: "Security",
+      icon: Lock,
     },
     {
       id: "pricing",
@@ -148,6 +154,9 @@ export default function AccountClient({ user }: AccountClientProps) {
             </div>
           </div>
         );
+
+      case "security":
+        return <SecuritySection />;
 
       case "pricing":
         return (
@@ -296,6 +305,127 @@ export default function AccountClient({ user }: AccountClientProps) {
   );
 }
 
+function SecuritySection() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/user/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Password changed successfully");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        toast.error(data.error || "Failed to change password");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+        Security
+      </h2>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          Change Password
+        </h3>
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+          <div>
+            <label
+              htmlFor="currentPassword"
+              className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+            >
+              Current Password
+            </label>
+            <input
+              type="password"
+              id="currentPassword"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="newPassword"
+              className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+            >
+              New Password
+            </label>
+            <input
+              type="password"
+              id="newPassword"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+            >
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md transition-colors font-medium"
+          >
+            {isSubmitting ? "Changing..." : "Change Password"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function BillingHistory({
   payments,
   loading,
@@ -351,7 +481,6 @@ function BillingHistory({
             {payments.map((p) => {
               const date = p.createdAt ? new Date(p.createdAt) : null;
               const amount = Number(p.amount ?? 0);
-              const idShort = String(p.orderId || "").slice(-8);
               return (
                 <tr
                   key={p.orderId}
