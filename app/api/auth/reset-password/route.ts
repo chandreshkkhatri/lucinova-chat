@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // Find user by valid reset token
     const user = await getUserByResetToken(token);
 
-    if (!user) {
+    if (!user || Array.isArray(user)) {
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }
