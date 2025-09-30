@@ -20,63 +20,70 @@ export async function POST(request: Request) {
     await request.json();
 
   const session = await auth();
+  const isGuest = !session || !session.user;
 
-  if (!session || !session.user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  console.log("[Chat API] Request received - isGuest:", isGuest, "messageCount:", messages.length);
 
   const coreMessages = convertToCoreMessages(messages).filter(
     (message) => message.content.length > 0
   );
 
-  // Get the actual user document to ensure we have the MongoDB ObjectId
-  const user = await getUserByEmail(session.user.email!);
-  if (!user) {
-    return new Response("User not found", { status: 401 });
+  let userId: string | null = null;
+
+  // Get user info for authenticated users
+  if (!isGuest && session?.user?.email) {
+    const user = await getUserByEmail(session.user.email);
+    if (!user) {
+      return new Response("User not found", { status: 401 });
+    }
+    userId = (user as any)._id.toString();
   }
 
-  const userId = (user as any)._id.toString();
+  console.log("[Chat API] Processing - userId:", userId, "coreMessages:", coreMessages.length);
 
-  /**
-   * Ensure that a Chat document exists for this conversation.
-   * We use the client-generated id so that front-end routing continues to work.
-   */
-  let chat = await getChatById({ id });
+  // Only persist chat to DB for authenticated users
+  if (!isGuest && userId) {
+    /**
+     * Ensure that a Chat document exists for this conversation.
+     * We use the client-generated id so that front-end routing continues to work.
+     */
+    let chat = await getChatById({ id });
 
-  if (!chat) {
-    // Find or create the single AI user that represents the assistant
-    let aiUser = await getUserByEmail("ai@assistant.local");
+    if (!chat) {
+      // Find or create the single AI user that represents the assistant
+      let aiUser = await getUserByEmail("ai@assistant.local");
 
-    if (!aiUser) {
-      aiUser = await createUser(
-        "ai@assistant.local",
-        undefined, // password
-        "AI Assistant", // displayName
-        undefined, // avatarUrl
-        true // isBot
+      if (!aiUser) {
+        aiUser = await createUser(
+          "ai@assistant.local",
+          undefined, // password
+          "AI Assistant", // displayName
+          undefined, // avatarUrl
+          true // isBot
+        );
+      }
+
+      chat = await createChat(
+        userId,
+        (aiUser as any)._id.toString(),
+        "New Chat",
+        id
       );
     }
 
-    chat = await createChat(
-      userId,
-      (aiUser as any)._id.toString(),
-      "New Chat",
-      id
+    // Persist the latest user message (the last user role in the array)
+    const userMessages = coreMessages.filter(
+      (m) => m.role === "user" && m.content
     );
-  }
+    const lastUserMsg = userMessages[userMessages.length - 1];
 
-  // Persist the latest user message (the last user role in the array)
-  const userMessages = coreMessages.filter(
-    (m) => m.role === "user" && m.content
-  );
-  const lastUserMsg = userMessages[userMessages.length - 1];
-
-  if (lastUserMsg) {
-    await createMessage({
-      chatId: id,
-      senderId: userId,
-      body: String(lastUserMsg.content),
-    });
+    if (lastUserMsg) {
+      await createMessage({
+        chatId: id,
+        senderId: userId,
+        body: String(lastUserMsg.content),
+      });
+    }
   }
 
   const result = await streamText({
@@ -84,6 +91,9 @@ export async function POST(request: Request) {
     system: `You are ${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
     messages: coreMessages,
     onFinish: async ({ responseMessages }) => {
+      // Only persist for authenticated users
+      if (isGuest || !userId) return;
+
       // Persist AI response messages
       const currentChat = await getChatById({ id });
       if (currentChat) {
@@ -108,15 +118,20 @@ export async function POST(request: Request) {
 
         // After the first exchange, generate a title
         if (messages.length === 1) {
-          const { text: title } = await generateText({
-            model: geminiProModel,
-            prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words):\n\nUser: ${String(
-              lastUserMsg.content
-            )}\nAssistant: ${toPlainText(responseMessages[0].content)}`,
-          });
+          const userMessages = coreMessages.filter((m) => m.role === "user" && m.content);
+          const lastUserMsg = userMessages[userMessages.length - 1];
 
-          await ensureConnection();
-          await Chat.findByIdAndUpdate(id, { title });
+          if (lastUserMsg) {
+            const { text: title } = await generateText({
+              model: geminiProModel,
+              prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words):\n\nUser: ${String(
+                lastUserMsg.content
+              )}\nAssistant: ${toPlainText(responseMessages[0].content)}`,
+            });
+
+            await ensureConnection();
+            await Chat.findByIdAndUpdate(id, { title });
+          }
         }
       }
     },

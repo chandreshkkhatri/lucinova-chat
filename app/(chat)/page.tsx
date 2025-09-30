@@ -26,11 +26,14 @@ export default async function Page() {
   const id = generateUUID();
   let isPro = false;
   const session = await auth();
+  const isGuest = !session?.user;
+
   if (session?.user?.email) {
     try {
       const dbUser: any = await getUserByEmail(session.user.email);
       isPro = !!dbUser?.isPro;
     } catch {}
   }
-  return <Chat key={id} id={id} initialMessages={[]} isPro={isPro} />;
+
+  return <Chat key={id} id={id} initialMessages={[]} isPro={isPro} isGuest={isGuest} />;
 }

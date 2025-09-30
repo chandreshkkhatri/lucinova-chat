@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {},
+  serverExternalPackages: ['resend'],
   images: {
     remotePatterns: [],
     formats: ["image/webp", "image/avif"], // Modern image formats for better performance

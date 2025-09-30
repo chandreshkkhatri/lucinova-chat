@@ -11,7 +11,7 @@ export async function GET() {
   }
   await ensureConnection();
   const user = await User.findOne({ email: session.user.email })
-    .select("email displayName name phone")
+    .select("email displayName name phone countryCode")
     .lean();
   return NextResponse.json({ user });
 }
@@ -25,6 +25,7 @@ export async function PUT(request: NextRequest) {
   const body = await request.json();
   const name = typeof body.name === "string" ? body.name.trim() : undefined;
   const phone = typeof body.phone === "string" ? body.phone.trim() : undefined;
+  const countryCode = typeof body.countryCode === "string" ? body.countryCode.trim() : "+91";
 
   if (!name || !phone) {
     return NextResponse.json(
@@ -33,11 +34,11 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  // Basic phone validation (India 10-digit without country code)
+  // Basic phone validation (10-digit without country code)
   const phoneDigits = phone.replace(/\D/g, "");
-  if (!/^[6-9]\d{9}$/.test(phoneDigits)) {
+  if (!/^\d{10}$/.test(phoneDigits)) {
     return NextResponse.json(
-      { error: "Invalid phone number. Enter 10-digit Indian mobile number." },
+      { error: "Invalid phone number. Enter 10-digit mobile number." },
       { status: 400 }
     );
   }
@@ -45,10 +46,10 @@ export async function PUT(request: NextRequest) {
   await ensureConnection();
   const updated = await User.findOneAndUpdate(
     { email: session.user.email },
-    { $set: { name, phone: phoneDigits } },
+    { $set: { name, phone: phoneDigits, countryCode } },
     { new: true }
   )
-    .select("email displayName name phone")
+    .select("email displayName name phone countryCode")
     .lean();
 
   return NextResponse.json({ user: updated });

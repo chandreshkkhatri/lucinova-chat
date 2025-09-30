@@ -24,6 +24,7 @@ export default async function AccountPage() {
         baseUser.currentPeriodEnd = dbUser.currentPeriodEnd || null;
         baseUser.name = dbUser.name || baseUser.name;
         baseUser.phone = dbUser.phone || null;
+        baseUser.countryCode = dbUser.countryCode || null;
       }
     } catch {}
   }

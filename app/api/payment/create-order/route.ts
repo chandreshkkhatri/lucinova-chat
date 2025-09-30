@@ -31,8 +31,9 @@ export async function POST(request: NextRequest) {
       .toString(36)
       .substring(2, 9)}`;
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      : "http://localhost:3000";
 
     // Normalize amount: client sends in paise by convention
     const normalizedAmountRupees = Number(amount) / 100;

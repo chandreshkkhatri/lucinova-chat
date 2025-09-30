@@ -37,10 +37,9 @@ export const {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // MongoDB documents have _id field, not id
         token.id = (user as any)._id?.toString() || user.id;
+        token.email = user.email;
       }
-
       return token;
     },
     async session({
@@ -53,7 +52,6 @@ export const {
       if (session.user) {
         session.user.id = token.id as string;
       }
-
       return session;
     },
   },

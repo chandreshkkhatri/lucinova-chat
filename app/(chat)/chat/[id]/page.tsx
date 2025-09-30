@@ -1,6 +1,6 @@
 import { generateId, Message } from "ai";
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/app/(auth)/auth";
 import { Chat as PreviewChat } from "@/components/custom/chat";
@@ -65,12 +65,12 @@ export default async function Page({ params }: { params: any }) {
 
   // Check if id is valid before making database call
   if (!id || id === "undefined" || id === "null") {
-    notFound();
+    redirect("/");
   }
 
   const chatFromDb = await getChatById({ id });
 
-  if (!chatFromDb) notFound();
+  if (!chatFromDb) redirect("/");
 
   // verify access
   const session = await auth();

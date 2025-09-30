@@ -38,6 +38,7 @@ export function Chat({
   className = "",
   onFinish,
   isPro = false,
+  isGuest = false,
   selectedText,
 }: {
   id: string;
@@ -48,6 +49,7 @@ export function Chat({
   className?: string;
   onFinish?: () => void;
   isPro?: boolean;
+  isGuest?: boolean;
   selectedText?: string;
 }) {
   const router = useRouter();
@@ -444,17 +446,36 @@ export function Chat({
         {/* Input */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0">
           <div className="max-w-4xl mx-auto">
-            <MultimodalInput
-              input={input}
-              setInput={setInput}
-              isLoading={isLoading}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              append={append}
-              handleSubmit={handleSubmit}
-            />
+            {isGuest && messages.filter(m => m.role === 'user').length >= 3 ? (
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
+                <Sparkles className="size-12 mx-auto mb-3 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Ready for more?
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  You've reached the free message limit. Sign up to continue the conversation and unlock unlimited messages!
+                </p>
+                <button
+                  onClick={() => router.push('/register')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+                >
+                  <Sparkles className="size-5" />
+                  Sign Up Free
+                </button>
+              </div>
+            ) : (
+              <MultimodalInput
+                input={input}
+                setInput={setInput}
+                isLoading={isLoading}
+                stop={stop}
+                attachments={attachments}
+                setAttachments={setAttachments}
+                messages={messages}
+                append={append}
+                handleSubmit={handleSubmit}
+              />
+            )}
           </div>
         </div>
       </div>
