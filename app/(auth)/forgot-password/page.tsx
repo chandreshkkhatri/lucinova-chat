@@ -31,9 +31,11 @@ export default function ForgotPasswordPage() {
         setSubmitted(true);
         toast.success("Check your email for reset instructions");
       } else {
+        console.error("Forgot password error:", data);
         toast.error(data.error || "Failed to send reset email");
       }
     } catch (error) {
+      console.error("Forgot password exception:", error);
       toast.error("An error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);

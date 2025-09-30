@@ -27,25 +27,27 @@ export const login = async (
       password: formData.get("password"),
     });
 
-    const result = await signIn("credentials", {
+    await signIn("credentials", {
       email: validatedData.email,
       password: validatedData.password,
       redirect: false,
     });
 
-    if (result && "error" in result && result.error) {
-      return { status: "failed" };
-    }
-
     return { status: "success" };
   } catch (error) {
     if (error instanceof AuthError) {
-      return { status: "failed" };
+      switch (error.type) {
+        case "CredentialsSignin":
+          return { status: "failed" };
+        default:
+          return { status: "failed" };
+      }
     }
     if (error instanceof z.ZodError) {
       return { status: "invalid_data" };
     }
 
+    console.error("Login error:", error);
     return { status: "failed" };
   }
 };
@@ -79,15 +81,11 @@ export const register = async (
     const hashedPassword = await hash(validatedData.password, 10);
     await createUser(validatedData.email, hashedPassword);
 
-    const result = await signIn("credentials", {
+    await signIn("credentials", {
       email: validatedData.email,
       password: validatedData.password,
       redirect: false,
     });
-
-    if (result && "error" in result && result.error) {
-      return { status: "failed" };
-    }
 
     return { status: "success" };
   } catch (error) {
