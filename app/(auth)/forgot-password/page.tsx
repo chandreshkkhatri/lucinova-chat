@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { SubmitButton } from "@/components/custom/submit-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -108,13 +108,13 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
-              <SubmitButton
+              <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full"
               >
                 {isSubmitting ? "Sending..." : "Send Reset Link"}
-              </SubmitButton>
+              </Button>
 
               <p className="text-center text-sm text-gray-600 dark:text-gray-400">
                 Remember your password?{" "}

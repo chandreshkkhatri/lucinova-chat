@@ -12,7 +12,11 @@ import {
 } from "@/components/ui/card";
 import { appConfig } from "@/lib/config";
 
-export function PricingSection() {
+interface PricingSectionProps {
+  isPro?: boolean;
+}
+
+export function PricingSection({ isPro = false }: PricingSectionProps) {
   const priceRupees = appConfig.pricing.proMonthlyRupees;
   const pricePaise = Math.round(priceRupees * 100);
   const currency = appConfig.pricing.currency;
@@ -92,14 +96,20 @@ export function PricingSection() {
             {/* Removed: Advanced features */}
           </CardContent>
           <CardFooter>
-            <CashfreePaymentButton
-              amount={pricePaise}
-              planName="Pro Plan - Monthly"
-              buttonText={`Subscribe for ${symbol}${priceRupees.toLocaleString(
-                currency === "INR" ? "en-IN" : undefined
-              )}/month`}
-              className="w-full"
-            />
+            {isPro ? (
+              <Button disabled className="w-full">
+                Current Plan
+              </Button>
+            ) : (
+              <CashfreePaymentButton
+                amount={pricePaise}
+                planName="Pro Plan - Monthly"
+                buttonText={`Subscribe for ${symbol}${priceRupees.toLocaleString(
+                  currency === "INR" ? "en-IN" : undefined
+                )}/month`}
+                className="w-full"
+              />
+            )}
           </CardFooter>
         </Card>
       </div>
