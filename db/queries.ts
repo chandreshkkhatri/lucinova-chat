@@ -241,3 +241,38 @@ export async function deleteChatById({ id }: { id: string }) {
   await Message.deleteMany({ chatId: id });
   return Chat.findByIdAndDelete(id);
 }
+
+// Password reset functions
+export async function setPasswordResetToken(
+  email: string,
+  token: string,
+  expiryDate: Date
+) {
+  await ensureConnection();
+  return User.findOneAndUpdate(
+    { email },
+    { resetToken: token, resetTokenExpiry: expiryDate },
+    { new: true }
+  ).lean();
+}
+
+export async function getUserByResetToken(token: string) {
+  await ensureConnection();
+  return User.findOne({
+    resetToken: token,
+    resetTokenExpiry: { $gt: new Date() },
+  }).lean();
+}
+
+export async function updatePassword(email: string, hashedPassword: string) {
+  await ensureConnection();
+  return User.findOneAndUpdate(
+    { email },
+    {
+      password: hashedPassword,
+      resetToken: undefined,
+      resetTokenExpiry: undefined,
+    },
+    { new: true }
+  ).lean();
+}

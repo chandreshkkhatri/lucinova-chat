@@ -16,6 +16,9 @@ export interface IUser extends Document {
   currentPeriodEnd?: Date | null;
   subscriptionProvider?: "cashfree" | "manual" | null;
   subscriptionStatus?: "active" | "inactive" | "canceled" | null;
+  // Password reset fields
+  resetToken?: string;
+  resetTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +45,8 @@ const userSchema = new Schema<IUser>(
       enum: ["active", "inactive", "canceled"],
       default: null,
     },
+    resetToken: { type: String },
+    resetTokenExpiry: { type: Date },
   },
   { timestamps: true }
 );

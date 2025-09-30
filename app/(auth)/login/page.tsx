@@ -84,16 +84,26 @@ export default function Page() {
         <div className="px-8 pb-8">
           <AuthForm action={handleSubmit} defaultEmail={email}>
             <SubmitButton>Sign in</SubmitButton>
-            <p className="text-center text-sm text-gray-600 mt-4 dark:text-gray-400">
-              {"Don't have an account? "}
-              <Link
-                href="/register"
-                className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-              >
-                Sign up
-              </Link>
-              {" for free."}
-            </p>
+            <div className="text-center text-sm text-gray-600 mt-4 dark:text-gray-400 space-y-2">
+              <p>
+                <Link
+                  href="/forgot-password"
+                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </p>
+              <p>
+                {"Don't have an account? "}
+                <Link
+                  href="/register"
+                  className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                >
+                  Sign up
+                </Link>
+                {" for free."}
+              </p>
+            </div>
           </AuthForm>
         </div>
       </div>
