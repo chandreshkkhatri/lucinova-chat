@@ -6,6 +6,7 @@ export interface IUser extends Document {
   displayName: string;
   name?: string;
   phone?: string;
+  countryCode?: string;
   password?: string;
   avatarUrl?: string;
   isBot: boolean;
@@ -28,6 +29,7 @@ const userSchema = new Schema<IUser>(
     displayName: { type: String, required: true },
     name: { type: String },
     phone: { type: String },
+    countryCode: { type: String },
     password: { type: String },
     avatarUrl: { type: String },
     isBot: { type: Boolean, default: false },
