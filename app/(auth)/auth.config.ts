@@ -11,28 +11,26 @@ export const authConfig = {
   ],
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      let isLoggedIn = !!auth?.user;
-      let isOnChat = nextUrl.pathname.startsWith("/");
-      let isOnRegister = nextUrl.pathname.startsWith("/register");
-      let isOnLogin = nextUrl.pathname.startsWith("/login");
-      let isOnForgotPassword = nextUrl.pathname.startsWith("/forgot-password");
-      let isOnResetPassword = nextUrl.pathname.startsWith("/reset-password");
+      const isLoggedIn = !!auth?.user;
+      const pathname = nextUrl.pathname;
 
-      if (isLoggedIn && (isOnLogin || isOnRegister)) {
+      // Public routes that don't require authentication
+      const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/chat"];
+      const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname === "/";
+
+      // Redirect logged-in users away from auth pages
+      if (isLoggedIn && (pathname.startsWith("/login") || pathname.startsWith("/register"))) {
         return Response.redirect(new URL("/", nextUrl));
       }
 
-      if (isOnRegister || isOnLogin || isOnForgotPassword || isOnResetPassword) {
-        return true; // Always allow access to register, login, and password reset pages
+      // Allow access to public routes
+      if (isPublicRoute) {
+        return true;
       }
 
-      if (isOnChat) {
-        if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
-      }
-
-      if (isLoggedIn) {
-        return Response.redirect(new URL("/", nextUrl));
+      // All other routes require authentication
+      if (!isLoggedIn) {
+        return false; // Redirect to login
       }
 
       return true;

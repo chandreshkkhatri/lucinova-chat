@@ -21,7 +21,7 @@ export default async function ChatLayout({
   return (
     <EnhancedChatUI>
       <div className="flex h-dvh pt-16">
-        <History user={{ ...(session?.user as any), isPro }} />
+        <History user={session?.user ? { ...(session.user as any), isPro } : undefined} />
         <main className="flex-1 flex flex-col min-w-0">{children}</main>
       </div>
     </EnhancedChatUI>
