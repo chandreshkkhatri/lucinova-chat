@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import Link from "next/link";
 
 import { CashfreePaymentButton } from "@/components/cashfree-payment-button";
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,8 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
             {/* Removed: Community support */}
           </CardContent>
           <CardFooter>
-            <Button className="w-full bg-transparent" variant="outline">
-              Get Started
+            <Button className="w-full bg-transparent" variant="outline" asChild>
+              <Link href="/register">Get Started</Link>
             </Button>
           </CardFooter>
         </Card>
