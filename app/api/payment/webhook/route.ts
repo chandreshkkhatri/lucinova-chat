@@ -39,7 +39,12 @@ export async function POST(request: NextRequest) {
       .digest("base64");
 
     if (signature !== generatedSignature) {
-      console.error("[Webhook] Invalid signature. Expected:", generatedSignature.substring(0, 10) + "...", "Got:", signature.substring(0, 10) + "...");
+      console.error(
+        "[Webhook] Invalid signature. Expected:",
+        generatedSignature.substring(0, 10) + "...",
+        "Got:",
+        signature.substring(0, 10) + "..."
+      );
       return NextResponse.json(
         { error: "Invalid webhook signature" },
         { status: 401 }
@@ -47,7 +52,12 @@ export async function POST(request: NextRequest) {
     }
 
     const event = JSON.parse(rawBody);
-    console.log("[Webhook] Event received:", event.type, "Order ID:", event.data?.order?.order_id || event.data?.payment?.order_id);
+    console.log(
+      "[Webhook] Event received:",
+      event.type,
+      "Order ID:",
+      event.data?.order?.order_id || event.data?.payment?.order_id
+    );
 
     // Handle different event types
     switch (event.type) {
@@ -92,15 +102,28 @@ async function handlePaymentSuccess(event: any) {
       ? "production"
       : "sandbox";
 
-  console.log("Payment successful:", {
+  console.log("[Payment Success] Processing payment:", {
     orderId,
     amount,
     customer: customerEmail,
   });
 
+  // Early deduplication check - if payment already processed successfully, skip entirely
+  const existingPayment = await getPaymentByOrderId(orderId);
+  if (existingPayment && !Array.isArray(existingPayment)) {
+    if (existingPayment.status === "PAYMENT_SUCCESS" || existingPayment.status === "PAID") {
+      console.log(
+        "[Payment Success] Duplicate webhook detected for order:",
+        orderId,
+        "- Already processed successfully. Skipping."
+      );
+      return;
+    }
+  }
+
   if (!customerEmail) {
     console.error(
-      "No customer email found in webhook payload for order:",
+      "[Payment Success] No customer email found in webhook payload for order:",
       orderId
     );
     // Still record the payment even without email
@@ -118,11 +141,7 @@ async function handlePaymentSuccess(event: any) {
     return;
   }
 
-  // Check if this payment was already processed
-  const existingPayment = await getPaymentByOrderId(orderId);
-  const isAlreadyProcessed = existingPayment && !Array.isArray(existingPayment) && existingPayment.status === "PAYMENT_SUCCESS";
-
-  // Idempotently record the payment
+  // Record the payment (idempotent - will update if already exists)
   const paymentRecord = await recordPaymentOnce({
     orderId,
     status: payment.payment_status || event.type || "PAYMENT_SUCCESS",
@@ -136,31 +155,36 @@ async function handlePaymentSuccess(event: any) {
   });
 
   if (!paymentRecord) {
-    console.error("Failed to record payment for order:", orderId);
+    console.error("[Payment Success] Failed to record payment for order:", orderId);
     return;
   }
 
-  // Skip subscription activation if already processed (duplicate webhook)
-  if (isAlreadyProcessed) {
-    console.log("Payment already processed, skipping subscription activation for order:", orderId);
-    return;
-  }
+  console.log("[Payment Success] Payment recorded successfully for order:", orderId);
 
-  // Activate subscription only if payment was successfully recorded and not already processed
+  // Activate subscription (only happens once due to early deduplication check)
   try {
-    const user = await activateProSubscriptionByEmail(customerEmail, 30, "cashfree");
+    const user = await activateProSubscriptionByEmail(
+      customerEmail,
+      30,
+      "cashfree"
+    );
     if (!user) {
       console.error(
-        "Failed to activate subscription: User not found for email:",
+        "[Payment Success] Failed to activate subscription: User not found for email:",
         customerEmail,
         "order:",
         orderId
       );
     } else {
-      console.log("Successfully activated Pro subscription for:", customerEmail);
+      console.log(
+        "[Payment Success] Successfully activated Pro subscription for:",
+        customerEmail,
+        "order:",
+        orderId
+      );
     }
   } catch (error) {
-    console.error("Error activating subscription:", error, "order:", orderId);
+    console.error("[Payment Success] Error activating subscription:", error, "order:", orderId);
   }
 }
 
