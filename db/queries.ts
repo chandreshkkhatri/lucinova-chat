@@ -74,7 +74,7 @@ export async function activateProSubscriptionByEmail(
 
   // First, check if user exists
   const existingUser = await User.findOne({ email }).lean();
-  if (!existingUser) {
+  if (!existingUser || Array.isArray(existingUser)) {
     console.error("User not found for email:", email);
     return null;
   }
@@ -86,21 +86,21 @@ export async function activateProSubscriptionByEmail(
   let proSince: Date;
 
   // Check if user already has an active subscription
-  const hasActiveSub = existingUser.isPro &&
-                      existingUser.currentPeriodEnd &&
-                      new Date(existingUser.currentPeriodEnd).getTime() > now.getTime();
+  const hasActiveSub = (existingUser as any).isPro &&
+                      (existingUser as any).currentPeriodEnd &&
+                      new Date((existingUser as any).currentPeriodEnd).getTime() > now.getTime();
 
   if (hasActiveSub) {
     // Extend from existing end date (renewal)
-    currentPeriodEnd = new Date(existingUser.currentPeriodEnd!);
+    currentPeriodEnd = new Date((existingUser as any).currentPeriodEnd!);
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
-    proSince = existingUser.proSince || now;
-    console.log(`Extending subscription for ${email} from ${existingUser.currentPeriodEnd} to ${currentPeriodEnd}`);
+    proSince = (existingUser as any).proSince || now;
+    console.log(`Extending subscription for ${email} from ${(existingUser as any).currentPeriodEnd} to ${currentPeriodEnd}`);
   } else {
     // New subscription - start from today
     currentPeriodEnd = new Date(now);
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
-    proSince = existingUser.proSince || now;
+    proSince = (existingUser as any).proSince || now;
     console.log(`Activating new subscription for ${email} until ${currentPeriodEnd}`);
   }
 

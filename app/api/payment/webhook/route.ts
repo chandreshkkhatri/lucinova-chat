@@ -109,7 +109,7 @@ async function handlePaymentSuccess(event: any) {
 
   // Check if this payment was already processed
   const existingPayment = await getPaymentByOrderId(orderId);
-  const isAlreadyProcessed = existingPayment && existingPayment.status === "PAYMENT_SUCCESS";
+  const isAlreadyProcessed = existingPayment && !Array.isArray(existingPayment) && existingPayment.status === "PAYMENT_SUCCESS";
 
   // Idempotently record the payment
   const paymentRecord = await recordPaymentOnce({
