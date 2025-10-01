@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
       .toString(36)
       .substring(2, 9)}`;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Determine the app URL - prioritize NEXT_PUBLIC_APP_URL, fallback to Vercel URL or localhost
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+    console.log("[Create Order] App URL for webhooks:", appUrl);
 
     // Normalize amount: client sends in paise by convention
     const normalizedAmountRupees = Number(amount) / 100;
@@ -59,6 +63,13 @@ export async function POST(request: NextRequest) {
       },
       order_note: `Payment for ${planName || "Pro Plan"}`,
     } as const;
+
+    console.log("[Create Order] Order request:", {
+      orderId,
+      amount: normalizedAmountRupees,
+      email: customerEmail,
+      notifyUrl: orderRequest.order_meta.notify_url,
+    });
 
     // Create order using SDK v5 method (no API version argument)
     const response = await cf.client.PGCreateOrder(orderRequest);
