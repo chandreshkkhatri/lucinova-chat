@@ -4,5 +4,13 @@
             "development": true,
             "main": true
         }
+    },
+    "deploymentProtection": {
+        "bypass": [
+            {
+                "type": "path",
+                "value": "/api/payment/webhook"
+            }
+        ]
     }
 }
