@@ -5,15 +5,18 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   activateProSubscriptionByEmail,
   recordPaymentOnce,
+  getPaymentByOrderId,
 } from "@/db/queries";
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[Webhook] Received webhook request");
     const rawBody = await request.text();
     const signature = request.headers.get("x-webhook-signature");
     const timestamp = request.headers.get("x-webhook-timestamp");
 
     if (!signature || !timestamp) {
+      console.error("[Webhook] Missing signature or timestamp");
       return NextResponse.json(
         { error: "Missing webhook signature or timestamp" },
         { status: 400 }
@@ -21,13 +24,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify webhook signature
-    const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET!;
+    const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("[Webhook] CASHFREE_WEBHOOK_SECRET not configured");
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 500 }
+      );
+    }
+
     const generatedSignature = crypto
       .createHmac("sha256", webhookSecret)
       .update(timestamp + rawBody)
       .digest("base64");
 
     if (signature !== generatedSignature) {
+      console.error(
+        "[Webhook] Invalid signature. Expected:",
+        generatedSignature.substring(0, 10) + "...",
+        "Got:",
+        signature.substring(0, 10) + "..."
+      );
       return NextResponse.json(
         { error: "Invalid webhook signature" },
         { status: 401 }
@@ -35,7 +52,12 @@ export async function POST(request: NextRequest) {
     }
 
     const event = JSON.parse(rawBody);
-    console.log("Webhook event received:", event.type);
+    console.log(
+      "[Webhook] Event received:",
+      event.type,
+      "Order ID:",
+      event.data?.order?.order_id || event.data?.payment?.order_id
+    );
 
     // Handle different event types
     switch (event.type) {
@@ -80,14 +102,47 @@ async function handlePaymentSuccess(event: any) {
       ? "production"
       : "sandbox";
 
-  console.log("Payment successful:", {
+  console.log("[Payment Success] Processing payment:", {
     orderId,
     amount,
     customer: customerEmail,
   });
 
-  // Idempotently record the payment
-  await recordPaymentOnce({
+  // Early deduplication check - if payment already processed successfully, skip entirely
+  const existingPayment = await getPaymentByOrderId(orderId);
+  if (existingPayment && !Array.isArray(existingPayment)) {
+    if (existingPayment.status === "PAYMENT_SUCCESS" || existingPayment.status === "PAID") {
+      console.log(
+        "[Payment Success] Duplicate webhook detected for order:",
+        orderId,
+        "- Already processed successfully. Skipping."
+      );
+      return;
+    }
+  }
+
+  if (!customerEmail) {
+    console.error(
+      "[Payment Success] No customer email found in webhook payload for order:",
+      orderId
+    );
+    // Still record the payment even without email
+    await recordPaymentOnce({
+      orderId,
+      status: payment.payment_status || event.type || "PAYMENT_SUCCESS",
+      amount,
+      currency,
+      customerEmail,
+      customerName,
+      environment,
+      planName,
+      raw: event,
+    });
+    return;
+  }
+
+  // Record the payment (idempotent - will update if already exists)
+  const paymentRecord = await recordPaymentOnce({
     orderId,
     status: payment.payment_status || event.type || "PAYMENT_SUCCESS",
     amount,
@@ -99,14 +154,37 @@ async function handlePaymentSuccess(event: any) {
     raw: event,
   });
 
-  // Activate subscription if we can identify the user by email
-  if (customerEmail) {
-    await activateProSubscriptionByEmail(customerEmail, 30, "cashfree");
-  } else {
-    console.warn(
-      "No customer email found in webhook payload for order:",
-      orderId
+  if (!paymentRecord) {
+    console.error("[Payment Success] Failed to record payment for order:", orderId);
+    return;
+  }
+
+  console.log("[Payment Success] Payment recorded successfully for order:", orderId);
+
+  // Activate subscription (only happens once due to early deduplication check)
+  try {
+    const user = await activateProSubscriptionByEmail(
+      customerEmail,
+      30,
+      "cashfree"
     );
+    if (!user) {
+      console.error(
+        "[Payment Success] Failed to activate subscription: User not found for email:",
+        customerEmail,
+        "order:",
+        orderId
+      );
+    } else {
+      console.log(
+        "[Payment Success] Successfully activated Pro subscription for:",
+        customerEmail,
+        "order:",
+        orderId
+      );
+    }
+  } catch (error) {
+    console.error("[Payment Success] Error activating subscription:", error, "order:", orderId);
   }
 }
 

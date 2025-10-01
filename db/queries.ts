@@ -71,24 +71,52 @@ export async function activateProSubscriptionByEmail(
   provider: "cashfree" | "manual" = "cashfree"
 ) {
   await ensureConnection();
+
+  // First, check if user exists
+  const existingUser = await User.findOne({ email }).lean();
+  if (!existingUser || Array.isArray(existingUser)) {
+    console.error("User not found for email:", email);
+    return null;
+  }
+
   const now = new Date();
-  // Normalize plan start to start of today
   now.setHours(0, 0, 0, 0);
 
-  // End date is periodInDays ahead
-  const currentPeriodEnd = new Date(now);
-  currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
+  let currentPeriodEnd: Date;
+  let proSince: Date;
+
+  // Check if user already has an active subscription
+  const hasActiveSub = (existingUser as any).isPro &&
+                      (existingUser as any).currentPeriodEnd &&
+                      new Date((existingUser as any).currentPeriodEnd).getTime() > now.getTime();
+
+  if (hasActiveSub) {
+    // Extend from existing end date (renewal)
+    currentPeriodEnd = new Date((existingUser as any).currentPeriodEnd!);
+    currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
+    proSince = (existingUser as any).proSince || now;
+    console.log(`Extending subscription for ${email} from ${(existingUser as any).currentPeriodEnd} to ${currentPeriodEnd}`);
+  } else {
+    // New subscription - start from today
+    currentPeriodEnd = new Date(now);
+    currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
+    proSince = (existingUser as any).proSince || now;
+    console.log(`Activating new subscription for ${email} until ${currentPeriodEnd}`);
+  }
+
   const update = {
     plan: "pro" as const,
     isPro: true,
-    proSince: now,
+    proSince,
     currentPeriodEnd,
     subscriptionProvider: provider,
     subscriptionStatus: "active" as const,
   };
+
   const user = await User.findOneAndUpdate({ email }, update, {
     new: true,
   }).lean();
+
   return user;
 }
 
@@ -141,6 +169,11 @@ export async function getPaymentsByEmail(email: string, limit = 50) {
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
+}
+
+export async function getPaymentByOrderId(orderId: string) {
+  await ensureConnection();
+  return Payment.findOne({ orderId }).lean();
 }
 
 // Chat functions

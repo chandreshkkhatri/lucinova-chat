@@ -31,9 +31,19 @@ export async function POST(request: NextRequest) {
       .toString(36)
       .substring(2, 9)}`;
 
-    const appUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : "http://localhost:3000";
+    // Determine the app URL - prioritize NEXT_PUBLIC_APP_URL, fallback to Vercel URL or localhost
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+    console.log("[Create Order] App URL for webhooks:", appUrl);
+
+    // Build webhook URL with Vercel bypass token if configured
+    const vercelBypassToken = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    const webhookUrl = vercelBypassToken
+      ? `${appUrl}/api/payment/webhook?x-vercel-protection-bypass=${vercelBypassToken}`
+      : `${appUrl}/api/payment/webhook`;
+
+    console.log("[Create Order] Webhook URL configured with bypass:", !!vercelBypassToken);
 
     // Normalize amount: client sends in paise by convention
     const normalizedAmountRupees = Number(amount) / 100;
@@ -55,12 +65,19 @@ export async function POST(request: NextRequest) {
       },
       order_meta: {
         return_url: `${appUrl}/payment/success?order_id={order_id}`,
-        notify_url: `${appUrl}/api/payment/webhook`,
+        notify_url: webhookUrl,
         // Allowed values: cc, dc, ppc, ccc, emi, paypal, upi, nb, app, paylater
         payment_methods: "cc,dc,upi,nb",
       },
       order_note: `Payment for ${planName || "Pro Plan"}`,
     } as const;
+
+    console.log("[Create Order] Order request:", {
+      orderId,
+      amount: normalizedAmountRupees,
+      email: customerEmail,
+      notifyUrl: orderRequest.order_meta.notify_url,
+    });
 
     // Create order using SDK v5 method (no API version argument)
     const response = await cf.client.PGCreateOrder(orderRequest);
