@@ -37,6 +37,14 @@ export async function POST(request: NextRequest) {
 
     console.log("[Create Order] App URL for webhooks:", appUrl);
 
+    // Build webhook URL with Vercel bypass token if configured
+    const vercelBypassToken = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    const webhookUrl = vercelBypassToken
+      ? `${appUrl}/api/payment/webhook?x-vercel-protection-bypass=${vercelBypassToken}`
+      : `${appUrl}/api/payment/webhook`;
+
+    console.log("[Create Order] Webhook URL configured with bypass:", !!vercelBypassToken);
+
     // Normalize amount: client sends in paise by convention
     const normalizedAmountRupees = Number(amount) / 100;
     const currency = (
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
       },
       order_meta: {
         return_url: `${appUrl}/payment/success?order_id={order_id}`,
-        notify_url: `${appUrl}/api/payment/webhook`,
+        notify_url: webhookUrl,
         // Allowed values: cc, dc, ppc, ccc, emi, paypal, upi, nb, app, paylater
         payment_methods: "cc,dc,upi,nb",
       },
