@@ -10,11 +10,13 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[Webhook] Received webhook request");
     const rawBody = await request.text();
     const signature = request.headers.get("x-webhook-signature");
     const timestamp = request.headers.get("x-webhook-timestamp");
 
     if (!signature || !timestamp) {
+      console.error("[Webhook] Missing signature or timestamp");
       return NextResponse.json(
         { error: "Missing webhook signature or timestamp" },
         { status: 400 }
@@ -22,13 +24,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify webhook signature
-    const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET!;
+    const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("[Webhook] CASHFREE_WEBHOOK_SECRET not configured");
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 500 }
+      );
+    }
+
     const generatedSignature = crypto
       .createHmac("sha256", webhookSecret)
       .update(timestamp + rawBody)
       .digest("base64");
 
     if (signature !== generatedSignature) {
+      console.error("[Webhook] Invalid signature. Expected:", generatedSignature.substring(0, 10) + "...", "Got:", signature.substring(0, 10) + "...");
       return NextResponse.json(
         { error: "Invalid webhook signature" },
         { status: 401 }
@@ -36,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const event = JSON.parse(rawBody);
-    console.log("Webhook event received:", event.type);
+    console.log("[Webhook] Event received:", event.type, "Order ID:", event.data?.order?.order_id || event.data?.payment?.order_id);
 
     // Handle different event types
     switch (event.type) {
