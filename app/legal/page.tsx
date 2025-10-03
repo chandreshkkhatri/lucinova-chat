@@ -31,9 +31,7 @@ export default function LegalPage() {
                 Delibration's AI chat assistant.
               </p>
               <a
-                href="/legal/terms-and-conditions.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/legal/terms-and-conditions"
                 className="inline-block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
               >
                 View Terms & Conditions
@@ -50,28 +48,24 @@ export default function LegalPage() {
                 services.
               </p>
               <a
-                href="/legal/refund-policy.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/legal/refund-policy"
                 className="inline-block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
               >
                 View Refund Policy
               </a>
             </div>
 
-            {/* Contact Us PDF */}
+            {/* Contact Us */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                Contact Us PDF
+                Contact Us
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Get in touch with our support team for any questions or
                 assistance.
               </p>
               <a
-                href="/legal/contact-us.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/legal/contact-us"
                 className="inline-block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
               >
                 View Contact Information

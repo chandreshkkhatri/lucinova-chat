@@ -15,7 +15,7 @@ export const authConfig = {
       const pathname = nextUrl.pathname;
 
       // Public routes that don't require authentication
-      const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/chat"];
+      const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/chat", "/pricing", "/legal", "/privacy", "/contact"];
       const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname === "/";
 
       // Redirect logged-in users away from auth pages
