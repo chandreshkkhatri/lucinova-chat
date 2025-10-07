@@ -14,11 +14,21 @@ export const metadata: Metadata = {
     description:
       "Start a new conversation with our AI-powered chat assistant. Get intelligent responses and boost your productivity.",
     url: "https://delibration.vercel.app",
+    images: [
+      {
+        url: "/og/default.png",
+        width: 768,
+        height: 480,
+        alt: "Delibration AI Chat Assistant",
+      },
+    ],
   },
   twitter: {
+    card: "summary_large_image",
     title: "AI Chat Assistant - Start Your Conversation",
     description:
       "Start a new conversation with our AI-powered chat assistant. Get intelligent responses and boost your productivity.",
+    images: ["/og/default.png"],
   },
 };
 
@@ -35,5 +45,13 @@ export default async function Page() {
     } catch {}
   }
 
-  return <Chat key={id} id={id} initialMessages={[]} isPro={isPro} isGuest={isGuest} />;
+  return (
+    <Chat
+      key={id}
+      id={id}
+      initialMessages={[]}
+      isPro={isPro}
+      isGuest={isGuest}
+    />
+  );
 }

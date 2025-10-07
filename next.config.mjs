@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {},
-  serverExternalPackages: ['resend'],
+  serverExternalPackages: ["resend"],
   images: {
     remotePatterns: [],
     formats: ["image/webp", "image/avif"], // Modern image formats for better performance
+    unoptimized: false, // Keep optimization enabled
+    minimumCacheTTL: 60,
   },
   eslint: {
     // Allow production builds to complete even if there are ESLint errors

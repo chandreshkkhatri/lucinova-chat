@@ -48,9 +48,9 @@ export const metadata: Metadata = {
     siteName: "Delibration",
     images: [
       {
-        url: "/images/og-image.png", // We'll create this
-        width: 1200,
-        height: 630,
+        url: "/og/default.png",
+        width: 768,
+        height: 480,
         alt: "Delibration - AI Chat Assistant",
       },
     ],
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: "Delibration - AI-Powered Chat Assistant",
     description:
       "Advanced AI chatbot powered by Google Gemini. Get intelligent responses and boost your productivity.",
-    images: ["/images/twitter-image.png"], // We'll create this
+    images: ["/og/default.png"],
     creator: "@delibration", // Update with your Twitter handle
   },
   verification: {
