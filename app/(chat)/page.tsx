@@ -23,13 +23,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "AI Chat Assistant - Start Your Conversation",
-    description:
-      "Start a new conversation with our AI-powered chat assistant. Get intelligent responses and boost your productivity.",
-    images: ["/og/default.png"],
-  },
 };
 
 export default async function Page() {

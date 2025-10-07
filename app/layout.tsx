@@ -55,14 +55,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Delibration - AI-Powered Chat Assistant",
-    description:
-      "Advanced AI chatbot powered by Google Gemini. Get intelligent responses and boost your productivity.",
-    images: ["/og/default.png"],
-    creator: "@delibration", // Update with your Twitter handle
-  },
   verification: {
     google: "your-google-verification-code", // Add your Google Search Console verification
     yandex: "your-yandex-verification-code", // Optional
