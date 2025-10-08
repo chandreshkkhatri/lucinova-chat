@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "Privacy policy for Delibration AI chat assistant service - learn how we collect, use, and protect your data.",
+    "Privacy policy for Lucidity AI chat assistant service - learn how we collect, use, and protect your data.",
 };
 
 export default function PrivacyPage() {
@@ -26,8 +26,8 @@ export default function PrivacyPage() {
                   1. Introduction
                 </h2>
                 <p>
-                  At Delibration, we are committed to protecting your privacy
-                  and ensuring the security of your personal information. This
+                  At Lucidity, we are committed to protecting your privacy and
+                  ensuring the security of your personal information. This
                   Privacy Policy explains how we collect, use, disclose, and
                   safeguard your information when you use our AI-powered chat
                   assistant service.
@@ -223,7 +223,7 @@ export default function PrivacyPage() {
                 </ul>
                 <p className="mt-2">
                   To exercise these rights, please contact us at
-                  privacy@delibration.com.
+                  privacy@lucidity.chat.
                 </p>
               </section>
 
@@ -286,7 +286,7 @@ export default function PrivacyPage() {
                   privacy practices, please contact us at:
                 </p>
                 <p className="mt-2">
-                  <strong>Support:</strong> support@delibration.com
+                  <strong>Support:</strong> support@lucidity.chat
                 </p>
               </section>
             </div>

@@ -4,10 +4,10 @@ export function StructuredData() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Delibration",
+    name: "Lucidity",
     description:
       "Advanced AI chatbot powered by Google Gemini. Get intelligent responses, have natural conversations, and boost your productivity.",
-    url: "https://delibration.vercel.app",
+    url: "https://lucidity.chat",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Any",
     offers: {
@@ -17,7 +17,7 @@ export function StructuredData() {
     },
     creator: {
       "@type": "Organization",
-      name: "Delibration Team",
+      name: "Lucidity Team",
     },
     featureList: [
       "AI-powered conversations",
@@ -26,7 +26,7 @@ export function StructuredData() {
       "Conversation history",
       "Multi-modal support",
     ],
-    screenshot: "https://delibration.vercel.app/images/demo-thumbnail.png",
+    screenshot: "https://lucidity.chat/images/demo-thumbnail.png",
   };
 
   return (

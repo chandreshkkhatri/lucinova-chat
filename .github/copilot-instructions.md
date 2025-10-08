@@ -1,4 +1,4 @@
-# Copilot instructions for delibration
+# Copilot instructions for lucidity
 
 ## Architecture & runtime
 

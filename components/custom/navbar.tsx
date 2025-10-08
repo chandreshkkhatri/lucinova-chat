@@ -35,15 +35,15 @@ export const Navbar = async () => {
           >
             <div className="size-12 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-2">
               <Image
-                src="/images/delibration-logo.png"
+                src="/images/lucidity-logo.png"
                 height={100}
                 width={100}
-                alt="Delibration logo"
+                alt="Lucidity logo"
                 className="size-full object-contain"
               />
             </div>
             <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:inline">
-              Delibration
+              Lucidity
             </span>
           </Link>
         </div>

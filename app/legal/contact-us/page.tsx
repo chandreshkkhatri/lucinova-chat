@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Contact information for Delibration - get in touch with us for support and inquiries.",
+    "Contact information for Lucidity - get in touch with us for support and inquiries.",
 };
 
 export default function ContactUsPage() {
@@ -87,10 +87,10 @@ export default function ContactUsPage() {
                     </p>
                     <p>
                       <a
-                        href="mailto:support@delibration.com"
+                        href="mailto:support@lucidity.chat"
                         className="text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        support@delibration.com
+                        support@lucidity.chat
                       </a>
                     </p>
                   </div>

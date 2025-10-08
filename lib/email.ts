@@ -20,9 +20,9 @@ export async function sendPasswordResetEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "Delibration <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM || "Lucidity <onboarding@resend.dev>",
       to: [to],
-      subject: "Reset Your Password - Delibration",
+      subject: "Reset Your Password - Lucidity",
       html: getPasswordResetEmailTemplate(resetUrl, displayName),
     });
 
@@ -71,7 +71,7 @@ function getPasswordResetEmailTemplate(
                 ${displayName ? `Hi ${displayName},` : "Hi,"}
               </p>
               <p style="margin: 0 0 16px 0;">
-                We received a request to reset your password for your Delibration account. Click the button below to create a new password:
+                We received a request to reset your password for your Lucidity account. Click the button below to create a new password:
               </p>
             </td>
           </tr>
@@ -115,7 +115,7 @@ function getPasswordResetEmailTemplate(
                 Think in threads, learn in layers
               </p>
               <p style="margin: 0;">
-                © ${new Date().getFullYear()} Delibration. All rights reserved.
+                © ${new Date().getFullYear()} Lucidity. All rights reserved.
               </p>
             </td>
           </tr>

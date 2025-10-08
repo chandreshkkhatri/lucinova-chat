@@ -118,8 +118,8 @@ export function Chat({
             <Avatar className="size-8 shrink-0">
               <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                 <Image
-                  src="/images/delibration-logo.png"
-                  alt="Delibration"
+                  src="/images/lucidity-logo.png"
+                  alt="Lucidity"
                   width={24}
                   height={24}
                   className="size-full object-contain"
@@ -356,15 +356,15 @@ export function Chat({
                   <>
                     <div className="size-16 mx-auto mb-4 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3">
                       <Image
-                        src="/images/delibration-logo.png"
-                        alt="Delibration"
+                        src="/images/lucidity-logo.png"
+                        alt="Lucidity"
                         width={40}
                         height={40}
                         className="size-full object-contain"
                       />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      Welcome to Delibration
+                      Welcome to Lucidity
                     </h2>
                     <p className="text-gray-600 dark:text-gray-300 mb-6">
                       Think in threads, learn in layers.
@@ -418,8 +418,8 @@ export function Chat({
                 <Avatar className="size-8 shrink-0">
                   <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                     <Image
-                      src="/images/delibration-logo.png"
-                      alt="Delibration"
+                      src="/images/lucidity-logo.png"
+                      alt="Lucidity"
                       width={24}
                       height={24}
                       className="size-full object-contain"
@@ -446,17 +446,19 @@ export function Chat({
         {/* Input */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0">
           <div className="max-w-4xl mx-auto">
-            {isGuest && messages.filter(m => m.role === 'user').length >= 3 ? (
+            {isGuest &&
+            messages.filter((m) => m.role === "user").length >= 3 ? (
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
                 <Sparkles className="size-12 mx-auto mb-3 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Ready for more?
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  You've reached the free message limit. Sign up to continue the conversation and unlock unlimited messages!
+                  You've reached the free message limit. Sign up to continue the
+                  conversation and unlock unlimited messages!
                 </p>
                 <button
-                  onClick={() => router.push('/register')}
+                  onClick={() => router.push("/register")}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
                 >
                   <Sparkles className="size-5" />

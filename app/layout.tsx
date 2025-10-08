@@ -9,10 +9,10 @@ import { ThemeProvider } from "@/components/custom/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://delibration.vercel.app"), // Update this to your actual domain
+  metadataBase: new URL("https://lucidity.chat"),
   title: {
-    default: "Delibration - AI-Powered Chat Assistant",
-    template: "%s | Delibration",
+    default: "Lucidity - AI-Powered Chat Assistant",
+    template: "%s | Lucidity",
   },
   description:
     "Advanced AI chatbot powered by Google Gemini. Get intelligent responses, have natural conversations, and boost your productivity with our cutting-edge chat assistant.",
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
     "conversational AI",
     "productivity tool",
   ],
-  authors: [{ name: "Delibration Team" }],
-  creator: "Delibration",
-  publisher: "Delibration",
+  authors: [{ name: "Lucidity Team" }],
+  creator: "Lucidity",
+  publisher: "Lucidity",
   robots: {
     index: true,
     follow: true,
@@ -41,17 +41,17 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://delibration.vercel.app",
-    title: "Delibration - AI-Powered Chat Assistant",
+    url: "https://lucidity.chat",
+    title: "Lucidity - AI-Powered Chat Assistant",
     description:
       "Advanced AI chatbot powered by Google Gemini. Get intelligent responses, have natural conversations, and boost your productivity.",
-    siteName: "Delibration",
+    siteName: "Lucidity",
     images: [
       {
         url: "/og/default.png",
         width: 768,
         height: 480,
-        alt: "Delibration - AI Chat Assistant",
+        alt: "Lucidity - AI Chat Assistant",
       },
     ],
   },
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     yahoo: "your-yahoo-verification-code", // Optional
   },
   alternates: {
-    canonical: "https://delibration.vercel.app",
+    canonical: "https://lucidity.chat",
   },
 };
 

@@ -1,9 +1,11 @@
-# Delibration - Claude Code Context
+# Lucidity - Claude Code Context
 
 ## Project Overview
-**Delibration** is a Slack-style AI chat application with threaded conversations powered by Google Gemini. Built with Next.js 15 and featuring real-time streaming responses, persistent chat history, and secure authentication.
+
+**Lucidity** is a Slack-style AI chat application with threaded conversations powered by Google Gemini. Built with Next.js 15 and featuring real-time streaming responses, persistent chat history, and secure authentication.
 
 ## Tech Stack
+
 - **Framework**: Next.js 15 (App Router, React 19 RC)
 - **AI Model**: Google Gemini (2.5-pro & 2.5-flash via @ai-sdk/google)
 - **Database**: MongoDB (with Mongoose ODM)
@@ -14,6 +16,7 @@
 - **Package Manager**: pnpm 10.12.2
 
 ## Project Structure
+
 ```
 app/
 ├── (auth)/              # Authentication pages & API
@@ -54,6 +57,7 @@ scripts/                # Utility scripts (e.g., migrateIndexes.js)
 ```
 
 ## Key Features
+
 1. **Threaded Conversations**: Nested replies with context preservation
 2. **Real-time Streaming**: AI responses via Vercel AI SDK streaming
 3. **Persistent History**: MongoDB-backed chat storage with automatic session management
@@ -64,7 +68,9 @@ scripts/                # Utility scripts (e.g., migrateIndexes.js)
 8. **User Profiles**: Account information and settings management
 
 ## Environment Variables
+
 Required environment variables (see `.env.example`):
+
 ```bash
 # Google Gemini API
 GOOGLE_GENERATIVE_AI_API_KEY=****
@@ -88,6 +94,7 @@ NEXT_PUBLIC_CURRENCY=
 ```
 
 ## Development Commands
+
 ```bash
 pnpm dev              # Start development server (with Turbo)
 pnpm build            # Build for production
@@ -97,20 +104,24 @@ pnpm migrate-indexes  # Setup MongoDB indexes
 ```
 
 ## Configuration Files
+
 - **next.config.mjs**: Next.js configuration
 - **tailwind.config.ts**: Tailwind CSS configuration
-- **tsconfig.json**: TypeScript configuration (ESNext, strict mode, path aliases via @/*)
+- **tsconfig.json**: TypeScript configuration (ESNext, strict mode, path aliases via @/\*)
 - **components.json**: shadcn/ui component configuration
 - **.eslintrc.json**: ESLint rules with Prettier integration
 
 ## API Routes Overview
+
 ### Authentication
+
 - `POST /api/auth/[...nextauth]` - NextAuth.js handler
 - `GET/POST /api/auth/session` - Session management
 - `POST /api/auth/forgot-password` - Initiate password reset
 - `POST /api/auth/reset-password` - Complete password reset
 
 ### Chat
+
 - `POST /api/chat` - Main chat endpoint (streaming)
 - `GET /api/history` - Fetch chat history
 - `GET/POST /api/thread` - Thread management
@@ -118,38 +129,48 @@ pnpm migrate-indexes  # Setup MongoDB indexes
 - `GET /api/threads/count` - Thread count
 
 ### User
+
 - `GET/PATCH /api/user/profile` - User profile CRUD
 - `GET /api/user/profile-status` - Profile completion status
 
 ### Payment
+
 - `POST /api/payment/create-order` - Create Cashfree order
 - `POST /api/payment/webhook` - Cashfree webhook handler
 - `GET /api/payment/status` - Payment status check
 - `GET /api/payment/history` - Payment history
 
 ### Files
+
 - `POST /api/files/upload` - File upload to Vercel Blob
 
 ## AI Models Configuration
+
 Located in `ai/index.ts`:
+
 - **Primary Model**: Gemini 2.5 Pro (customizable via `GOOGLE_GEMINI_PRIMARY_MODEL`)
 - **Fast Model**: Gemini 2.5 Flash (customizable via `GOOGLE_GEMINI_FAST_MODEL`)
 - Both wrapped with custom middleware for extended functionality
 
 ## Database Models
+
 Key MongoDB collections (see `db/models.ts`):
+
 - **User**: User accounts with auth credentials, profile info, and pro subscription status
 - **Chat**: Chat sessions/threads
 - **Message**: Individual messages with AI responses
 - **Payment**: Payment transaction records
 
 ## Current Development Status
+
 Based on git status:
+
 - Modified: `auth.config.ts`, `login/page.tsx`, `models.ts`, `queries.ts`
 - New features: Forgot/reset password flows (in progress)
 - Recent commits: Pro plan integration, phone number field, webhook event updates
 
 ## Important Notes
+
 - Uses Next.js App Router (not Pages Router)
 - React 19 RC - may have unstable APIs
 - NextAuth v5 beta - breaking changes from v4
@@ -158,4 +179,5 @@ Based on git status:
 - Model display naming: "Tara" (custom) vs "Gemini" (original)
 
 ## License
+
 MIT

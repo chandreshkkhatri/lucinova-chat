@@ -16,7 +16,7 @@ export default function LegalPage() {
           </h1>
 
           <p className="text-gray-600 dark:text-gray-400 text-center mb-8">
-            Access all important legal documents and policies for Delibration
+            Access all important legal documents and policies for Lucidity
             services.
           </p>
 
@@ -27,8 +27,8 @@ export default function LegalPage() {
                 Terms and Conditions
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Review our terms of service that govern your use of
-                Delibration's AI chat assistant.
+                Review our terms of service that govern your use of Lucidity's
+                AI chat assistant.
               </p>
               <a
                 href="/legal/terms-and-conditions"

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Authentication - Delibration App",
+  title: "Authentication - Lucidity App",
   description:
     "Sign in or create an account to access your personal AI chat assistant.",
   robots: {

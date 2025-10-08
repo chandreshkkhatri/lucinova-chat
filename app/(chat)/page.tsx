@@ -13,13 +13,13 @@ export const metadata: Metadata = {
     title: "AI Chat Assistant - Start Your Conversation",
     description:
       "Start a new conversation with our AI-powered chat assistant. Get intelligent responses and boost your productivity.",
-    url: "https://delibration.vercel.app",
+    url: "https://lucidity.chat",
     images: [
       {
         url: "/og/default.png",
         width: 768,
         height: 480,
-        alt: "Delibration AI Chat Assistant",
+        alt: "Lucidity AI Chat Assistant",
       },
     ],
   },

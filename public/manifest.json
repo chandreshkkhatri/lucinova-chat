@@ -1,6 +1,6 @@
 {
-  "name": "Delibration - AI Chat Assistant",
-  "short_name": "Delibration",
+  "name": "Lucidity - AI Chat Assistant",
+  "short_name": "Lucidity",
   "description": "Advanced AI chatbot powered by Google Gemini",
   "start_url": "/",
   "display": "standalone",

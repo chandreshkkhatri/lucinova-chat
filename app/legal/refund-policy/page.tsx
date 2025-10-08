@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Cancellation & Refund Policy",
   description:
-    "Cancellation and Refund Policy for Delibration - understand our policies for cancellations and refunds.",
+    "Cancellation and Refund Policy for Lucidity - understand our policies for cancellations and refunds.",
 };
 
 export default function RefundPolicyPage() {
@@ -38,8 +38,8 @@ export default function RefundPolicyPage() {
                     Cancellations will be considered only if the request is made
                     immediately after placing the order. However, the
                     cancellation request may not be entertained if the orders
-                    have been communicated to the vendors/merchants and they have
-                    initiated the process of shipping them.
+                    have been communicated to the vendors/merchants and they
+                    have initiated the process of shipping them.
                   </li>
                   <li>
                     CHANDRESH KUMAR does not accept cancellation requests for
@@ -64,9 +64,9 @@ export default function RefundPolicyPage() {
                     products.
                   </li>
                   <li>
-                    In case you feel that the product received is not as shown on
-                    the site or as per your expectations, you must bring it to
-                    the notice of our customer service within{" "}
+                    In case you feel that the product received is not as shown
+                    on the site or as per your expectations, you must bring it
+                    to the notice of our customer service within{" "}
                     <strong>7 Days</strong> of receiving the product. The
                     Customer Service Team after looking into your complaint will
                     take an appropriate decision.

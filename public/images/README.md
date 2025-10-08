@@ -18,7 +18,7 @@ This directory should contain the following optimized images for SEO:
 ### Existing Images:
 
 - `demo-thumbnail.png` - Already exists, good for structured data
-- `delibration-logo.png` - Updated logo file for Delibration branding
+- `lucidity-logo.png` - Updated logo file for Lucidity branding
 
 ## Recommendations:
 

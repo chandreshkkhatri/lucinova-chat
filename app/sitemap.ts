@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://delibration.vercel.app"; // Update this to your actual domain
+  const baseUrl = "https://lucidity.chat";
 
   return [
     {

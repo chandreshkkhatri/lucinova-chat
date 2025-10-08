@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description:
-    "Terms and Conditions for Delibration AI chat assistant service - understand the terms that govern your use of our services.",
+    "Terms and Conditions for Lucidity AI chat assistant service - understand the terms that govern your use of our services.",
 };
 
 export default function TermsAndConditionsPage() {
@@ -33,9 +33,10 @@ export default function TermsAndConditionsPage() {
                 <p className="mt-4">
                   By using our website and availing the Services, you agree that
                   you have read and accepted these Terms (including the Privacy
-                  Policy). We reserve the right to modify these Terms at any time
-                  and without assigning any reason. It is your responsibility to
-                  periodically review these Terms to stay informed of updates.
+                  Policy). We reserve the right to modify these Terms at any
+                  time and without assigning any reason. It is your
+                  responsibility to periodically review these Terms to stay
+                  informed of updates.
                 </p>
               </section>
 
@@ -60,9 +61,9 @@ export default function TermsAndConditionsPage() {
                     completeness or suitability of the information and materials
                     offered on this website or through the Services, for any
                     specific purpose. You acknowledge that such information and
-                    materials may contain inaccuracies or errors and we expressly
-                    exclude liability for any such inaccuracies or errors to the
-                    fullest extent permitted by law.
+                    materials may contain inaccuracies or errors and we
+                    expressly exclude liability for any such inaccuracies or
+                    errors to the fullest extent permitted by law.
                   </li>
                   <li>
                     Your use of our Services and the website is solely at your
@@ -77,8 +78,8 @@ export default function TermsAndConditionsPage() {
                   </li>
                   <li>
                     You acknowledge that unauthorized use of the Website or the
-                    Services may lead to action against you as per these Terms or
-                    applicable laws.
+                    Services may lead to action against you as per these Terms
+                    or applicable laws.
                   </li>
                   <li>
                     You agree to pay us the charges associated with availing the
@@ -98,17 +99,18 @@ export default function TermsAndConditionsPage() {
                   </li>
                   <li>
                     You understand that upon initiating a transaction for
-                    availing the Services you are entering into a legally binding
-                    and enforceable contract with the us for the Services.
+                    availing the Services you are entering into a legally
+                    binding and enforceable contract with the us for the
+                    Services.
                   </li>
                   <li>
                     You shall be entitled to claim a refund of the payment made
                     by you in case we are not able to provide the Service. The
-                    timelines for such return and refund will be according to the
-                    specific Service you have availed or within the time period
-                    provided in our policies (as applicable). In case you do not
-                    raise a refund claim within the stipulated time, than this
-                    would make you ineligible for a refund.
+                    timelines for such return and refund will be according to
+                    the specific Service you have availed or within the time
+                    period provided in our policies (as applicable). In case you
+                    do not raise a refund claim within the stipulated time, than
+                    this would make you ineligible for a refund.
                   </li>
                   <li>
                     Notwithstanding anything contained in these Terms, the
@@ -122,9 +124,9 @@ export default function TermsAndConditionsPage() {
                     accordance with the laws of India.
                   </li>
                   <li>
-                    All disputes arising out of or in connection with these Terms
-                    shall be subject to the exclusive jurisdiction of the courts
-                    in Bengaluru, Karnataka.
+                    All disputes arising out of or in connection with these
+                    Terms shall be subject to the exclusive jurisdiction of the
+                    courts in Bengaluru, Karnataka.
                   </li>
                   <li>
                     All concerns or communications relating to these Terms must

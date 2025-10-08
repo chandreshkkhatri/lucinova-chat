@@ -24,7 +24,10 @@ export default function AccountClient({ user }: AccountClientProps) {
   const [payments, setPayments] = useState<any[] | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
-  const formatPhoneNumber = (value?: string | null, countryCode?: string | null) => {
+  const formatPhoneNumber = (
+    value?: string | null,
+    countryCode?: string | null
+  ) => {
     if (!value) return null;
     const digits = value.replace(/\D/g, "");
     const code = countryCode || "+91";
@@ -121,7 +124,8 @@ export default function AccountClient({ user }: AccountClientProps) {
                     Phone Number
                   </label>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {formatPhoneNumber(user.phone, user.countryCode) || "Not provided"}
+                    {formatPhoneNumber(user.phone, user.countryCode) ||
+                      "Not provided"}
                   </p>
                   {!user.phone && (
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
@@ -299,7 +303,7 @@ export default function AccountClient({ user }: AccountClientProps) {
             </Link>
           </div>
           <div className="text-center mt-4 text-xs text-gray-500 dark:text-gray-500">
-            © {new Date().getFullYear()} Delibration. All rights reserved.
+            © {new Date().getFullYear()} Lucidity. All rights reserved.
           </div>
         </div>
       </footer>

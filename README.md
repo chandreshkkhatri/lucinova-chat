@@ -1,4 +1,4 @@
-# Delibration
+# Lucidity
 
 Slack-style AI chat application with threaded conversations powered by Google Gemini.
 
@@ -15,7 +15,7 @@ Slack-style AI chat application with threaded conversations powered by Google Ge
 ```bash
 # Clone and install
 git clone <repository-url>
-cd delibration
+cd lucidity
 pnpm install
 
 # Configure environment

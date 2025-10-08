@@ -2,7 +2,8 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Get in touch with the Delibration team for support, feedback, or general inquiries.",
+  description:
+    "Get in touch with the Lucidity team for support, feedback, or general inquiries.",
 };
 
 export default function ContactPage() {
@@ -20,10 +21,10 @@ export default function ContactPage() {
 
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-6">
             <a
-              href="mailto:support@delibration.com"
+              href="mailto:support@lucidity.chat"
               className="text-2xl font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
             >
-              support@delibration.com
+              support@lucidity.chat
             </a>
           </div>
 
