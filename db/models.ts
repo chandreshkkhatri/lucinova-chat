@@ -15,8 +15,10 @@ export interface IUser extends Document {
   isPro?: boolean;
   proSince?: Date;
   currentPeriodEnd?: Date | null;
-  subscriptionProvider?: "cashfree" | "manual" | null;
+  subscriptionProvider?: "cashfree" | "razorpay" | "manual" | null;
   subscriptionStatus?: "active" | "inactive" | "canceled" | null;
+  subscriptionId?: string; // Razorpay subscription_id or Cashfree reference
+  razorpayCustomerId?: string; // Razorpay customer_id for recurring payments
   // Password reset fields
   resetToken?: string;
   resetTokenExpiry?: Date;
@@ -39,7 +41,7 @@ const userSchema = new Schema<IUser>(
     currentPeriodEnd: { type: Date, default: null },
     subscriptionProvider: {
       type: String,
-      enum: ["cashfree", "manual"],
+      enum: ["cashfree", "razorpay", "manual"],
       default: null,
     },
     subscriptionStatus: {
@@ -47,6 +49,8 @@ const userSchema = new Schema<IUser>(
       enum: ["active", "inactive", "canceled"],
       default: null,
     },
+    subscriptionId: { type: String },
+    razorpayCustomerId: { type: String },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
   },
@@ -112,16 +116,19 @@ messageSchema.index({ parentMsgId: 1, createdAt: 1 });
 export const Message =
   mongoose.models.Message || mongoose.model<IMessage>("Message", messageSchema);
 
-// Payment schema (records Cashfree payment events/orders)
+// Payment schema (records payment events/orders from Cashfree or Razorpay)
 export interface IPayment extends Document {
   orderId: string;
-  status: string; // e.g., PAID, FAILED
+  status: string; // e.g., PAID, FAILED, SUCCESS
   amount: number; // rupees
   currency: string; // e.g., INR
   customerEmail?: string;
   customerName?: string;
-  environment?: "production" | "sandbox";
+  environment?: "production" | "sandbox" | "test";
   planName?: string; // from order_note
+  provider?: "cashfree" | "razorpay"; // payment gateway used
+  subscriptionId?: string; // Razorpay subscription_id
+  paymentId?: string; // Razorpay payment_id
   raw?: any;
   createdAt: Date;
   updatedAt: Date;
@@ -134,8 +141,11 @@ const paymentSchema = new Schema<IPayment>(
     currency: { type: String, default: "INR" },
     customerEmail: { type: String },
     customerName: { type: String },
-    environment: { type: String, enum: ["production", "sandbox"] },
+    environment: { type: String, enum: ["production", "sandbox", "test"] },
     planName: { type: String },
+    provider: { type: String, enum: ["cashfree", "razorpay"] },
+    subscriptionId: { type: String },
+    paymentId: { type: String },
     raw: { type: Schema.Types.Mixed },
   },
   { timestamps: true }

@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 
-import { CashfreePaymentButton } from "@/components/cashfree-payment-button";
+import { PaymentButton } from "@/components/payment-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -102,7 +102,7 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
                 Current Plan
               </Button>
             ) : (
-              <CashfreePaymentButton
+              <PaymentButton
                 amount={pricePaise}
                 planName="Pro Plan - Monthly"
                 buttonText={`Subscribe for ${symbol}${priceRupees.toLocaleString(

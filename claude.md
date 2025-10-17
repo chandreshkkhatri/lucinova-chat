@@ -54,6 +54,7 @@ lib/                    # Utility functions
 types/                  # TypeScript type definitions
 public/                 # Static assets
 scripts/                # Utility scripts (e.g., migrateIndexes.js)
+docs/                   # copilot documentation
 ```
 
 ## Key Features

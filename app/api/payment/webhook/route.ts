@@ -136,6 +136,7 @@ async function handlePaymentSuccess(event: any) {
       customerName,
       environment,
       planName,
+      provider: "cashfree",
       raw: event,
     });
     return;
@@ -151,6 +152,7 @@ async function handlePaymentSuccess(event: any) {
     customerName,
     environment,
     planName,
+    provider: "cashfree",
     raw: event,
   });
 
@@ -220,6 +222,7 @@ async function handlePaymentFailure(event: any) {
     customerName,
     environment,
     planName,
+    provider: "cashfree",
     raw: event,
   });
 }
@@ -256,6 +259,7 @@ async function handlePaymentDropped(event: any) {
     customerName,
     environment,
     planName,
+    provider: "cashfree",
     raw: event,
   });
 }

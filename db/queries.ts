@@ -68,7 +68,7 @@ export async function getUserByEmail(email: string) {
 export async function activateProSubscriptionByEmail(
   email: string,
   periodInDays = 30,
-  provider: "cashfree" | "manual" = "cashfree"
+  provider: "cashfree" | "razorpay" | "manual" = "cashfree"
 ) {
   await ensureConnection();
 
@@ -129,6 +129,9 @@ export async function recordPaymentOnce({
   customerName,
   environment,
   planName,
+  provider,
+  subscriptionId,
+  paymentId,
   raw,
 }: {
   orderId: string;
@@ -137,8 +140,11 @@ export async function recordPaymentOnce({
   currency?: string;
   customerEmail?: string;
   customerName?: string;
-  environment?: "production" | "sandbox";
+  environment?: "production" | "sandbox" | "test";
   planName?: string;
+  provider?: "cashfree" | "razorpay";
+  subscriptionId?: string;
+  paymentId?: string;
   raw?: any;
 }) {
   await ensureConnection();
@@ -155,6 +161,9 @@ export async function recordPaymentOnce({
         customerName,
         environment,
         planName,
+        provider,
+        subscriptionId,
+        paymentId,
         raw,
       },
     },
