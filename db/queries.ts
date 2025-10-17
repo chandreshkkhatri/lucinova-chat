@@ -15,9 +15,10 @@ export async function createUser(
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
-  const finalDisplayName = displayName || email.split("@")[0];
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const finalDisplayName = displayName || normalizedEmail.split("@")[0];
   return User.create({
-    email,
+    email: normalizedEmail,
     password,
     displayName: finalDisplayName,
     avatarUrl,
@@ -26,7 +27,8 @@ export async function createUser(
 }
 export async function getUserByEmail(email: string) {
   await ensureConnection();
-  const userDoc = await User.findOne({ email });
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const userDoc = await User.findOne({ email: normalizedEmail });
   if (!userDoc) {
     return null;
   }
@@ -71,9 +73,9 @@ export async function activateProSubscriptionByEmail(
   provider: "cashfree" | "razorpay" | "manual" = "cashfree"
 ) {
   await ensureConnection();
-
-  // First, check if user exists
-  const existingUser = await User.findOne({ email }).lean();
+  // Normalize email and check if user exists
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const existingUser = await User.findOne({ email: normalizedEmail }).lean();
   if (!existingUser || Array.isArray(existingUser)) {
     console.error("User not found for email:", email);
     return null;
@@ -113,7 +115,9 @@ export async function activateProSubscriptionByEmail(
     subscriptionStatus: "active" as const,
   };
 
-  const user = await User.findOneAndUpdate({ email }, update, {
+  console.log("[activateProSubscriptionByEmail] Activating for:", normalizedEmail, { periodInDays, provider });
+
+  const user = await User.findOneAndUpdate({ email: normalizedEmail }, update, {
     new: true,
   }).lean();
 

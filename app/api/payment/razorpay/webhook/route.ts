@@ -7,7 +7,7 @@ import {
   recordPaymentOnce,
   getPaymentByOrderId,
 } from "@/db/queries";
-import { verifyRazorpayWebhook } from "@/lib/razorpay";
+import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
 
 export async function POST(request: NextRequest) {
   try {
@@ -119,19 +119,53 @@ async function handleSubscriptionCharged(event: any) {
     }
   }
 
-  if (!customerEmail) {
+  // If subscription notes don't include email, try fallback sources
+  let effectiveEmail = customerEmail;
+  let effectiveName = customerName;
+
+  // Prefer email from payment payload
+  if (!effectiveEmail && payment && payment.email) {
+    effectiveEmail = payment.email;
+  }
+
+  // If still no email, try fetching customer by customer_id from subscription
+  if (!effectiveEmail && subscription.customer_id) {
+    try {
+      const rz = ensureRazorpayClient();
+      if ("error" in rz) {
+        console.error("[Subscription Charged] Razorpay client init error:", rz.error);
+      } else {
+        try {
+          // @ts-ignore - razorpay client types
+          const cust = await rz.client.customers.fetch(subscription.customer_id);
+          if (cust && cust.email) {
+            effectiveEmail = cust.email;
+          }
+          if (cust && cust.name && !effectiveName) {
+            effectiveName = cust.name;
+          }
+        } catch (err) {
+          console.error("[Subscription Charged] Failed to fetch customer:", err);
+        }
+      }
+    } catch (err) {
+      console.error("[Subscription Charged] Error initializing Razorpay client:", err);
+    }
+  }
+
+  if (!effectiveEmail) {
     console.error(
-      "[Subscription Charged] No customer email found in subscription notes for:",
+      "[Subscription Charged] No customer email available for subscription:",
       subscriptionId
     );
-    // Still record the payment
+    // Still record the payment but can't activate without email
     await recordPaymentOnce({
       orderId: paymentId,
       status: "SUCCESS",
       amount,
       currency,
-      customerEmail,
-      customerName,
+      customerEmail: effectiveEmail,
+      customerName: effectiveName,
       environment,
       planName: "Pro Monthly Subscription",
       provider: "razorpay",
@@ -148,8 +182,8 @@ async function handleSubscriptionCharged(event: any) {
     status: "SUCCESS",
     amount,
     currency,
-    customerEmail,
-    customerName,
+    customerEmail: effectiveEmail,
+    customerName: effectiveName,
     environment,
     planName: "Pro Monthly Subscription",
     provider: "razorpay",
@@ -159,11 +193,11 @@ async function handleSubscriptionCharged(event: any) {
   });
 
   // Activate pro subscription for 30 days (monthly)
-  await activateProSubscriptionByEmail(customerEmail, 30, "razorpay");
+  await activateProSubscriptionByEmail(effectiveEmail, 30, "razorpay");
 
   console.log(
     "[Subscription Charged] Successfully processed subscription charge for:",
-    customerEmail
+    effectiveEmail
   );
 }
 

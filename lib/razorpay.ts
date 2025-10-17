@@ -127,6 +127,25 @@ export async function fetchRazorpaySubscription(subscriptionId: string) {
 }
 
 /**
+ * Fetch a Razorpay payment by ID
+ */
+export async function fetchRazorpayPayment(paymentId: string) {
+  const rz = ensureRazorpayClient();
+  if ("error" in rz) throw new Error(rz.error);
+
+  try {
+    // The Razorpay SDK exposes payments.fetch
+    // @ts-ignore
+    const payment = await rz.client.payments.fetch(paymentId);
+    return payment;
+  } catch (error: any) {
+    throw new Error(
+      `Failed to fetch Razorpay payment: ${error.error?.description || error.message}`
+    );
+  }
+}
+
+/**
  * Cancels an active Razorpay subscription
  */
 export async function cancelRazorpaySubscription(

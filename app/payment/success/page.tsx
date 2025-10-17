@@ -17,22 +17,43 @@ import {
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order_id");
+  const paymentId = searchParams.get("payment_id");
+  const subscriptionId = searchParams.get("subscription_id");
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!orderId) return;
+    // Prefer Razorpay identifiers first
     const run = async () => {
       try {
-        const response = await fetch(`/api/payment/status?order_id=${orderId}`);
-        const data = await response.json();
-        setOrderDetails(data);
+        if (paymentId || subscriptionId) {
+          const q = paymentId
+            ? `payment_id=${encodeURIComponent(paymentId)}`
+            : `subscription_id=${encodeURIComponent(subscriptionId!)}`;
+          const response = await fetch(`/api/payment/razorpay/status?${q}`);
+          const data = await response.json();
+          setOrderDetails(data);
+          return;
+        }
+
+        if (orderId) {
+          const response = await fetch(`/api/payment/status?order_id=${orderId}`);
+          const data = await response.json();
+          setOrderDetails(data);
+        }
       } catch (error) {
         console.error("Failed to fetch order details:", error);
       } finally {
         setIsLoading(false);
       }
     };
+
+    // If no identifiers at all, stop loading immediately
+    if (!orderId && !paymentId && !subscriptionId) {
+      setIsLoading(false);
+      return;
+    }
+
     run();
   }, [orderId]);
 
