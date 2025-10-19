@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { CashfreePaymentButton } from "@/components/cashfree-payment-button";
 import { RazorpayPaymentModal } from "@/components/razorpay-payment-modal";
 import { Button } from "@/components/ui/button";
 
@@ -22,8 +21,7 @@ interface UserSession {
 }
 
 /**
- * Unified payment button that renders either Cashfree or Razorpay
- * based on PAYMENT_PROVIDER environment variable
+ * Payment button for Razorpay subscription-based purchases
  */
 export function PaymentButton({
   amount,
@@ -31,8 +29,7 @@ export function PaymentButton({
   className,
   buttonText = "Subscribe Now",
 }: PaymentButtonProps) {
-  const [paymentProvider, setPaymentProvider] = useState<string | null>(null);
-  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [profile, setProfile] = useState<{
     name?: string;
@@ -40,26 +37,9 @@ export function PaymentButton({
   } | null>(null);
 
   useEffect(() => {
-    // Fetch payment provider from server
-    fetchPaymentProvider();
     // Fetch user session data
     fetchUserSession();
   }, []);
-
-  const fetchPaymentProvider = async () => {
-    try {
-      const response = await fetch("/api/payment/provider");
-      if (response.ok) {
-        const data = await response.json();
-        setPaymentProvider(data.provider || "cashfree");
-      } else {
-        setPaymentProvider("cashfree"); // Default fallback
-      }
-    } catch (error) {
-      console.error("Failed to fetch payment provider:", error);
-      setPaymentProvider("cashfree"); // Default fallback
-    }
-  };
 
   const fetchUserSession = async () => {
     try {
@@ -83,43 +63,21 @@ export function PaymentButton({
     }
   };
 
-  // Loading state
-  if (paymentProvider === null) {
-    return (
-      <Button disabled className={className}>
-        Loading...
-      </Button>
-    );
-  }
-
-  // Render Razorpay if provider is razorpay
-  if (paymentProvider === "razorpay") {
-    return (
-      <>
-        <Button onClick={() => setIsRazorpayModalOpen(true)} className={className}>
-          {buttonText}
-        </Button>
-
-        <RazorpayPaymentModal
-          isOpen={isRazorpayModalOpen}
-          onClose={() => setIsRazorpayModalOpen(false)}
-          amount={amount}
-          planName={planName}
-          userEmail={userSession?.user?.email}
-          userName={profile?.name || userSession?.user?.name}
-          userPhone={profile?.phone}
-        />
-      </>
-    );
-  }
-
-  // Default: Render Cashfree
   return (
-    <CashfreePaymentButton
-      amount={amount}
-      planName={planName}
-      className={className}
-      buttonText={buttonText}
-    />
+    <>
+      <Button onClick={() => setIsModalOpen(true)} className={className}>
+        {buttonText}
+      </Button>
+
+      <RazorpayPaymentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        amount={amount}
+        planName={planName}
+        userEmail={userSession?.user?.email}
+        userName={profile?.name || userSession?.user?.name}
+        userPhone={profile?.phone}
+      />
+    </>
   );
 }

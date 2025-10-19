@@ -70,7 +70,7 @@ export async function getUserByEmail(email: string) {
 export async function activateProSubscriptionByEmail(
   email: string,
   periodInDays = 30,
-  provider: "cashfree" | "razorpay" | "manual" = "cashfree"
+  provider: "razorpay" | "manual" = "razorpay"
 ) {
   await ensureConnection();
   // Normalize email and check if user exists
@@ -144,9 +144,9 @@ export async function recordPaymentOnce({
   currency?: string;
   customerEmail?: string;
   customerName?: string;
-  environment?: "production" | "sandbox" | "test";
+  environment?: "production" | "test";
   planName?: string;
-  provider?: "cashfree" | "razorpay";
+  provider?: "razorpay";
   subscriptionId?: string;
   paymentId?: string;
   raw?: any;

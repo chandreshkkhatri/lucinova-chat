@@ -15,9 +15,9 @@ export interface IUser extends Document {
   isPro?: boolean;
   proSince?: Date;
   currentPeriodEnd?: Date | null;
-  subscriptionProvider?: "cashfree" | "razorpay" | "manual" | null;
+  subscriptionProvider?: "razorpay" | "manual" | null;
   subscriptionStatus?: "active" | "inactive" | "canceled" | null;
-  subscriptionId?: string; // Razorpay subscription_id or Cashfree reference
+  subscriptionId?: string; // Razorpay subscription_id
   razorpayCustomerId?: string; // Razorpay customer_id for recurring payments
   // Password reset fields
   resetToken?: string;
@@ -41,7 +41,7 @@ const userSchema = new Schema<IUser>(
     currentPeriodEnd: { type: Date, default: null },
     subscriptionProvider: {
       type: String,
-      enum: ["cashfree", "razorpay", "manual"],
+      enum: ["razorpay", "manual"],
       default: null,
     },
     subscriptionStatus: {
@@ -116,7 +116,7 @@ messageSchema.index({ parentMsgId: 1, createdAt: 1 });
 export const Message =
   mongoose.models.Message || mongoose.model<IMessage>("Message", messageSchema);
 
-// Payment schema (records payment events/orders from Cashfree or Razorpay)
+// Payment schema (records payment events/orders from Razorpay)
 export interface IPayment extends Document {
   orderId: string;
   status: string; // e.g., PAID, FAILED, SUCCESS
@@ -124,9 +124,9 @@ export interface IPayment extends Document {
   currency: string; // e.g., INR
   customerEmail?: string;
   customerName?: string;
-  environment?: "production" | "sandbox" | "test";
+  environment?: "production" | "test";
   planName?: string; // from order_note
-  provider?: "cashfree" | "razorpay"; // payment gateway used
+  provider?: "razorpay"; // payment gateway used
   subscriptionId?: string; // Razorpay subscription_id
   paymentId?: string; // Razorpay payment_id
   raw?: any;
@@ -141,9 +141,9 @@ const paymentSchema = new Schema<IPayment>(
     currency: { type: String, default: "INR" },
     customerEmail: { type: String },
     customerName: { type: String },
-    environment: { type: String, enum: ["production", "sandbox", "test"] },
+    environment: { type: String, enum: ["production", "test"] },
     planName: { type: String },
-    provider: { type: String, enum: ["cashfree", "razorpay"] },
+    provider: { type: String, enum: ["razorpay"] },
     subscriptionId: { type: String },
     paymentId: { type: String },
     raw: { type: Schema.Types.Mixed },
