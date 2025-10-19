@@ -54,7 +54,7 @@ lib/                    # Utility functions
 types/                  # TypeScript type definitions
 public/                 # Static assets
 scripts/                # Utility scripts (e.g., migrateIndexes.js)
-docs/                   # copilot documentation
+docs/                   # copilot documentation. all documentation .md files must go in this directory
 ```
 
 ## Key Features
