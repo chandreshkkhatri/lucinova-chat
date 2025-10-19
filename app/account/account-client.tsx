@@ -23,6 +23,7 @@ export default function AccountClient({ user }: AccountClientProps) {
   const router = useRouter();
   const [payments, setPayments] = useState<any[] | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const formatPhoneNumber = (
     value?: string | null,
@@ -48,6 +49,18 @@ export default function AccountClient({ user }: AccountClientProps) {
       setPayments([]);
     } finally {
       setLoadingPayments(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    toast.info("Refreshing account data...");
+    try {
+      // Hard refresh to get latest data from server
+      window.location.reload();
+    } catch (e) {
+      toast.error("Failed to refresh");
+      setIsRefreshing(false);
     }
   }
 

@@ -98,8 +98,8 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
           </CardContent>
           <CardFooter>
             {isPro ? (
-              <Button disabled className="w-full">
-                Current Plan
+              <Button disabled className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed">
+                ✓ Current Plan
               </Button>
             ) : (
               <PaymentButton

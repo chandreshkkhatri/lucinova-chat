@@ -29,6 +29,29 @@ export async function POST(request: NextRequest) {
     // Get or create plan ID from environment
     let planId = process.env.RAZORPAY_PLAN_ID;
 
+    console.log("[Create Subscription] Using plan ID from env:", planId);
+
+    // Verify the plan exists
+    if (planId) {
+      try {
+        const plan = await rz.client.plans.fetch(planId);
+        console.log("[Create Subscription] Plan verified:", {
+          id: plan.id,
+          period: plan.period,
+          interval: plan.interval,
+          amount: (plan.item as any)?.amount,
+        });
+      } catch (error: any) {
+        console.error("[Create Subscription] Plan does not exist:", planId);
+        console.error("[Create Subscription] Plan fetch error:", error.error?.description || error.message);
+        return jsonError(
+          "Invalid plan configuration",
+          500,
+          `Plan ${planId} does not exist. Please verify RAZORPAY_PLAN_ID in your environment.`
+        );
+      }
+    }
+
     // If no plan exists, create one (typically done once during setup)
     if (!planId) {
       const currency = (
@@ -65,8 +88,8 @@ export async function POST(request: NextRequest) {
     let customerId: string | undefined;
 
     try {
-      // Try to find existing customer by email (Note: Razorpay doesn't have email search, so we'll create a new one each time)
-      // In production, you should store the customer_id in your database
+      // Create a new customer for each subscription
+      // In production, you should store and reuse the customer_id from your database
       const customer = await rz.client.customers.create({
         name: customerName,
         email: customerEmail,
@@ -75,9 +98,23 @@ export async function POST(request: NextRequest) {
       });
 
       customerId = customer.id;
-      console.log("[Create Subscription] Customer created/found:", customerId);
+      console.log("[Create Subscription] Customer created:", {
+        id: customerId,
+        email: customerEmail,
+        name: customerName,
+      });
+
+      // Verify customer was created successfully
+      try {
+        const verifyCustomer = await rz.client.customers.fetch(customerId);
+        console.log("[Create Subscription] Customer verified:", verifyCustomer.id);
+      } catch (verifyError: any) {
+        console.error("[Create Subscription] Customer verification failed:", verifyError);
+        throw new Error("Customer was created but cannot be verified");
+      }
     } catch (error: any) {
       console.error("[Create Subscription] Customer creation failed:", error);
+      console.error("[Create Subscription] Full customer error:", JSON.stringify(error, null, 2));
       return jsonError(
         "Failed to create customer",
         500,
@@ -87,6 +124,13 @@ export async function POST(request: NextRequest) {
 
     // Create subscription
     try {
+      console.log("[Create Subscription] Creating subscription with params:", {
+        plan_id: planId,
+        customer_id: customerId,
+        quantity: 1,
+        total_count: 12,
+      });
+
       const subscription = await rz.client.subscriptions.create({
         plan_id: planId,
         customer_id: customerId,
@@ -120,10 +164,11 @@ export async function POST(request: NextRequest) {
       });
     } catch (error: any) {
       console.error("[Create Subscription] Subscription creation failed:", error);
+      console.error("[Create Subscription] Full error details:", JSON.stringify(error, null, 2));
       return jsonError(
         "Failed to create subscription",
         500,
-        error.error?.description || error.message
+        error.error?.description || error.description || error.message
       );
     }
   } catch (error: any) {

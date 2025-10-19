@@ -17,7 +17,17 @@ export default async function AccountPage() {
   // Enrich with subscription info from DB (best-effort)
   if (baseUser?.email) {
     try {
+      console.log("[Account Page] Fetching user data for:", baseUser.email);
       const dbUser: any = await getUserByEmail(baseUser.email);
+      console.log("[Account Page] DB user data:", {
+        email: dbUser?.email,
+        plan: dbUser?.plan,
+        isPro: dbUser?.isPro,
+        currentPeriodEnd: dbUser?.currentPeriodEnd,
+        subscriptionStatus: dbUser?.subscriptionStatus,
+        subscriptionProvider: dbUser?.subscriptionProvider,
+      });
+
       if (dbUser && !Array.isArray(dbUser)) {
         baseUser.plan = dbUser.plan || "free";
         baseUser.isPro = !!dbUser.isPro;
@@ -25,8 +35,17 @@ export default async function AccountPage() {
         baseUser.name = dbUser.name || baseUser.name;
         baseUser.phone = dbUser.phone || null;
         baseUser.countryCode = dbUser.countryCode || null;
+
+        console.log("[Account Page] Enriched user data:", {
+          email: baseUser.email,
+          plan: baseUser.plan,
+          isPro: baseUser.isPro,
+          currentPeriodEnd: baseUser.currentPeriodEnd,
+        });
       }
-    } catch {}
+    } catch (err) {
+      console.error("[Account Page] Error fetching user from DB:", err);
+    }
   }
 
   return <AccountClient user={baseUser} />;

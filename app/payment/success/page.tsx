@@ -26,23 +26,37 @@ export default function PaymentSuccessPage() {
     // Prefer Razorpay identifiers first
     const run = async () => {
       try {
+        console.log("[Payment Success Page] URL params:", {
+          orderId,
+          paymentId,
+          subscriptionId,
+        });
+
         if (paymentId || subscriptionId) {
           const q = paymentId
             ? `payment_id=${encodeURIComponent(paymentId)}`
             : `subscription_id=${encodeURIComponent(subscriptionId!)}`;
+          console.log("[Payment Success Page] Fetching from:", `/api/payment/razorpay/status?${q}`);
+
           const response = await fetch(`/api/payment/razorpay/status?${q}`);
           const data = await response.json();
+
+          console.log("[Payment Success Page] API response data:", data);
+          console.log("[Payment Success Page] orderAmount value:", data.orderAmount, "type:", typeof data.orderAmount);
+
           setOrderDetails(data);
           return;
         }
 
         if (orderId) {
+          console.log("[Payment Success Page] Fetching legacy order:", orderId);
           const response = await fetch(`/api/payment/status?order_id=${orderId}`);
           const data = await response.json();
+          console.log("[Payment Success Page] Legacy API response:", data);
           setOrderDetails(data);
         }
       } catch (error) {
-        console.error("Failed to fetch order details:", error);
+        console.error("[Payment Success Page] Failed to fetch order details:", error);
       } finally {
         setIsLoading(false);
       }
@@ -50,12 +64,13 @@ export default function PaymentSuccessPage() {
 
     // If no identifiers at all, stop loading immediately
     if (!orderId && !paymentId && !subscriptionId) {
+      console.log("[Payment Success Page] No payment identifiers found in URL");
       setIsLoading(false);
       return;
     }
 
     run();
-  }, [orderId]);
+  }, [orderId, paymentId, subscriptionId]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">

@@ -11,8 +11,13 @@ import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[Razorpay Webhook] Received webhook request");
+    console.log("[Razorpay Webhook] ========================================");
+    console.log("[Razorpay Webhook] Received webhook request at:", new Date().toISOString());
+    console.log("[Razorpay Webhook] Request URL:", request.url);
+
     const rawBody = await request.text();
+    console.log("[Razorpay Webhook] Raw body length:", rawBody.length);
+
     const signature = request.headers.get("x-razorpay-signature");
 
     if (!signature) {
@@ -99,11 +104,15 @@ async function handleSubscriptionCharged(event: any) {
   const environment =
     process.env.RAZORPAY_ENVIRONMENT === "production" ? "production" : "test";
 
+  console.log("[Subscription Charged] Raw event payload:", JSON.stringify(event.payload, null, 2));
   console.log("[Subscription Charged] Processing payment:", {
     subscriptionId,
     paymentId,
     amount,
+    amountInPaise: payment.amount,
+    currency,
     customer: customerEmail,
+    customerName,
   });
 
   // Check for duplicate payment

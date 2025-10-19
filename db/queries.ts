@@ -30,12 +30,22 @@ export async function getUserByEmail(email: string) {
   const normalizedEmail = String(email).trim().toLowerCase();
   const userDoc = await User.findOne({ email: normalizedEmail });
   if (!userDoc) {
+    console.log("[getUserByEmail] User not found for email:", normalizedEmail);
     return null;
   }
+
+  console.log("[getUserByEmail] User found:", {
+    email: userDoc.email,
+    plan: userDoc.plan,
+    isPro: userDoc.isPro,
+    currentPeriodEnd: userDoc.currentPeriodEnd,
+    subscriptionStatus: userDoc.subscriptionStatus,
+  });
 
   const now = new Date();
   const currentPeriodEnd = userDoc.currentPeriodEnd;
   if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
+    console.log("[getUserByEmail] Subscription expired, downgrading user:", normalizedEmail);
     let shouldUpdate = false;
 
     if (userDoc.isPro) {
@@ -60,10 +70,19 @@ export async function getUserByEmail(email: string) {
 
     if (shouldUpdate) {
       await userDoc.save();
+      console.log("[getUserByEmail] User downgraded to free plan");
     }
   }
 
-  return userDoc.toObject();
+  const result = userDoc.toObject();
+  console.log("[getUserByEmail] Returning user object:", {
+    email: result.email,
+    plan: result.plan,
+    isPro: result.isPro,
+    currentPeriodEnd: result.currentPeriodEnd,
+  });
+
+  return result;
 }
 
 // Subscription helpers
@@ -116,10 +135,21 @@ export async function activateProSubscriptionByEmail(
   };
 
   console.log("[activateProSubscriptionByEmail] Activating for:", normalizedEmail, { periodInDays, provider });
+  console.log("[activateProSubscriptionByEmail] Update object:", update);
 
   const user = await User.findOneAndUpdate({ email: normalizedEmail }, update, {
     new: true,
   }).lean();
+
+  if (user && !Array.isArray(user)) {
+    console.log("[activateProSubscriptionByEmail] Updated user:", {
+      email: (user as any).email,
+      plan: (user as any).plan,
+      isPro: (user as any).isPro,
+      currentPeriodEnd: (user as any).currentPeriodEnd,
+      subscriptionStatus: (user as any).subscriptionStatus,
+    });
+  }
 
   return user;
 }
@@ -152,6 +182,20 @@ export async function recordPaymentOnce({
   raw?: any;
 }) {
   await ensureConnection();
+  console.log("[recordPaymentOnce] Recording payment:", {
+    orderId,
+    status,
+    amount,
+    currency,
+    customerEmail,
+    customerName,
+    environment,
+    planName,
+    provider,
+    subscriptionId,
+    paymentId,
+  });
+
   // Idempotent create-or-update by orderId
   const doc = await Payment.findOneAndUpdate(
     { orderId },
@@ -173,6 +217,16 @@ export async function recordPaymentOnce({
     },
     { upsert: true, new: true }
   ).lean();
+
+  if (doc && !Array.isArray(doc)) {
+    console.log("[recordPaymentOnce] Payment recorded:", {
+      _id: (doc as any)._id,
+      orderId: (doc as any).orderId,
+      status: (doc as any).status,
+      amount: (doc as any).amount,
+    });
+  }
+
   return doc;
 }
 
