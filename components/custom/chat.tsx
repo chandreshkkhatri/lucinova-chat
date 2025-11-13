@@ -118,7 +118,7 @@ export function Chat({
             <Avatar className="size-8 shrink-0">
               <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                 <Image
-                  src="/images/lucidity-logo.png"
+                  src="/images/lucidity-logo.svg"
                   alt="Lucidity"
                   width={24}
                   height={24}
@@ -356,7 +356,7 @@ export function Chat({
                   <>
                     <div className="size-16 mx-auto mb-4 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3">
                       <Image
-                        src="/images/lucidity-logo.png"
+                        src="/images/lucidity-logo.svg"
                         alt="Lucidity"
                         width={40}
                         height={40}
@@ -418,7 +418,7 @@ export function Chat({
                 <Avatar className="size-8 shrink-0">
                   <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                     <Image
-                      src="/images/lucidity-logo.png"
+                      src="/images/lucidity-logo.svg"
                       alt="Lucidity"
                       width={24}
                       height={24}

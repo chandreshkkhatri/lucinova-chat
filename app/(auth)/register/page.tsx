@@ -55,7 +55,7 @@ export default function Page() {
             <div className="flex flex-col items-center gap-3">
               <div className="size-16 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-lg border border-gray-200 dark:border-gray-700 p-3">
                 <Image
-                  src="/images/lucidity-logo.png"
+                  src="/images/lucidity-logo.svg"
                   alt="Lucidity"
                   width={48}
                   height={48}
