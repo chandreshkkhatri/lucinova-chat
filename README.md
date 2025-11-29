@@ -48,6 +48,8 @@ pnpm build            # Production build
 pnpm start            # Production server
 pnpm lint             # Run linter
 pnpm migrate-indexes  # Setup MongoDB indexes
+pnpm validate-specs   # Validate specification files
+pnpm spec:new         # Create a new specification
 ```
 
 ## Project Structure
@@ -63,7 +65,28 @@ components/
 └── ui/              # Reusable UI components
 db/                  # Database models & queries
 ai/                  # AI SDK configuration
+specs/               # Feature specifications (spec-driven development)
+├── features/        # Feature specs
+├── api/             # API endpoint specs
+├── components/      # Component specs
+└── database/        # Database schema specs
 ```
+
+## Spec-Driven Development
+
+This project follows a specification-driven development workflow. All features should be documented in `specs/` before implementation.
+
+**Creating a new spec:**
+```bash
+pnpm spec:new
+```
+
+**Validating specs:**
+```bash
+pnpm validate-specs
+```
+
+See `specs/README.md` for the complete specification workflow and guidelines.
 
 ## License
 
