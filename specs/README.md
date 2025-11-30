@@ -39,8 +39,24 @@ Use descriptive, kebab-case filenames:
 ## Status Labels
 
 Mark each spec with a status:
-- `[DRAFT]` - Work in progress
-- `[REVIEW]` - Ready for review
+- `[DRAFT]` - Work in progress, still being designed
+- `[REVIEW]` - Ready for team review and feedback
 - `[APPROVED]` - Approved for implementation
-- `[IMPLEMENTED]` - Feature has been built
-- `[DEPRECATED]` - No longer relevant
+- `[IMPLEMENTED]` - Feature built; spec now serves as living documentation
+- `[DEPRECATED]` - Feature removed or replaced
+
+### Status Lifecycle
+
+```
+New Feature:     DRAFT → REVIEW → APPROVED → IMPLEMENTED → DEPRECATED
+                   ↑                              ↑
+               Planning                    Spec = Documentation
+               
+Existing Feature: Start at IMPLEMENTED (use "Originally Built" field)
+```
+
+When moving to `IMPLEMENTED`:
+1. Update all requirement checkboxes (`- [x]`)
+2. Update the Rollout Plan section with actual deployment info
+3. Note any deviations from original plan in Changelog
+4. The spec now serves as the authoritative documentation

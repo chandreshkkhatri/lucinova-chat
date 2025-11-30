@@ -3,7 +3,8 @@
 **Status:** DRAFT | REVIEW | APPROVED | IMPLEMENTED | DEPRECATED  
 **Author:** Your Name  
 **Created:** YYYY-MM-DD  
-**Last Updated:** YYYY-MM-DD
+**Last Updated:** YYYY-MM-DD  
+**Originally Built:** *(Optional: for documenting existing features)*
 
 ## Overview
 
@@ -29,6 +30,8 @@ Provide relevant context:
 - What is the current state?
 - What user problems does this solve?
 - Links to related discussions or issues
+
+> **Note:** For new features, describe the problem and proposed solution. For documenting existing features (starting at IMPLEMENTED), describe what was built and why.
 
 ## Requirements
 
@@ -154,6 +157,8 @@ Load testing, benchmarking requirements.
 - Monitoring and metrics
 - Rollback plan
 
+> **When IMPLEMENTED:** Update this section to reflect actual deployment status (e.g., "✅ Deployed on YYYY-MM-DD").
+
 ## Success Metrics
 
 How to measure if this feature is successful:
@@ -179,5 +184,8 @@ What other approaches were considered and why they were rejected.
 ## Changelog
 
 | Date | Author | Changes |
-|------|--------|---------|
+|------|--------|--------|
 | YYYY-MM-DD | Name | Initial draft |
+
+> **Status Lifecycle:** DRAFT → REVIEW → APPROVED → IMPLEMENTED → DEPRECATED  
+> When a feature is implemented, update the spec to reflect what was actually built. The IMPLEMENTED spec serves as the living documentation.
