@@ -317,7 +317,7 @@ export function Chat({
     <div
       className={`flex h-full ${className} ${
         isThread ? "max-h-full overflow-hidden" : ""
-      } bg-white dark:bg-gray-900`}
+      } bg-paper`}
     >
       {/* Main Chat Area */}
       <div

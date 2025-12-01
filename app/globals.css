@@ -57,6 +57,21 @@
   .typing-indicator span:nth-child(3) {
     animation-delay: 0.4s;
   }
+
+  /* Modern Paper Background with Doodles */
+  .bg-paper {
+    background-color: #fdfbf7;
+    background-image: 
+      url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23a8b4c4' stroke-width='1.5' stroke-linecap='round' opacity='0.7'%3E%3Cpath d='M 30 30 Q 45 15 60 30 T 90 30' /%3E%3Ccircle cx='150' cy='70' r='12' /%3E%3Cpath d='M 220 220 L 245 260 L 195 260 Z' /%3E%3Ccircle cx='70' cy='220' r='3' fill='%23a8b4c4' /%3E%3Ccircle cx='270' cy='120' r='3' fill='%23a8b4c4' /%3E%3Cpath d='M 15 150 C 35 140 55 170 35 180' /%3E%3Crect x='220' y='35' width='18' height='18' rx='3' /%3E%3Cpath d='M 110 40 L 130 60 M 130 40 L 110 60' /%3E%3Cpath d='M 180 150 Q 200 130 220 150 Q 200 170 180 150' /%3E%3Ccircle cx='50' cy='130' r='2' fill='%23a8b4c4' /%3E%3Cpath d='M 250 180 C 260 170 280 190 270 200' /%3E%3Cpath d='M 100 270 L 120 270 M 110 260 L 110 280' /%3E%3Ccircle cx='200' cy='280' r='8' /%3E%3Cpath d='M 40 80 Q 50 70 60 80' /%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  .dark .bg-paper {
+    background-color: #0f172a; /* Slate-900 base */
+    background-image: 
+      url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23475569' stroke-width='1.5' stroke-linecap='round' opacity='0.7'%3E%3Cpath d='M 30 30 Q 45 15 60 30 T 90 30' /%3E%3Ccircle cx='150' cy='70' r='12' /%3E%3Cpath d='M 220 220 L 245 260 L 195 260 Z' /%3E%3Ccircle cx='70' cy='220' r='3' fill='%23475569' /%3E%3Ccircle cx='270' cy='120' r='3' fill='%23475569' /%3E%3Cpath d='M 15 150 C 35 140 55 170 35 180' /%3E%3Crect x='220' y='35' width='18' height='18' rx='3' /%3E%3Cpath d='M 110 40 L 130 60 M 130 40 L 110 60' /%3E%3Cpath d='M 180 150 Q 200 130 220 150 Q 200 170 180 150' /%3E%3Ccircle cx='50' cy='130' r='2' fill='%23475569' /%3E%3Cpath d='M 250 180 C 260 170 280 190 270 200' /%3E%3Cpath d='M 100 270 L 120 270 M 110 260 L 110 280' /%3E%3Ccircle cx='200' cy='280' r='8' /%3E%3Cpath d='M 40 80 Q 50 70 60 80' /%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  }
 }
 
 @layer base {
