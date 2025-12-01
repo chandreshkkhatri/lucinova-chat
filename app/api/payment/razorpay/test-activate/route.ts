@@ -18,8 +18,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("[Test Activate] Manually activating subscription for:", email);
-
     // Activate Pro subscription for 30 days
     const user = await activateProSubscriptionByEmail(email, 30, "razorpay");
 
@@ -29,13 +27,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    console.log("[Test Activate] Successfully activated:", {
-      email,
-      plan: (user as any).plan,
-      isPro: (user as any).isPro,
-      currentPeriodEnd: (user as any).currentPeriodEnd,
-    });
 
     return NextResponse.json({
       success: true,

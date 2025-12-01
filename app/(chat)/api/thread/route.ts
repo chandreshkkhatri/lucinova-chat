@@ -2,7 +2,7 @@ import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
 
 import { geminiProModel } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
-import { getChatById, createMessage, getUserByEmail } from "@/db/queries";
+import { getChatById, createMessage, getUserByEmail, deleteThreadMessages } from "@/db/queries";
 import { appConfig } from "@/lib/config";
 import { Message as DbMessage } from "@/db/models";
 import { ensureConnection } from "@/db/connection";
@@ -132,4 +132,22 @@ export async function POST(request: Request) {
   });
 
   return result.toDataStreamResponse({});
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const parentMessageId = searchParams.get("parentMessageId");
+
+  if (!parentMessageId) {
+    return new Response("Missing parentMessageId", { status: 400 });
+  }
+
+  const session = await auth();
+  if (!session || !session.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  await deleteThreadMessages(parentMessageId);
+
+  return new Response("Thread deleted", { status: 200 });
 }

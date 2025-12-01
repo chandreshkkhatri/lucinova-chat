@@ -141,7 +141,6 @@ export function RazorpayPaymentModal({
           color: "#3b82f6",
         },
         handler: function (response: any) {
-          console.log("Payment successful:", response);
           toast.success(
             "Subscription activated! Welcome to the Pro plan!"
           );
@@ -153,7 +152,6 @@ export function RazorpayPaymentModal({
         },
         modal: {
           ondismiss: function () {
-            console.log("Payment modal closed");
             toast.info("Payment cancelled");
             setIsLoading(false);
           },

@@ -1,4 +1,4 @@
-import { X, MessageSquare } from "lucide-react";
+import { X, MessageSquare, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chat } from "./chat";
 import { Message } from "ai";
@@ -27,6 +27,23 @@ export function ThreadView({
     revalidateSWR(
       `/api/threads/count?parentMessageId=${parentMessage.id}&mainChatId=${mainChatId}`
     );
+  };
+
+  const handleDeleteThread = async () => {
+    if (confirm("Are you sure you want to delete this thread? All messages in this thread will be removed.")) {
+      try {
+        const res = await fetch(`/api/thread?parentMessageId=${parentMessage.id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          onClose();
+          // Force revalidation of the thread count to update the UI
+          handleNewReply();
+        }
+      } catch (error) {
+        console.error("Failed to delete thread:", error);
+      }
+    }
   };
 
   // Load existing replies for this thread only if no selected text
@@ -67,14 +84,25 @@ export function ThreadView({
             </p>
           </div>
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onClose}
-          className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleDeleteThread}
+            className="rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+            title="Delete Thread"
+          >
+            <Trash className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose}
+            className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
 

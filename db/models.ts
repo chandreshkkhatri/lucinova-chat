@@ -122,6 +122,34 @@ messageSchema.index({ parentMsgId: 1, createdAt: 1 });
 export const Message =
   mongoose.models.Message || mongoose.model<IMessage>("Message", messageSchema);
 
+// Annotation schema - for "Ask Tara" threads tied to selected text
+export interface IAnnotation extends Document {
+  messageId: mongoose.Types.ObjectId | string; // The message containing the selected text
+  chatId: mongoose.Types.ObjectId | string;
+  userId: mongoose.Types.ObjectId | string; // User who created the annotation
+  selectedText: string; // The text that was selected
+  // Position info for rendering the highlight
+  startOffset?: number;
+  endOffset?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+const annotationSchema = new Schema<IAnnotation>(
+  {
+    messageId: { type: Schema.Types.ObjectId, ref: "Message", required: true },
+    chatId: { type: Schema.Types.ObjectId, ref: "Chat", required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    selectedText: { type: String, required: true },
+    startOffset: { type: Number },
+    endOffset: { type: Number },
+  },
+  { timestamps: true }
+);
+annotationSchema.index({ messageId: 1, createdAt: 1 });
+annotationSchema.index({ chatId: 1 });
+export const Annotation =
+  mongoose.models.Annotation || mongoose.model<IAnnotation>("Annotation", annotationSchema);
+
 // Payment schema (records payment events/orders from Razorpay)
 export interface IPayment extends Document {
   orderId: string;

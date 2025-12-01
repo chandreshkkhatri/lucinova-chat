@@ -5,7 +5,8 @@ import { useChat } from "ai/react";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import useSWR from "swr";
 
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
 import { useThreadCount } from "@/components/custom/use-thread-count";
@@ -25,9 +26,13 @@ import {
 } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
 
-import { EnhancedMessage } from "./enhanced-message";
+import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { ThreadView } from "./thread-view";
+import { AnnotationThreadView } from "./annotation-thread-view";
+
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function Chat({
   id,
@@ -75,17 +80,54 @@ export function Chat({
     useScrollToBottom<HTMLDivElement>();
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
+  
+  // Reply thread state
   const [activeThread, setActiveThread] = useState<{
     parentMessage: Message;
     selectedText?: string;
   } | null>(null);
+  
+  // Annotation (Ask Tara) thread state
+  const [activeAnnotation, setActiveAnnotation] = useState<{
+    id: string;
+    selectedText: string;
+  } | null>(null);
+  
+  // Pending annotation (before first message is sent)
+  const [pendingAnnotation, setPendingAnnotation] = useState<{
+    messageId: string;
+    selectedText: string;
+  } | null>(null);
+  
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.0-flash");
+
+  // Fetch annotations for this chat
+  const { data: annotationsData, mutate: mutateAnnotations } = useSWR(
+    !isThread ? `/api/annotations?chatId=${id}` : null,
+    fetcher
+  );
+
+  const annotations: SavedAnnotation[] = annotationsData?.annotations || [];
+
+  // Group annotations by messageId
+  const annotationsByMessage = annotations.reduce(
+    (acc, ann) => {
+      if (!acc[ann.messageId]) {
+        acc[ann.messageId] = [];
+      }
+      acc[ann.messageId].push(ann);
+      return acc;
+    },
+    {} as Record<string, SavedAnnotation[]>
+  );
 
   const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
     if (parentMessage && !isThread) {
       setActiveThread({ parentMessage, selectedText });
+      setActiveAnnotation(null);
+      setPendingAnnotation(null);
     }
   };
 
@@ -96,7 +138,72 @@ export function Chat({
     }
   };
 
-  // Removed collapsible thread preview behavior – clicking the count will open the thread modal
+  // Handle "Ask Tara" click - create pending annotation
+  const handleAskTara = useCallback(
+    (messageId: string, selectedText: string) => {
+      setPendingAnnotation({ messageId, selectedText });
+      setActiveThread(null);
+      setActiveAnnotation(null);
+    },
+    []
+  );
+
+  // Handle opening an existing annotation
+  const handleOpenAnnotation = useCallback(
+    (annotationId: string, selectedText: string) => {
+      setActiveAnnotation({ id: annotationId, selectedText });
+      setActiveThread(null);
+      setPendingAnnotation(null);
+    },
+    []
+  );
+
+  // Close annotation view
+  const handleCloseAnnotation = () => {
+    setActiveAnnotation(null);
+    setPendingAnnotation(null);
+  };
+
+  // Handle annotation deletion
+  const handleAnnotationDeleted = () => {
+    mutateAnnotations();
+  };
+
+  // Create annotation when first message is sent in pending annotation
+  const handleCreateAnnotation = async (firstMessage: string) => {
+    if (!pendingAnnotation) return null;
+
+    try {
+      const res = await fetch("/api/annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId: pendingAnnotation.messageId,
+          chatId: id,
+          selectedText: pendingAnnotation.selectedText,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create annotation");
+
+      const { annotation } = await res.json();
+      
+      // Update annotations list
+      mutateAnnotations();
+      
+      // Switch from pending to active annotation
+      setActiveAnnotation({
+        id: annotation.id,
+        selectedText: annotation.selectedText,
+      });
+      setPendingAnnotation(null);
+
+      return annotation.id;
+    } catch (error) {
+      console.error("Failed to create annotation:", error);
+      return null;
+    }
+  };
 
   const MessageComponent = ({
     message,
@@ -106,6 +213,7 @@ export function Chat({
     showReply?: boolean;
   }) => {
     const { threadCount } = useThreadCount(message.id, id);
+    const messageAnnotations = annotationsByMessage[message.id] || [];
 
     return (
       <div className="group relative">
@@ -144,12 +252,12 @@ export function Chat({
                 <div className="flex-1">
                   <EnhancedMessage
                     message={message}
-                    onAnnotationReply={(question, text) => {
-                      // Handle annotation replies if needed
-                    }}
+                    chatId={id}
+                    annotations={messageAnnotations}
                     onAskTara={(selectedText) =>
-                      handleStartThread(message.id, selectedText)
+                      handleAskTara(message.id, selectedText)
                     }
+                    onOpenAnnotation={handleOpenAnnotation}
                   />
                 </div>
               </div>
@@ -182,7 +290,7 @@ export function Chat({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Tip: Select text in a message to see “Ask Tara”.
+                      Tip: Select text in a message to see "Ask Tara".
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -198,11 +306,12 @@ export function Chat({
             </Avatar>
           )}
         </div>
-
-        {/* Collapsible thread preview removed as per requirements */}
       </div>
     );
   };
+
+  // Determine if sidebar should be shown
+  const showSidebar = activeThread || activeAnnotation || pendingAnnotation;
 
   return (
     <div
@@ -213,7 +322,7 @@ export function Chat({
       {/* Main Chat Area */}
       <div
         className={`flex-1 flex flex-col min-w-0 ${
-          activeThread ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
+          showSidebar ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
         } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
       >
         {/* Model Selector Header */}
@@ -260,7 +369,6 @@ export function Chat({
                         </span>
                       </div>
                     </SelectItem>
-                    {/* Removed gemini-1.5-flash option */}
                   </SelectContent>
                 </Select>
               </div>
@@ -482,32 +590,235 @@ export function Chat({
         </div>
       </div>
 
-      {/* Thread Sidebar - Mobile Modal or Desktop Sidebar */}
-      {!isThread && activeThread && (
+      {/* Sidebar - Reply Thread, Annotation Thread, or Pending Annotation */}
+      {!isThread && showSidebar && (
         <>
           {/* Mobile: Full screen modal */}
           <div className="fixed inset-0 z-50 lg:hidden bg-white dark:bg-gray-900">
-            <ThreadView
-              parentMessage={activeThread.parentMessage}
-              selectedText={activeThread.selectedText}
-              mainChatId={id}
-              onClose={handleCloseThread}
-              className="size-full"
-            />
+            {activeThread ? (
+              <ThreadView
+                parentMessage={activeThread.parentMessage}
+                selectedText={activeThread.selectedText}
+                mainChatId={id}
+                onClose={handleCloseThread}
+                className="size-full"
+              />
+            ) : activeAnnotation ? (
+              <AnnotationThreadView
+                annotationId={activeAnnotation.id}
+                selectedText={activeAnnotation.selectedText}
+                chatId={id}
+                onClose={handleCloseAnnotation}
+                onDelete={handleAnnotationDeleted}
+                className="size-full"
+              />
+            ) : pendingAnnotation ? (
+              <PendingAnnotationView
+                selectedText={pendingAnnotation.selectedText}
+                messageId={pendingAnnotation.messageId}
+                chatId={id}
+                onClose={handleCloseAnnotation}
+                onCreateAnnotation={handleCreateAnnotation}
+                onAnnotationCreated={(annotationId, selectedText) => {
+                  setActiveAnnotation({ id: annotationId, selectedText });
+                  setPendingAnnotation(null);
+                  mutateAnnotations();
+                }}
+                className="size-full"
+              />
+            ) : null}
           </div>
 
           {/* Desktop: Sidebar */}
           <div className="hidden lg:block h-full overflow-hidden border-l border-gray-200 dark:border-gray-700 w-96">
-            <ThreadView
-              parentMessage={activeThread.parentMessage}
-              selectedText={activeThread.selectedText}
-              mainChatId={id}
-              onClose={handleCloseThread}
-              className="size-full"
-            />
+            {activeThread ? (
+              <ThreadView
+                parentMessage={activeThread.parentMessage}
+                selectedText={activeThread.selectedText}
+                mainChatId={id}
+                onClose={handleCloseThread}
+                className="size-full"
+              />
+            ) : activeAnnotation ? (
+              <AnnotationThreadView
+                annotationId={activeAnnotation.id}
+                selectedText={activeAnnotation.selectedText}
+                chatId={id}
+                onClose={handleCloseAnnotation}
+                onDelete={handleAnnotationDeleted}
+                className="size-full"
+              />
+            ) : pendingAnnotation ? (
+              <PendingAnnotationView
+                selectedText={pendingAnnotation.selectedText}
+                messageId={pendingAnnotation.messageId}
+                chatId={id}
+                onClose={handleCloseAnnotation}
+                onCreateAnnotation={handleCreateAnnotation}
+                onAnnotationCreated={(annotationId, selectedText) => {
+                  setActiveAnnotation({ id: annotationId, selectedText });
+                  setPendingAnnotation(null);
+                  mutateAnnotations();
+                }}
+                className="size-full"
+              />
+            ) : null}
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Component for pending annotation (before first message)
+function PendingAnnotationView({
+  selectedText,
+  messageId,
+  chatId,
+  onClose,
+  onCreateAnnotation,
+  onAnnotationCreated,
+  className = "",
+}: {
+  selectedText: string;
+  messageId: string;
+  chatId: string;
+  onClose: () => void;
+  onCreateAnnotation: (firstMessage: string) => Promise<string | null>;
+  onAnnotationCreated: (annotationId: string, selectedText: string) => void;
+  className?: string;
+}) {
+  const [input, setInput] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isCreating) return;
+
+    setIsCreating(true);
+    try {
+      // First create the annotation
+      const res = await fetch("/api/annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId,
+          chatId,
+          selectedText,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create annotation");
+
+      const { annotation } = await res.json();
+      
+      // Switch to the annotation thread view which will handle the chat
+      onAnnotationCreated(annotation.id, selectedText);
+    } catch (error) {
+      console.error("Failed to create annotation:", error);
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <div
+      className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
+    >
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+              Ask Tara
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              New annotation
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Selected Text Display */}
+      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+        <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
+          "{selectedText}"
+        </div>
+      </div>
+
+      {/* Empty state with suggestions */}
+      <div className="flex-1 overflow-y-auto p-4 bg-white dark:bg-gray-900">
+        <div className="text-center max-w-md mx-auto py-8">
+          <div className="size-12 mx-auto mb-4 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 flex items-center justify-center">
+            <Sparkles className="size-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Ask about this text
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+            What would you like to know about the selected text?
+          </p>
+
+          {/* Quick suggestions */}
+          <div className="flex flex-col gap-2 mb-4">
+            <button
+              onClick={() => setInput("Can you explain this in simpler terms?")}
+              className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Explain this in simpler terms
+              </p>
+            </button>
+
+            <button
+              onClick={() => setInput("What are the key points here?")}
+              className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                What are the key points?
+              </p>
+            </button>
+
+            <button
+              onClick={() => setInput("Can you give me an example?")}
+              className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Give me an example
+              </p>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0 bg-white dark:bg-gray-900">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask a question about this text..."
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            disabled={isCreating}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || isCreating}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+          >
+            {isCreating ? "..." : "Ask"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
