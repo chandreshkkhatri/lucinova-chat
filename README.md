@@ -7,7 +7,7 @@ Slack-style AI chat application with threaded conversations powered by Google Ge
 - **Threaded Conversations**: Organize discussions with nested replies - keep context intact
 - **Real-time Streaming**: Fast responses via Vercel AI SDK streaming
 - **Persistent History**: MongoDB-backed chat storage with automatic session management
-- **Secure Auth**: NextAuth.js with email/password authentication
+- **Secure Auth**: NextAuth.js with email/password and Google OAuth authentication
 - **Modern UI**: Responsive Slack-like interface built with shadcn/ui and Tailwind CSS
 
 ## Quick Start
@@ -19,17 +19,22 @@ cd lucidity
 pnpm install
 
 # Configure environment
-cp .env.example .env.local
-# Add your credentials:
+# Create a .env file in the root directory
+# See ENV_SETUP.md for detailed configuration instructions
+# Required credentials:
 # - MONGODB_URI
 # - AUTH_SECRET
 # - GOOGLE_GENERATIVE_AI_API_KEY
+# - GOOGLE_CLIENT_ID (for Google OAuth)
+# - GOOGLE_CLIENT_SECRET (for Google OAuth)
 
 # Run development server
 pnpm dev
 ```
 
 Open http://localhost:3000
+
+**Note:** For complete environment setup instructions including Google OAuth configuration, see [ENV_SETUP.md](./ENV_SETUP.md)
 
 ## Tech Stack
 

@@ -10,6 +10,9 @@ export interface IUser extends Document {
   password?: string;
   avatarUrl?: string;
   isBot: boolean;
+  // OAuth fields
+  oauthProvider?: "google" | null;
+  oauthProviderId?: string; // Provider's unique user ID
   // Subscription fields
   plan?: "free" | "pro";
   isPro?: boolean;
@@ -35,6 +38,8 @@ const userSchema = new Schema<IUser>(
     password: { type: String },
     avatarUrl: { type: String },
     isBot: { type: Boolean, default: false },
+    oauthProvider: { type: String, enum: ["google"], default: null },
+    oauthProviderId: { type: String },
     plan: { type: String, enum: ["free", "pro"], default: "free" },
     isPro: { type: Boolean, default: false },
     proSince: { type: Date },
@@ -57,6 +62,7 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 userSchema.index({ displayName: 1 });
+userSchema.index({ oauthProvider: 1, oauthProviderId: 1 });
 export const User =
   mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 

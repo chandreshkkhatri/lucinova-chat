@@ -11,7 +11,9 @@ export async function createUser(
   password?: string,
   displayName?: string,
   avatarUrl?: string,
-  isBot = false
+  isBot = false,
+  oauthProvider?: "google" | null,
+  oauthProviderId?: string
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
@@ -23,7 +25,87 @@ export async function createUser(
     displayName: finalDisplayName,
     avatarUrl,
     isBot,
+    oauthProvider,
+    oauthProviderId,
   });
+}
+
+export async function getUserById(id: string) {
+  await ensureConnection();
+  const userDoc = await User.findById(id);
+  if (!userDoc) {
+    return null;
+  }
+  
+  // Same subscription expiry logic as getUserByEmail
+  const now = new Date();
+  const currentPeriodEnd = userDoc.currentPeriodEnd;
+  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
+    let shouldUpdate = false;
+    if (userDoc.isPro) {
+      userDoc.isPro = false;
+      shouldUpdate = true;
+    }
+    if (userDoc.plan === "pro") {
+      userDoc.plan = "free";
+      shouldUpdate = true;
+    }
+    if (userDoc.subscriptionStatus === "active") {
+      userDoc.subscriptionStatus = "inactive";
+      shouldUpdate = true;
+    }
+    if (userDoc.currentPeriodEnd !== null) {
+      userDoc.currentPeriodEnd = null;
+      shouldUpdate = true;
+    }
+    if (shouldUpdate) {
+      await userDoc.save();
+    }
+  }
+  
+  return userDoc.toObject();
+}
+
+export async function getUserByOAuth(
+  provider: "google",
+  providerId: string
+) {
+  await ensureConnection();
+  const userDoc = await User.findOne({
+    oauthProvider: provider,
+    oauthProviderId: providerId,
+  });
+  if (!userDoc) {
+    return null;
+  }
+  
+  // Same subscription expiry logic
+  const now = new Date();
+  const currentPeriodEnd = userDoc.currentPeriodEnd;
+  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
+    let shouldUpdate = false;
+    if (userDoc.isPro) {
+      userDoc.isPro = false;
+      shouldUpdate = true;
+    }
+    if (userDoc.plan === "pro") {
+      userDoc.plan = "free";
+      shouldUpdate = true;
+    }
+    if (userDoc.subscriptionStatus === "active") {
+      userDoc.subscriptionStatus = "inactive";
+      shouldUpdate = true;
+    }
+    if (userDoc.currentPeriodEnd !== null) {
+      userDoc.currentPeriodEnd = null;
+      shouldUpdate = true;
+    }
+    if (shouldUpdate) {
+      await userDoc.save();
+    }
+  }
+  
+  return userDoc.toObject();
 }
 export async function getUserByEmail(email: string) {
   await ensureConnection();
