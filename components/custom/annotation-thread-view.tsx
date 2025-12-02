@@ -201,7 +201,7 @@ export function AnnotationThreadView({
                   <Avatar className="size-8 shrink-0">
                     <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                       <Image
-                        src="/images/lucidity-logo.svg"
+                        src="/images/lucidity-logo.png"
                         alt="Tara"
                         width={24}
                         height={24}
@@ -245,7 +245,7 @@ export function AnnotationThreadView({
                   <Avatar className="size-8 shrink-0">
                     <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
                       <Image
-                        src="/images/lucidity-logo.svg"
+                        src="/images/lucidity-logo.png"
                         alt="Tara"
                         width={24}
                         height={24}

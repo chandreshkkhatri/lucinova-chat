@@ -35,7 +35,7 @@ export const Navbar = async () => {
           >
             <div className="size-12 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-2">
               <Image
-                src="/images/lucidity-logo.svg"
+                src="/images/lucidity-logo.png"
                 height={100}
                 width={100}
                 alt="Lucidity logo"
