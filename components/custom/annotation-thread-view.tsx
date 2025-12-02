@@ -199,12 +199,12 @@ export function AnnotationThreadView({
               >
                 {message.role === "assistant" && (
                   <Avatar className="size-8 shrink-0">
-                    <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
+                    <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
                         alt="Tara"
-                        width={24}
-                        height={24}
+                        width={28}
+                        height={28}
                         className="size-full object-contain"
                       />
                     </AvatarFallback>
@@ -243,12 +243,12 @@ export function AnnotationThreadView({
               <div className="p-3">
                 <div className="flex items-center gap-2">
                   <Avatar className="size-8 shrink-0">
-                    <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
+                    <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
                         alt="Tara"
-                        width={24}
-                        height={24}
+                        width={28}
+                        height={28}
                         className="size-full object-contain"
                       />
                     </AvatarFallback>

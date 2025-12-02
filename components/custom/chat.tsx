@@ -224,12 +224,12 @@ export function Chat({
         >
           {message.role === "assistant" && (
             <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
+              <AvatarFallback className="bg-transparent p-0.5">
                 <Image
                   src="/images/lucidity-logo.png"
                   alt="Lucidity"
-                  width={24}
-                  height={24}
+                  width={28}
+                  height={28}
                   className="size-full object-contain"
                 />
               </AvatarFallback>
@@ -462,12 +462,12 @@ export function Chat({
                 ) : (
                   // Main chat - original welcome
                   <>
-                    <div className="size-16 mx-auto mb-4 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3">
+                    <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
                       <Image
                         src="/images/lucidity-logo.png"
                         alt="Lucidity"
-                        width={40}
-                        height={40}
+                        width={64}
+                        height={64}
                         className="size-full object-contain"
                       />
                     </div>
