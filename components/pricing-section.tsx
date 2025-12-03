@@ -64,8 +64,8 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
         {/* Pro Plan */}
         <Card className="relative border-primary">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-              Most Popular
+            <span className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 px-3 py-1 rounded-full text-sm font-semibold">
+              Coming Soon
             </span>
           </div>
           <CardHeader>
@@ -96,20 +96,24 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
             </div>
             {/* Removed: Advanced features */}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-2">
             {isPro ? (
               <Button disabled className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed">
                 ✓ Current Plan
               </Button>
             ) : (
-              <PaymentButton
-                amount={pricePaise}
-                planName="Pro Plan - Monthly"
-                buttonText={`Subscribe for ${symbol}${priceRupees.toLocaleString(
-                  currency === "INR" ? "en-IN" : undefined
-                )}/month`}
-                className="w-full"
-              />
+              <Button
+                disabled
+                className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
+              >
+                Coming Soon
+              </Button>
+            )}
+            {!isPro && (
+              <p className="text-xs text-center text-muted-foreground">
+                The Pro subscription is still rolling out. Register to be notified
+                when we launch.
+              </p>
             )}
           </CardFooter>
         </Card>
