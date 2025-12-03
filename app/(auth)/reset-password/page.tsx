@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
@@ -84,13 +83,16 @@ function ResetPasswordForm() {
           <div className="flex flex-col items-center justify-center gap-6 text-center">
             {/* Logo and branding */}
             <div className="flex flex-col items-center gap-3">
-              <div className="size-16 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-lg border border-gray-200 dark:border-gray-700 p-3">
-                <Image
+              <div className="size-16 rounded-2xl flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src="/images/lucidity-logo.png"
                   alt="Lucidity"
-                  width={48}
-                  height={48}
+                  width={64}
+                  height={64}
                   className="size-full object-contain"
+                  fetchPriority="high"
+                  loading="eager"
                 />
               </div>
               <div>

@@ -58,8 +58,8 @@ export function PaymentButton({
           } catch {}
         }
       }
-    } catch (error) {
-      console.log("No user session found");
+    } catch {
+      // No user session
     }
   };
 

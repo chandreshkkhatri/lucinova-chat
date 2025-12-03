@@ -18,7 +18,7 @@ This directory should contain the following optimized images for SEO:
 ### Existing Images:
 
 - `demo-thumbnail.png` - Already exists, good for structured data
-- `lucidity-logo.png` - Updated logo file for Lucidity branding
+- `lucidity-logo.svg` - Updated logo file for Lucidity branding
 
 ## Recommendations:
 

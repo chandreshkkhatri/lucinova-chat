@@ -33,7 +33,7 @@ export const Navbar = async () => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             prefetch={false}
           >
-            <div className="size-12 rounded-xl bg-white border border-gray-200 dark:border-gray-700 flex items-center justify-center p-2">
+            <div className="size-12 rounded-xl flex items-center justify-center">
               <Image
                 src="/images/lucidity-logo.png"
                 height={100}

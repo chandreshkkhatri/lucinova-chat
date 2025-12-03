@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureConnection } from "./connection";
-import { User, Chat, Message, Payment } from "./models";
+import { User, Chat, Message, Payment, Annotation } from "./models";
 
 // Re-export types for external use
 export { Chat } from "./models";
@@ -11,7 +11,9 @@ export async function createUser(
   password?: string,
   displayName?: string,
   avatarUrl?: string,
-  isBot = false
+  isBot = false,
+  oauthProvider?: "google" | null,
+  oauthProviderId?: string
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
@@ -23,29 +25,99 @@ export async function createUser(
     displayName: finalDisplayName,
     avatarUrl,
     isBot,
+    oauthProvider,
+    oauthProviderId,
   });
+}
+
+export async function getUserById(id: string) {
+  await ensureConnection();
+  const userDoc = await User.findById(id);
+  if (!userDoc) {
+    return null;
+  }
+  
+  // Same subscription expiry logic as getUserByEmail
+  const now = new Date();
+  const currentPeriodEnd = userDoc.currentPeriodEnd;
+  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
+    let shouldUpdate = false;
+    if (userDoc.isPro) {
+      userDoc.isPro = false;
+      shouldUpdate = true;
+    }
+    if (userDoc.plan === "pro") {
+      userDoc.plan = "free";
+      shouldUpdate = true;
+    }
+    if (userDoc.subscriptionStatus === "active") {
+      userDoc.subscriptionStatus = "inactive";
+      shouldUpdate = true;
+    }
+    if (userDoc.currentPeriodEnd !== null) {
+      userDoc.currentPeriodEnd = null;
+      shouldUpdate = true;
+    }
+    if (shouldUpdate) {
+      await userDoc.save();
+    }
+  }
+  
+  return userDoc.toObject();
+}
+
+export async function getUserByOAuth(
+  provider: "google",
+  providerId: string
+) {
+  await ensureConnection();
+  const userDoc = await User.findOne({
+    oauthProvider: provider,
+    oauthProviderId: providerId,
+  });
+  if (!userDoc) {
+    return null;
+  }
+  
+  // Same subscription expiry logic
+  const now = new Date();
+  const currentPeriodEnd = userDoc.currentPeriodEnd;
+  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
+    let shouldUpdate = false;
+    if (userDoc.isPro) {
+      userDoc.isPro = false;
+      shouldUpdate = true;
+    }
+    if (userDoc.plan === "pro") {
+      userDoc.plan = "free";
+      shouldUpdate = true;
+    }
+    if (userDoc.subscriptionStatus === "active") {
+      userDoc.subscriptionStatus = "inactive";
+      shouldUpdate = true;
+    }
+    if (userDoc.currentPeriodEnd !== null) {
+      userDoc.currentPeriodEnd = null;
+      shouldUpdate = true;
+    }
+    if (shouldUpdate) {
+      await userDoc.save();
+    }
+  }
+  
+  return userDoc.toObject();
 }
 export async function getUserByEmail(email: string) {
   await ensureConnection();
   const normalizedEmail = String(email).trim().toLowerCase();
   const userDoc = await User.findOne({ email: normalizedEmail });
   if (!userDoc) {
-    console.log("[getUserByEmail] User not found for email:", normalizedEmail);
     return null;
   }
-
-  console.log("[getUserByEmail] User found:", {
-    email: userDoc.email,
-    plan: userDoc.plan,
-    isPro: userDoc.isPro,
-    currentPeriodEnd: userDoc.currentPeriodEnd,
-    subscriptionStatus: userDoc.subscriptionStatus,
-  });
 
   const now = new Date();
   const currentPeriodEnd = userDoc.currentPeriodEnd;
   if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
-    console.log("[getUserByEmail] Subscription expired, downgrading user:", normalizedEmail);
     let shouldUpdate = false;
 
     if (userDoc.isPro) {
@@ -70,19 +142,10 @@ export async function getUserByEmail(email: string) {
 
     if (shouldUpdate) {
       await userDoc.save();
-      console.log("[getUserByEmail] User downgraded to free plan");
     }
   }
 
-  const result = userDoc.toObject();
-  console.log("[getUserByEmail] Returning user object:", {
-    email: result.email,
-    plan: result.plan,
-    isPro: result.isPro,
-    currentPeriodEnd: result.currentPeriodEnd,
-  });
-
-  return result;
+  return userDoc.toObject();
 }
 
 // Subscription helpers
@@ -116,13 +179,11 @@ export async function activateProSubscriptionByEmail(
     currentPeriodEnd = new Date((existingUser as any).currentPeriodEnd!);
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
     proSince = (existingUser as any).proSince || now;
-    console.log(`Extending subscription for ${email} from ${(existingUser as any).currentPeriodEnd} to ${currentPeriodEnd}`);
   } else {
     // New subscription - start from today
     currentPeriodEnd = new Date(now);
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
     proSince = (existingUser as any).proSince || now;
-    console.log(`Activating new subscription for ${email} until ${currentPeriodEnd}`);
   }
 
   const update = {
@@ -134,22 +195,9 @@ export async function activateProSubscriptionByEmail(
     subscriptionStatus: "active" as const,
   };
 
-  console.log("[activateProSubscriptionByEmail] Activating for:", normalizedEmail, { periodInDays, provider });
-  console.log("[activateProSubscriptionByEmail] Update object:", update);
-
   const user = await User.findOneAndUpdate({ email: normalizedEmail }, update, {
     new: true,
   }).lean();
-
-  if (user && !Array.isArray(user)) {
-    console.log("[activateProSubscriptionByEmail] Updated user:", {
-      email: (user as any).email,
-      plan: (user as any).plan,
-      isPro: (user as any).isPro,
-      currentPeriodEnd: (user as any).currentPeriodEnd,
-      subscriptionStatus: (user as any).subscriptionStatus,
-    });
-  }
 
   return user;
 }
@@ -182,19 +230,6 @@ export async function recordPaymentOnce({
   raw?: any;
 }) {
   await ensureConnection();
-  console.log("[recordPaymentOnce] Recording payment:", {
-    orderId,
-    status,
-    amount,
-    currency,
-    customerEmail,
-    customerName,
-    environment,
-    planName,
-    provider,
-    subscriptionId,
-    paymentId,
-  });
 
   // Idempotent create-or-update by orderId
   const doc = await Payment.findOneAndUpdate(
@@ -217,15 +252,6 @@ export async function recordPaymentOnce({
     },
     { upsert: true, new: true }
   ).lean();
-
-  if (doc && !Array.isArray(doc)) {
-    console.log("[recordPaymentOnce] Payment recorded:", {
-      _id: (doc as any)._id,
-      orderId: (doc as any).orderId,
-      status: (doc as any).status,
-      amount: (doc as any).amount,
-    });
-  }
 
   return doc;
 }
@@ -340,6 +366,75 @@ export async function deleteChatById({ id }: { id: string }) {
   await ensureConnection();
   await Message.deleteMany({ chatId: id });
   return Chat.findByIdAndDelete(id);
+}
+export async function deleteThreadMessages(parentMsgId: string) {
+  await ensureConnection();
+  return Message.deleteMany({ parentMsgId });
+}
+
+// Annotation functions (Ask Tara threads)
+export async function createAnnotation({
+  messageId,
+  chatId,
+  userId,
+  selectedText,
+  startOffset,
+  endOffset,
+}: {
+  messageId: string;
+  chatId: string;
+  userId: string;
+  selectedText: string;
+  startOffset?: number;
+  endOffset?: number;
+}) {
+  await ensureConnection();
+  const annotation = await Annotation.create({
+    messageId,
+    chatId,
+    userId,
+    selectedText,
+    startOffset,
+    endOffset,
+  });
+  return annotation.toObject();
+}
+
+export async function getAnnotationsByMessageId(messageId: string) {
+  await ensureConnection();
+  return Annotation.find({ messageId }).sort({ createdAt: 1 }).lean();
+}
+
+export async function getAnnotationsByChatId(chatId: string) {
+  await ensureConnection();
+  return Annotation.find({ chatId }).sort({ createdAt: 1 }).lean();
+}
+
+export async function getAnnotationById(id: string) {
+  await ensureConnection();
+  const annotation = await Annotation.findById(id).lean();
+  if (annotation && !Array.isArray(annotation)) {
+    return { ...annotation, id: (annotation as any)._id.toString() };
+  }
+  return annotation;
+}
+
+export async function deleteAnnotation(id: string) {
+  await ensureConnection();
+  // Delete all messages in this annotation thread first
+  await Message.deleteMany({ parentMsgId: id });
+  // Then delete the annotation itself
+  return Annotation.findByIdAndDelete(id);
+}
+
+export async function getAnnotationThreadMessages(annotationId: string) {
+  await ensureConnection();
+  return Message.find({ parentMsgId: annotationId }).sort({ createdAt: 1 }).lean();
+}
+
+export async function getAnnotationThreadCount(annotationId: string) {
+  await ensureConnection();
+  return Message.countDocuments({ parentMsgId: annotationId });
 }
 
 // Password reset functions
