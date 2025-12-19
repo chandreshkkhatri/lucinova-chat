@@ -22,7 +22,7 @@ export default async function AccountPage() {
       console.log("[Account Page] DB user data:", {
         email: dbUser?.email,
         plan: dbUser?.plan,
-        isPro: dbUser?.isPro,
+        isUserPro: dbUser?.isPro,
         currentPeriodEnd: dbUser?.currentPeriodEnd,
         subscriptionStatus: dbUser?.subscriptionStatus,
         subscriptionProvider: dbUser?.subscriptionProvider,

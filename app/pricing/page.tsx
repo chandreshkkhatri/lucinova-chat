@@ -6,14 +6,14 @@ import { getUserByEmail } from "@/db/queries";
 
 export default async function PricingPage() {
   const session = await auth();
-  let isPro = false;
+  let isUserPro = false;
 
   // Fetch user's Pro status from database
   if (session?.user?.email) {
     try {
       const dbUser: any = await getUserByEmail(session.user.email);
       if (dbUser && !Array.isArray(dbUser)) {
-        isPro = !!dbUser.isPro;
+        isUserPro = !!dbUser.isPro;
       }
     } catch (err) {
       console.error("[Pricing Page] Error fetching user from DB:", err);
@@ -22,7 +22,7 @@ export default async function PricingPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 pt-20">
-      <PricingSection isPro={isPro} />
+      <PricingSection isUserPro={isUserPro} />
       <footer className="w-full max-w-4xl mx-auto mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center text-sm text-gray-600 dark:text-gray-400">
           <Link

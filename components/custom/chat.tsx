@@ -42,7 +42,7 @@ export function Chat({
   mainChatId,
   className = "",
   onFinish,
-  isPro = false,
+  isUserPro = false,
   isGuest = false,
   selectedText,
   defaultModelId = "gemini-2.5-flash",
@@ -54,7 +54,7 @@ export function Chat({
   mainChatId?: string;
   className?: string;
   onFinish?: () => void;
-  isPro?: boolean;
+  isUserPro?: boolean;
   isGuest?: boolean;
   selectedText?: string;
   defaultModelId?: string;
@@ -346,18 +346,18 @@ export function Chat({
                     <SelectItem
                       value="gemini-3.0-flash"
                       className={
-                        isPro
+                        isUserPro
                           ? "hover:bg-gray-100 dark:hover:bg-gray-700"
                           : "opacity-50 cursor-not-allowed"
                       }
-                      disabled={!isPro}
+                      disabled={!isUserPro}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
                           {appConfig.getModelDisplayName("gemini-3.0-flash")}
                         </span>
                         <Crown className="size-3 text-yellow-500" />
-                        {!isPro && (
+                        {!isUserPro && (
                           <span className="text-xs text-gray-500 ml-1">
                             Pro
                           </span>
