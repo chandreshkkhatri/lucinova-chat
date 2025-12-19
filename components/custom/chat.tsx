@@ -87,7 +87,7 @@ export function Chat({
     selectedText?: string;
   } | null>(null);
   
-  // Annotation (Ask Tara) thread state
+  // Annotation (Ask Taara) thread state
   const [activeAnnotation, setActiveAnnotation] = useState<{
     id: string;
     selectedText: string;
@@ -138,8 +138,8 @@ export function Chat({
     }
   };
 
-  // Handle "Ask Tara" click - create pending annotation
-  const handleAskTara = useCallback(
+  // Handle "Ask Taara" click - create pending annotation
+  const handleAskTaara = useCallback(
     (messageId: string, selectedText: string) => {
       setPendingAnnotation({ messageId, selectedText });
       setActiveThread(null);
@@ -254,8 +254,8 @@ export function Chat({
                     message={message}
                     chatId={id}
                     annotations={messageAnnotations}
-                    onAskTara={(selectedText) =>
-                      handleAskTara(message.id, selectedText)
+                    onAskTaara={(selectedText) =>
+                      handleAskTaara(message.id, selectedText)
                     }
                     onOpenAnnotation={handleOpenAnnotation}
                   />
@@ -290,7 +290,7 @@ export function Chat({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Tip: Select text in a message to see "Ask Tara".
+                      Tip: Select text in a message to see "Ask Taara".
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -743,7 +743,7 @@ function PendingAnnotationView({
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Tara
+              Ask Taara
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               New annotation

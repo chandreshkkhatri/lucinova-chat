@@ -23,9 +23,9 @@ export const appConfig = {
   // System prompt identity configuration
   getModelIdentity: () => {
     if (useCustomModelNames) {
-      return "Tara, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself as Tara, not as Gemini or any other AI model.";
+      return "You are Taara, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself (only when asked) as Taara, not as Gemini or any other AI model.";
     } else {
-      return "a helpful AI assistant powered by Gemini.";
+      return "You are a helpful AI assistant powered by Gemini.";
     }
   },
 

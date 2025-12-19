@@ -372,7 +372,7 @@ export async function deleteThreadMessages(parentMsgId: string) {
   return Message.deleteMany({ parentMsgId });
 }
 
-// Annotation functions (Ask Tara threads)
+// Annotation functions (Ask Taara threads)
 export async function createAnnotation({
   messageId,
   chatId,

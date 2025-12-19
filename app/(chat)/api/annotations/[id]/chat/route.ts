@@ -95,7 +95,8 @@ export async function POST(
 
   const result = await streamText({
     model: geminiProModel,
-    system: `You are ${appConfig.getModelIdentity()} Today's date is ${new Date().toLocaleDateString()}.
+    system: `${appConfig.getModelIdentity()}
+    Today's date is ${new Date().toLocaleDateString()}.
 
 The user has selected this text and is asking about it:
 "${selectedText}"

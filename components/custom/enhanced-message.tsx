@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Markdown } from "./markdown";
 
-// Annotation type for saved "Ask Tara" threads
+// Annotation type for saved "Ask Taara" threads
 export interface SavedAnnotation {
   id: string;
   messageId: string;
@@ -18,7 +18,7 @@ interface EnhancedMessageProps {
   message: Message;
   chatId: string;
   annotations?: SavedAnnotation[];
-  onAskTara?: (selectedText: string) => void;
+  onAskTaara?: (selectedText: string) => void;
   onOpenAnnotation?: (annotationId: string, selectedText: string) => void;
 }
 
@@ -26,7 +26,7 @@ export function EnhancedMessage({
   message,
   chatId,
   annotations = [],
-  onAskTara,
+  onAskTaara,
   onOpenAnnotation,
 }: EnhancedMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,10 +92,10 @@ export function EnhancedMessage({
     };
   }, []);
 
-  const handleAskTara = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleAskTaara = (e: React.MouseEvent) => {
     e.preventDefault();
-    onAskTara?.(capturedText);
+    const capturedText = window.getSelection()?.toString() || "";
+    onAskTaara?.(capturedText);
     // Clear selection
     window.getSelection()?.removeAllRanges();
     setHasSelection(false);
@@ -134,7 +134,7 @@ export function EnhancedMessage({
         />
       )}
 
-      {/* Selection Highlights and "Ask Tara" UI Overlay */}
+      {/* Selection Highlights and "Ask Taara" UI Overlay */}
       {hasSelection && selectionRects.length > 0 && lastRect && (
         <div
           className="absolute inset-0 pointer-events-none z-20"
@@ -166,7 +166,7 @@ export function EnhancedMessage({
             <circle cx={wireStartX} cy={wireStartY} r="2.5" className="fill-purple-400 dark:fill-purple-500/70" />
           </svg>
 
-          {/* "Ask Tara" Button */}
+          {/* "Ask Taara" Button */}
           <div
             className="absolute flex items-center justify-center"
             style={{
@@ -176,11 +176,11 @@ export function EnhancedMessage({
             }}
           >
             <button
-              onClick={handleAskTara}
+              onClick={handleAskTaara}
               className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-sm hover:scale-105 transition-all whitespace-nowrap"
             >
               <MessageSquareText className="size-3" />
-              <span>Ask Tara</span>
+              <span>Ask Taara</span>
             </button>
           </div>
         </div>
