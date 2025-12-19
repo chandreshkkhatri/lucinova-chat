@@ -45,6 +45,7 @@ export function Chat({
   isPro = false,
   isGuest = false,
   selectedText,
+  defaultModelId = "gemini-2.5-flash",
 }: {
   id: string;
   initialMessages: Array<Message>;
@@ -56,14 +57,21 @@ export function Chat({
   isPro?: boolean;
   isGuest?: boolean;
   selectedText?: string;
+  defaultModelId?: string;
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
+  
+  // Model selection state - must be declared before useChat
+  const [selectedModel, setSelectedModel] =
+    useState<string>(defaultModelId);
+    
   const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
     useChat({
       id: chatIdForSubmit,
       body: {
         id: chatIdForSubmit,
+        modelId: selectedModel,
         ...(isThread && { parentMessageId, mainChatId, selectedText }),
       },
       initialMessages,
@@ -98,9 +106,6 @@ export function Chat({
     messageId: string;
     selectedText: string;
   } | null>(null);
-  
-  const [selectedModel, setSelectedModel] =
-    useState<string>("gemini-2.0-flash");
 
   // Fetch annotations for this chat
   const { data: annotationsData, mutate: mutateAnnotations } = useSWR(
@@ -339,7 +344,7 @@ export function Chat({
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                     <SelectItem
-                      value="gemini-2.5-flash"
+                      value="gemini-3.0-flash"
                       className={
                         isPro
                           ? "hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -349,7 +354,7 @@ export function Chat({
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-2.5-flash")}
+                          {appConfig.getModelDisplayName("gemini-3.0-flash")}
                         </span>
                         <Crown className="size-3 text-yellow-500" />
                         {!isPro && (
@@ -360,12 +365,12 @@ export function Chat({
                       </div>
                     </SelectItem>
                     <SelectItem
-                      value="gemini-2.0-flash"
+                      value="gemini-2.5-flash"
                       className="hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-2.0-flash")}
+                          {appConfig.getModelDisplayName("gemini-2.5-flash")}
                         </span>
                       </div>
                     </SelectItem>
@@ -613,6 +618,7 @@ export function Chat({
                 mainChatId={id}
                 onClose={handleCloseThread}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : activeAnnotation ? (
               <AnnotationThreadView
@@ -622,6 +628,7 @@ export function Chat({
                 onClose={handleCloseAnnotation}
                 onDelete={handleAnnotationDeleted}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : pendingAnnotation ? (
               <PendingAnnotationView
@@ -649,6 +656,7 @@ export function Chat({
                 mainChatId={id}
                 onClose={handleCloseThread}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : activeAnnotation ? (
               <AnnotationThreadView
@@ -658,6 +666,7 @@ export function Chat({
                 onClose={handleCloseAnnotation}
                 onDelete={handleAnnotationDeleted}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : pendingAnnotation ? (
               <PendingAnnotationView

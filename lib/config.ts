@@ -9,14 +9,16 @@ export const appConfig = {
   // Model name mappings
   modelNames: {
     custom: {
-      "gemini-2.0-flash": "Taara 2.0",
       "gemini-2.5-flash": "Taara 2.5",
       "gemini-2.5-pro": "Taara 2.5 Pro",
+      "gemini-3.0-flash": "Taara 3.0",
+      "gemini-3.0-pro": "Taara 3.0 Pro",
     } as Record<string, string>,
     original: {
-      "gemini-2.0-flash": "Gemini 2.0 Flash",
       "gemini-2.5-flash": "Gemini 2.5 Flash",
       "gemini-2.5-pro": "Gemini 2.5 Pro",
+      "gemini-3.0-flash": "Gemini 3.0 Flash",
+      "Gemini-3.0-pro": "Gemini 3.0 Pro",
     } as Record<string, string>,
   },
 

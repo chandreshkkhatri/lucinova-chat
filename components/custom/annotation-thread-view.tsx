@@ -17,6 +17,7 @@ interface AnnotationThreadViewProps {
   onClose: () => void;
   onDelete?: () => void;
   className?: string;
+  modelId?: string;
 }
 
 export function AnnotationThreadView({
@@ -26,6 +27,7 @@ export function AnnotationThreadView({
   onClose,
   onDelete,
   className = "",
+  modelId,
 }: AnnotationThreadViewProps) {
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +61,9 @@ export function AnnotationThreadView({
   } = useChat({
     id: annotationId,
     api: `/api/annotations/${annotationId}/chat`,
+    body: {
+      modelId,
+    },
     initialMessages,
   });
 
