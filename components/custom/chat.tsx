@@ -481,22 +481,33 @@ export function Chat({
                     {/* Quick suggestions for main chat */}
                     <div className="flex flex-col gap-2 mb-4">
                       <button
-                        onClick={() => setInput("Tell me about yourself")}
+                        onClick={() => setInput("Explain a complex concept to me")}
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                          Tell me about yourself
+                          Explain a complex concept simply
                         </p>
                       </button>
 
                       <button
                         onClick={() =>
-                          setInput("Help me write a professional email")
+                          setInput("Help me create a study plan for a new subject")
                         }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                          Help me write a professional email
+                          Create a personalized study plan
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setInput("Summarize this text and extract key learning points")
+                        }
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Summarize and extract key points
                         </p>
                       </button>
                     </div>
