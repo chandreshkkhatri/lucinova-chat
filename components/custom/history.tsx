@@ -226,7 +226,7 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+                        className="size-8 p-0 opacity-0 group-hover:opacity-100"
                       >
                         <MoreHorizontalIcon size={16} />
                         <VisuallyHidden.Root>Dropdown Menu</VisuallyHidden.Root>

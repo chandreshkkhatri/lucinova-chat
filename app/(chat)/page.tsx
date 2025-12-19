@@ -27,14 +27,14 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const id = generateUUID();
-  let isPro = false;
+  let isUserPro = false;
   const session = await auth();
   const isGuest = !session?.user;
 
   if (session?.user?.email) {
     try {
       const dbUser: any = await getUserByEmail(session.user.email);
-      isPro = !!dbUser?.isPro;
+      isUserPro = !!dbUser?.isPro;
     } catch {}
   }
 
@@ -43,7 +43,7 @@ export default async function Page() {
       key={id}
       id={id}
       initialMessages={[]}
-      isPro={isPro}
+      isUserPro={isUserPro}
       isGuest={isGuest}
     />
   );

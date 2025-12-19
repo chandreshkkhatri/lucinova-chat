@@ -27,7 +27,7 @@ export default function LegalPage() {
                 Terms and Conditions
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Review our terms of service that govern your use of Lucidity's
+                Review our terms of service that govern your use of Lucidity&apos;s
                 AI chat assistant.
               </p>
               <a

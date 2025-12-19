@@ -1,14 +1,18 @@
 "use client";
 
-import { X, MessageSquareText, Trash2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Message } from "ai";
-import { useState, useEffect, useRef } from "react";
 import { useChat } from "ai/react";
-import { MultimodalInput } from "./multimodal-input";
-import { Markdown } from "./markdown";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { X, MessageSquareText, Trash2, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+
+import { Markdown } from "./markdown";
+import { MultimodalInput } from "./multimodal-input";
+
+
 
 interface AnnotationThreadViewProps {
   annotationId: string;
@@ -17,6 +21,7 @@ interface AnnotationThreadViewProps {
   onClose: () => void;
   onDelete?: () => void;
   className?: string;
+  modelId?: string;
 }
 
 export function AnnotationThreadView({
@@ -26,6 +31,7 @@ export function AnnotationThreadView({
   onClose,
   onDelete,
   className = "",
+  modelId,
 }: AnnotationThreadViewProps) {
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +65,9 @@ export function AnnotationThreadView({
   } = useChat({
     id: annotationId,
     api: `/api/annotations/${annotationId}/chat`,
+    body: {
+      modelId,
+    },
     initialMessages,
   });
 
@@ -92,14 +101,14 @@ export function AnnotationThreadView({
       className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <MessageSquareText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <MessageSquareText className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Tara
+              Ask Taara
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               About selected text
@@ -114,7 +123,7 @@ export function AnnotationThreadView({
             className="rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
             title="Delete Annotation"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="size-4" />
           </Button>
           <Button
             variant="ghost"
@@ -122,16 +131,16 @@ export function AnnotationThreadView({
             onClick={onClose}
             className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </Button>
         </div>
       </div>
 
       {/* Selected Text Display */}
-      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="flex items-start gap-2">
           <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-            "{selectedText}"
+            &quot;{selectedText}&quot;
           </div>
         </div>
       </div>
@@ -202,7 +211,7 @@ export function AnnotationThreadView({
                     <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
-                        alt="Tara"
+                        alt="Taara"
                         width={28}
                         height={28}
                         className="size-full object-contain"
@@ -246,7 +255,7 @@ export function AnnotationThreadView({
                     <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
-                        alt="Tara"
+                        alt="Taara"
                         width={28}
                         height={28}
                         className="size-full object-contain"

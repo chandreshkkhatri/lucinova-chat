@@ -14,10 +14,10 @@ import {
 import { appConfig } from "@/lib/config";
 
 interface PricingSectionProps {
-  isPro?: boolean;
+  isUserPro?: boolean;
 }
 
-export function PricingSection({ isPro = false }: PricingSectionProps) {
+export function PricingSection({ isUserPro = false }: PricingSectionProps) {
   const priceRupees = appConfig.pricing.proMonthlyRupees;
   const pricePaise = Math.round(priceRupees * 100);
   const currency = appConfig.pricing.currency;
@@ -97,7 +97,7 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
             {/* Removed: Advanced features */}
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
-            {isPro ? (
+            {isUserPro ? (
               <Button disabled className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed">
                 ✓ Current Plan
               </Button>
@@ -109,7 +109,7 @@ export function PricingSection({ isPro = false }: PricingSectionProps) {
                 Coming Soon
               </Button>
             )}
-            {!isPro && (
+            {!isUserPro && (
               <p className="text-xs text-center text-muted-foreground">
                 The Pro subscription is still rolling out. Register to be notified
                 when we launch.

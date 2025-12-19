@@ -1,5 +1,6 @@
-import { auth } from "@/app/(auth)/auth";
 import { redirect } from "next/navigation";
+
+import { auth } from "@/app/(auth)/auth";
 
 export default async function AccountLayout({
   children,

@@ -1,9 +1,10 @@
 "use client";
 
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useState } from "react";
+
 import { MenuIcon } from "./icons";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "../ui/sheet";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export function MobileMenuButton({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);

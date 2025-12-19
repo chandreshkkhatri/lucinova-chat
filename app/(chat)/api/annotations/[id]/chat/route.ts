@@ -1,7 +1,9 @@
 import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
 
-import { geminiProModel } from "@/ai";
+import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
+import { ensureConnection } from "@/db/connection";
+import { Message as DbMessage } from "@/db/models";
 import {
   getChatById,
   createMessage,
@@ -10,15 +12,13 @@ import {
   getAnnotationThreadMessages,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
-import { Message as DbMessage } from "@/db/models";
-import { ensureConnection } from "@/db/connection";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: annotationId } = await params;
-  const { messages }: { messages: Array<Message> } = await request.json();
+  const { messages, modelId }: { messages: Array<Message>; modelId?: string } = await request.json();
 
   const session = await auth();
   if (!session || !session.user) {
@@ -93,9 +93,13 @@ export async function POST(
 
   const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
 
+  // Use the requested model or fall back to default
+  const model = modelId ? getModelById(modelId) : getModelById(DEFAULT_MODEL_ID);
+
   const result = await streamText({
-    model: geminiProModel,
-    system: `You are ${appConfig.getModelIdentity()} Today's date is ${new Date().toLocaleDateString()}.
+    model,
+    system: `${appConfig.getModelIdentity()}
+    Today's date is ${new Date().toLocaleDateString()}.
 
 The user has selected this text and is asking about it:
 "${selectedText}"

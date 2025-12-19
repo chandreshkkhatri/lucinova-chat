@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { hash, compare } from "bcrypt-ts";
+import { NextRequest, NextResponse } from "next/server";
+
 import { auth } from "@/app/(auth)/auth";
 import { getUserByEmail, updatePassword } from "@/db/queries";
 

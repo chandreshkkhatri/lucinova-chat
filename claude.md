@@ -77,7 +77,7 @@ Required environment variables (see `.env.example`):
 GOOGLE_GENERATIVE_AI_API_KEY=****
 
 # Model Display Configuration
-NEXT_PUBLIC_MODEL_DISPLAY_MODE=custom  # "custom" (Tara) or "original" (Gemini)
+NEXT_PUBLIC_MODEL_DISPLAY_MODE=custom  # "custom" (Taara) or "original" (Gemini)
 
 # Authentication
 AUTH_SECRET=****  # Generate via openssl rand -base64 32
@@ -177,7 +177,7 @@ Based on git status:
 - NextAuth v5 beta - breaking changes from v4
 - pnpm is the required package manager
 - Turbo mode enabled for faster dev builds
-- Model display naming: "Tara" (custom) vs "Gemini" (original)
+- Model display naming: "Taara" (custom) vs "Gemini" (original)
 
 ## License
 

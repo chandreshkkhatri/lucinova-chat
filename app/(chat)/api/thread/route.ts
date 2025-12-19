@@ -1,11 +1,11 @@
 import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
 
-import { geminiProModel } from "@/ai";
+import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
+import { ensureConnection } from "@/db/connection";
+import { Message as DbMessage } from "@/db/models";
 import { getChatById, createMessage, getUserByEmail, deleteThreadMessages } from "@/db/queries";
 import { appConfig } from "@/lib/config";
-import { Message as DbMessage } from "@/db/models";
-import { ensureConnection } from "@/db/connection";
 
 export async function POST(request: Request) {
   const {
@@ -13,11 +13,13 @@ export async function POST(request: Request) {
     parentMessageId,
     mainChatId,
     selectedText,
+    modelId,
   }: {
     messages: Array<Message>;
     parentMessageId: string;
     mainChatId: string;
     selectedText?: string;
+    modelId?: string;
   } = await request.json();
 
   const session = await auth();
@@ -101,9 +103,13 @@ export async function POST(request: Request) {
 
   const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
 
+  // Use the requested model or fall back to default
+  const model = modelId ? getModelById(modelId) : getModelById(DEFAULT_MODEL_ID);
+
   const result = await streamText({
-    model: geminiProModel,
-    system: `You are ${appConfig.getModelIdentity()} You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
+    model,
+    system: `${appConfig.getModelIdentity()}
+    You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
 
     IMPORTANT: You are responding in a reply thread.${selectedText ? `\n\nThe user has selected the following text from the parent message and is asking about it:\n"${selectedText}"\n\nFocus your response on this selected text and the user's question about it.` : " Only answer based on the user's follow-up question."}`,
     messages: fullContext,

@@ -1,5 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { MessageSquare, ChevronRight } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+
 import { useThreadCount } from "./use-thread-count";
 
 interface ReplyLinkProps {
@@ -25,7 +27,7 @@ export function ReplyLink({
         className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
         onClick={() => onStartThread(messageId)}
       >
-        <MessageSquare className="w-3 h-3 mr-1" />
+        <MessageSquare className="size-3 mr-1" />
         Reply
       </Button>
 
@@ -36,7 +38,7 @@ export function ReplyLink({
           className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
           onClick={() => onViewThread?.(messageId)}
         >
-          <ChevronRight className="w-3 h-3 mr-1" />
+          <ChevronRight className="size-3 mr-1" />
           {isLoading
             ? "..."
             : `${threadCount} ${threadCount === 1 ? "reply" : "replies"}`}

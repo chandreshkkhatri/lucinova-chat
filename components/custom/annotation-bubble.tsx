@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Loader2, Move, Pin, PinOff } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -128,7 +128,7 @@ export function AnnotationBubble({
             Selected Text
           </p>
           <p className="text-xs text-gray-700 dark:text-gray-300 italic line-clamp-2">
-            "{text}"
+            &quot;{text}&quot;
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export function AnnotationBubble({
           
           {isLoading ? (
             <div className="flex items-center gap-2 py-3">
-              <Loader2 className="w-3 h-3 animate-spin text-yellow-600 dark:text-yellow-400" />
+              <Loader2 className="size-3 animate-spin text-yellow-600 dark:text-yellow-400" />
               <span className="text-xs text-yellow-700 dark:text-yellow-300">
                 Thinking...
               </span>
@@ -168,9 +168,9 @@ export function AnnotationBubble({
       </div>
 
       {/* Paper fold effect */}
-      <div className="absolute bottom-0 right-0 w-4 h-4">
-        <div className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900/20 transform rotate-45 translate-x-2 translate-y-2" />
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-200 to-yellow-300 dark:from-yellow-800/50 dark:to-yellow-700/50 transform rotate-45" />
+      <div className="absolute bottom-0 right-0 size-4">
+        <div className="absolute inset-0 bg-yellow-100 dark:bg-yellow-900/20 rotate-45 translate-x-2 translate-y-2" />
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-200 to-yellow-300 dark:from-yellow-800/50 dark:to-yellow-700/50 rotate-45" />
       </div>
     </motion.div>
   );

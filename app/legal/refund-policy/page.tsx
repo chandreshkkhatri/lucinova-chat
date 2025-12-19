@@ -85,7 +85,7 @@ export default function RefundPolicyPage() {
                   </li>
                   <li>
                     In case of any Refunds approved by the CHANDRESH KUMAR,
-                    it'll take <strong>9-15 Days</strong> for the refund to be
+                    it&apos;ll take <strong>9-15 Days</strong> for the refund to be
                     processed to the end customer.
                   </li>
                 </ul>

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcrypt-ts";
+import { NextRequest, NextResponse } from "next/server";
+
 import { getUserByResetToken, updatePassword } from "@/db/queries";
 
 export async function POST(request: NextRequest) {

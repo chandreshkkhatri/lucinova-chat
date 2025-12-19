@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Send, 
   Paperclip, 
@@ -13,7 +13,8 @@ import {
   Command,
   Zap
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -82,7 +83,7 @@ export function EnhancedInput({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-full mb-2 left-0 right-0 p-2 glass-card rounded-xl flex gap-2"
+            className="absolute bottom-full mb-2 inset-x-0 p-2 glass-card rounded-xl flex gap-2"
           >
             {quickActions.map((action) => (
               <button
@@ -90,7 +91,7 @@ export function EnhancedInput({
                 onClick={action.action}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-2"
               >
-                <action.icon className="w-4 h-4" />
+                <action.icon className="size-4" />
                 <span className="text-xs">{action.label}</span>
               </button>
             ))}
@@ -145,7 +146,7 @@ export function EnhancedInput({
             className="rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/20"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Paperclip className="w-4 h-4" />
+            <Paperclip className="size-4" />
           </Button>
           <input
             ref={fileInputRef}
@@ -195,7 +196,7 @@ export function EnhancedInput({
               className="rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
               onClick={() => setShowEmojis(!showEmojis)}
             >
-              <Smile className="w-4 h-4" />
+              <Smile className="size-4" />
             </Button>
           </motion.div>
 
@@ -211,7 +212,7 @@ export function EnhancedInput({
               className="rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/20"
               onClick={() => setShowActions(!showActions)}
             >
-              <Zap className="w-4 h-4" />
+              <Zap className="size-4" />
             </Button>
           </motion.div>
 
@@ -234,9 +235,9 @@ export function EnhancedInput({
               `}
             >
               {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="size-4" />
               )}
             </Button>
           </motion.div>

@@ -9,6 +9,9 @@ const PRIMARY_MODEL_ID =
 const FAST_MODEL_ID =
   process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-2.5-flash";
 
+// Default model ID used when no specific model is requested
+export const DEFAULT_MODEL_ID = FAST_MODEL_ID;
+
 export const geminiProModel = wrapLanguageModel({
   // Use supported model id for v1beta
   model: google(PRIMARY_MODEL_ID),
@@ -20,3 +23,14 @@ export const geminiFlashModel = wrapLanguageModel({
   model: google(FAST_MODEL_ID),
   middleware: customMiddleware,
 });
+
+/**
+ * Get a wrapped language model by ID.
+ * This allows dynamic model selection based on user preference.
+ */
+export function getModelById(modelId: string) {
+  return wrapLanguageModel({
+    model: google(modelId),
+    middleware: customMiddleware,
+  });
+}
