@@ -11,6 +11,7 @@ interface ThreadViewProps {
   mainChatId: string;
   onClose: () => void;
   className?: string;
+  modelId?: string;
 }
 
 export function ThreadView({
@@ -19,6 +20,7 @@ export function ThreadView({
   mainChatId,
   onClose,
   className = "",
+  modelId,
 }: ThreadViewProps) {
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
 
@@ -139,6 +141,7 @@ export function ThreadView({
           className="h-full max-h-full flex flex-col"
           onFinish={handleNewReply}
           selectedText={selectedText}
+          defaultModelId={modelId}
         />
       </div>
     </div>

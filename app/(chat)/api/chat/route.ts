@@ -1,6 +1,6 @@
 import { convertToCoreMessages, generateText, Message, streamText } from "ai";
 
-import { geminiProModel } from "@/ai";
+import { geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Chat } from "@/db/models";
@@ -15,7 +15,7 @@ import {
 import { appConfig } from "@/lib/config";
 
 export async function POST(request: Request) {
-  const { id, messages }: { id: string; messages: Array<Message> } =
+  const { id, messages, modelId }: { id: string; messages: Array<Message>; modelId?: string } =
     await request.json();
 
   const session = await auth();
@@ -85,9 +85,12 @@ export async function POST(request: Request) {
     }
   }
 
+  // Use the requested model or fall back to default
+  const model = modelId ? getModelById(modelId) : getModelById(DEFAULT_MODEL_ID);
+
   const result = await streamText({
-    model: geminiProModel,
-    system: `You are ${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
+    model,
+    system: `${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
     messages: coreMessages,
     onFinish: async ({ responseMessages }) => {
       // Only persist for authenticated users

@@ -42,9 +42,10 @@ export function Chat({
   mainChatId,
   className = "",
   onFinish,
-  isPro = false,
+  isUserPro = false,
   isGuest = false,
   selectedText,
+  defaultModelId = "gemini-2.5-flash",
 }: {
   id: string;
   initialMessages: Array<Message>;
@@ -53,17 +54,24 @@ export function Chat({
   mainChatId?: string;
   className?: string;
   onFinish?: () => void;
-  isPro?: boolean;
+  isUserPro?: boolean;
   isGuest?: boolean;
   selectedText?: string;
+  defaultModelId?: string;
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
+  
+  // Model selection state - must be declared before useChat
+  const [selectedModel, setSelectedModel] =
+    useState<string>(defaultModelId);
+    
   const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
     useChat({
       id: chatIdForSubmit,
       body: {
         id: chatIdForSubmit,
+        modelId: selectedModel,
         ...(isThread && { parentMessageId, mainChatId, selectedText }),
       },
       initialMessages,
@@ -87,7 +95,7 @@ export function Chat({
     selectedText?: string;
   } | null>(null);
   
-  // Annotation (Ask Tara) thread state
+  // Annotation (Ask Taara) thread state
   const [activeAnnotation, setActiveAnnotation] = useState<{
     id: string;
     selectedText: string;
@@ -98,9 +106,6 @@ export function Chat({
     messageId: string;
     selectedText: string;
   } | null>(null);
-  
-  const [selectedModel, setSelectedModel] =
-    useState<string>("gemini-2.0-flash");
 
   // Fetch annotations for this chat
   const { data: annotationsData, mutate: mutateAnnotations } = useSWR(
@@ -138,8 +143,8 @@ export function Chat({
     }
   };
 
-  // Handle "Ask Tara" click - create pending annotation
-  const handleAskTara = useCallback(
+  // Handle "Ask Taara" click - create pending annotation
+  const handleAskTaara = useCallback(
     (messageId: string, selectedText: string) => {
       setPendingAnnotation({ messageId, selectedText });
       setActiveThread(null);
@@ -254,8 +259,8 @@ export function Chat({
                     message={message}
                     chatId={id}
                     annotations={messageAnnotations}
-                    onAskTara={(selectedText) =>
-                      handleAskTara(message.id, selectedText)
+                    onAskTaara={(selectedText) =>
+                      handleAskTaara(message.id, selectedText)
                     }
                     onOpenAnnotation={handleOpenAnnotation}
                   />
@@ -290,7 +295,7 @@ export function Chat({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Tip: Select text in a message to see "Ask Tara".
+                      Tip: Select text in a message to see "Ask Taara".
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -339,20 +344,20 @@ export function Chat({
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                     <SelectItem
-                      value="gemini-2.5-flash"
+                      value="gemini-3.0-flash"
                       className={
-                        isPro
+                        isUserPro
                           ? "hover:bg-gray-100 dark:hover:bg-gray-700"
                           : "opacity-50 cursor-not-allowed"
                       }
-                      disabled={!isPro}
+                      disabled={!isUserPro}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-2.5-flash")}
+                          {appConfig.getModelDisplayName("gemini-3.0-flash")}
                         </span>
                         <Crown className="size-3 text-yellow-500" />
-                        {!isPro && (
+                        {!isUserPro && (
                           <span className="text-xs text-gray-500 ml-1">
                             Pro
                           </span>
@@ -360,12 +365,12 @@ export function Chat({
                       </div>
                     </SelectItem>
                     <SelectItem
-                      value="gemini-2.0-flash"
+                      value="gemini-2.5-flash"
                       className="hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-2.0-flash")}
+                          {appConfig.getModelDisplayName("gemini-2.5-flash")}
                         </span>
                       </div>
                     </SelectItem>
@@ -481,22 +486,33 @@ export function Chat({
                     {/* Quick suggestions for main chat */}
                     <div className="flex flex-col gap-2 mb-4">
                       <button
-                        onClick={() => setInput("Tell me about yourself")}
+                        onClick={() => setInput("Explain a complex concept to me")}
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                          Tell me about yourself
+                          Explain a complex concept simply
                         </p>
                       </button>
 
                       <button
                         onClick={() =>
-                          setInput("Help me write a professional email")
+                          setInput("Help me create a study plan for a new subject")
                         }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                          Help me write a professional email
+                          Create a personalized study plan
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setInput("Summarize this text and extract key learning points")
+                        }
+                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Summarize and extract key points
                         </p>
                       </button>
                     </div>
@@ -602,6 +618,7 @@ export function Chat({
                 mainChatId={id}
                 onClose={handleCloseThread}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : activeAnnotation ? (
               <AnnotationThreadView
@@ -611,6 +628,7 @@ export function Chat({
                 onClose={handleCloseAnnotation}
                 onDelete={handleAnnotationDeleted}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : pendingAnnotation ? (
               <PendingAnnotationView
@@ -638,6 +656,7 @@ export function Chat({
                 mainChatId={id}
                 onClose={handleCloseThread}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : activeAnnotation ? (
               <AnnotationThreadView
@@ -647,6 +666,7 @@ export function Chat({
                 onClose={handleCloseAnnotation}
                 onDelete={handleAnnotationDeleted}
                 className="size-full"
+                modelId={selectedModel}
               />
             ) : pendingAnnotation ? (
               <PendingAnnotationView
@@ -732,7 +752,7 @@ function PendingAnnotationView({
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Tara
+              Ask Taara
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               New annotation

@@ -28,7 +28,8 @@ Enable users to create threaded conversations from any message or selected text 
 ## Background & Context
 
 Users need a way to have side discussions about specific topics without derailing the main conversation. The current implementation allows:
-- Clicking "Ask Tara" on any message
+
+- Clicking "Ask Taara" on any message
 - Selecting text and using the context menu
 - Viewing threads in a modal overlay
 
@@ -39,7 +40,8 @@ This spec documents the existing implementation and defines the expected behavio
 ### Functional Requirements
 
 **Must Have:**
-- [x] Create thread from any message via "Ask Tara" button
+
+- [x] Create thread from any message via "Ask Taara" button
 - [x] Create thread from selected text via context menu
 - [x] Display thread count badge on messages with threads
 - [x] Modal view for thread conversations
@@ -49,12 +51,14 @@ This spec documents the existing implementation and defines the expected behavio
 - [x] Associate threads with parent messages
 
 **Should Have:**
+
 - [ ] Keyboard shortcuts for thread operations
 - [ ] Thread preview on hover
 - [ ] Sort/filter threads by activity
 - [ ] Thread title/summary generation
 
 **Nice to Have:**
+
 - [ ] Collapsible thread view in main chat
 - [ ] Thread search functionality
 - [ ] Thread archiving
@@ -72,7 +76,7 @@ This spec documents the existing implementation and defines the expected behavio
 ### Architecture
 
 ```
-[Main Chat] ──> [EnhancedMessage] ──> onAskTara event
+[Main Chat] ──> [EnhancedMessage] ──> onAskTaara event
                       │
                       ├──> [SelectionContextMenu]
                       │         │
@@ -90,14 +94,14 @@ interface DbMessage {
   id: string;
   chatId: string;
   content: string;
-  role: 'user' | 'assistant';
-  parentMsgId?: string;  // Reference to parent message for threads
+  role: "user" | "assistant";
+  parentMsgId?: string; // Reference to parent message for threads
   createdAt: Date;
 }
 
 interface ThreadContext {
   parentMessage: DbMessage;
-  previousMessages: DbMessage[];  // Last 4 main chat messages
+  previousMessages: DbMessage[]; // Last 4 main chat messages
   selectedText?: string;
 }
 ```
@@ -130,18 +134,21 @@ Response: {
 ### Component Specifications
 
 **EnhancedMessage** (`components/custom/enhanced-message.tsx`)
-- Props: `message`, `onAskTara`, `isThreadMessage`
-- Emits `onAskTara(messageId, selectedText?)` on button click or text selection
+
+- Props: `message`, `onAskTaara`, `isThreadMessage`
+- Emits `onAskTaara(messageId, selectedText?)` on button click or text selection
 - Shows thread count badge from `useThreadCount` hook
 
 **ThreadView** (`components/custom/thread-view.tsx`)
+
 - Props: `chatId`, `parentMsgId`, `selectedText?`, `onClose`
 - Fetches thread messages via `/api/threads`
 - Uses separate Chat instance with `api="/api/thread"`
 - Modal overlay with close functionality
 
 **SelectionContextMenu** (`components/custom/selection-context-menu.tsx`)
-- Shows "Ask Tara" option on text selection
+
+- Shows "Ask Taara" option on text selection
 - Emits `onStartThread(selectedText)` callback
 
 ### Database Changes
@@ -155,16 +162,18 @@ Response: {
 ### User Flows
 
 **Starting a Thread:**
+
 1. User hovers over a message
-2. Clicks "Ask Tara" button OR selects text and uses context menu
+2. Clicks "Ask Taara" button OR selects text and uses context menu
 3. Thread modal opens with parent message context
 4. User types question/comment
 5. AI responds in thread context
 6. Thread is persisted with parentMsgId reference
 
 **Viewing Threads:**
+
 1. User sees thread count badge on message
-2. Clicks "Ask Tara" to view existing threads
+2. Clicks "Ask Taara" to view existing threads
 3. Modal shows all thread messages
 4. User can continue conversation
 
@@ -225,22 +234,25 @@ Response: {
 
 ## Open Questions
 
-- [x] How many previous messages for context? *(4 messages)*
-- [x] Should threads be collapsible in main view? *(Modal only for now)*
+- [x] How many previous messages for context? _(4 messages)_
+- [x] Should threads be collapsible in main view? _(Modal only for now)_
 - [ ] Auto-generate thread titles?
 - [ ] Allow thread to thread transitions?
 
 ## Alternatives Considered
 
 **Inline Threading:**
+
 - Threads appear as collapsed sections in main chat
 - Rejected: Too cluttered, harder to focus
 
 **Separate Thread Page:**
+
 - Navigate to new route for threads
 - Rejected: Breaks flow, too much context switching
 
 **Current Modal Approach:**
+
 - Best balance of focus and accessibility
 - Keeps main chat clean
 - Easy to dismiss
@@ -254,7 +266,7 @@ Response: {
 
 ## Changelog
 
-| Date | Author | Changes |
-|------|--------|--------|
-| 2025-11-15 | Lucidity Team | Initial implementation |
+| Date       | Author        | Changes                        |
+| ---------- | ------------- | ------------------------------ |
+| 2025-11-15 | Lucidity Team | Initial implementation         |
 | 2025-11-30 | Lucidity Team | Documented as IMPLEMENTED spec |

@@ -17,6 +17,7 @@ interface AnnotationThreadViewProps {
   onClose: () => void;
   onDelete?: () => void;
   className?: string;
+  modelId?: string;
 }
 
 export function AnnotationThreadView({
@@ -26,6 +27,7 @@ export function AnnotationThreadView({
   onClose,
   onDelete,
   className = "",
+  modelId,
 }: AnnotationThreadViewProps) {
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +61,9 @@ export function AnnotationThreadView({
   } = useChat({
     id: annotationId,
     api: `/api/annotations/${annotationId}/chat`,
+    body: {
+      modelId,
+    },
     initialMessages,
   });
 
@@ -99,7 +104,7 @@ export function AnnotationThreadView({
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Tara
+              Ask Taara
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               About selected text
@@ -202,7 +207,7 @@ export function AnnotationThreadView({
                     <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
-                        alt="Tara"
+                        alt="Taara"
                         width={28}
                         height={28}
                         className="size-full object-contain"
@@ -246,7 +251,7 @@ export function AnnotationThreadView({
                     <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
-                        alt="Tara"
+                        alt="Taara"
                         width={28}
                         height={28}
                         className="size-full object-contain"
