@@ -12,6 +12,20 @@ import useSWR from "swr";
 import { IChat } from "@/db/models";
 import { fetcher } from "@/lib/utils";
 
+// Strip common markdown formatting from titles
+const stripMarkdown = (text: string): string => {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1") // Bold **text**
+    .replace(/\*(.+?)\*/g, "$1")     // Italic *text*
+    .replace(/__(.+?)__/g, "$1")     // Bold __text__
+    .replace(/_(.+?)_/g, "$1")       // Italic _text_
+    .replace(/~~(.+?)~~/g, "$1")     // Strikethrough ~~text~~
+    .replace(/`(.+?)`/g, "$1")       // Inline code `text`
+    .replace(/^#+\s*/gm, "")         // Headers # text
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Links [text](url)
+    .trim();
+};
+
 import {
   InfoIcon,
   MoreHorizontalIcon,
@@ -212,10 +226,10 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                         <Link
                           href={`/chat/${(chat as any)._id.toString()}`}
                           className="block truncate"
-                          title={chat.title || "Untitled Chat"}
+                          title={stripMarkdown(chat.title || "Untitled Chat")}
                         >
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {chat.title || "Untitled Chat"}
+                            {stripMarkdown(chat.title || "Untitled Chat")}
                           </div>
                         </Link>
                       </Button>
