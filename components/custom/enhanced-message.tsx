@@ -94,7 +94,6 @@ export function EnhancedMessage({
 
   const handleAskTaara = (e: React.MouseEvent) => {
     e.preventDefault();
-    const capturedText = window.getSelection()?.toString() || "";
     onAskTaara?.(capturedText);
     // Clear selection
     window.getSelection()?.removeAllRanges();
