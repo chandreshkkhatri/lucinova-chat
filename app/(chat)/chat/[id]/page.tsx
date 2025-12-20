@@ -9,9 +9,9 @@ import { getChatById, getMessages, getUserByEmail } from "@/db/queries";
 export async function generateMetadata({
   params,
 }: {
-  params: any;
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = params;
+  const { id } = await params;
 
   if (!id || id === "undefined" || id === "null") {
     return {
@@ -60,8 +60,12 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({ params }: { params: any }) {
-  const { id } = params;
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
   // Check if id is valid before making database call
   if (!id || id === "undefined" || id === "null") {

@@ -9,11 +9,11 @@ export default async function ThreadPage({
   params,
   searchParams,
 }: {
-  params: { id: string; threadId: string };
-  searchParams: { parentMessageId?: string };
+  params: Promise<{ id: string; threadId: string }>;
+  searchParams: Promise<{ parentMessageId?: string }>;
 }) {
-  const { id: mainChatId, threadId } = params;
-  const { parentMessageId } = searchParams;
+  const { id: mainChatId, threadId } = await params;
+  const { parentMessageId } = await searchParams;
 
   const session = await auth();
 
