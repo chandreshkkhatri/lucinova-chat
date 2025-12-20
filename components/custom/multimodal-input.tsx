@@ -1,5 +1,6 @@
 "use client";
 
+import { upload } from "@vercel/blob/client";
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import { Plus, Wrench, Image as ImageIcon } from "lucide-react";
 import React, {
@@ -44,13 +45,13 @@ export function MultimodalInput({
   messages: Array<Message>;
   append: (
     message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions
+    chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   handleSubmit: (
     event?: {
       preventDefault?: () => void;
     },
-    chatRequestOptions?: ChatRequestOptions
+    chatRequestOptions?: ChatRequestOptions,
   ) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -88,31 +89,63 @@ export function MultimodalInput({
     }
   }, [attachments, handleSubmit, setAttachments, width]);
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
+    async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
 
       if (files.length === 0) return;
 
-      files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const base64 = e.target?.result as string;
-          setAttachments((prev) => [
-            ...prev,
-            {
-              name: file.name,
-              contentType: file.type,
-              url: base64,
-            },
-          ]);
-        };
-        reader.readAsDataURL(file);
+      const newAttachments = [...attachments];
+
+      const uploadPromises = files.map(async (file) => {
+        // Enforce 20MB limit
+        if (file.size > 20 * 1024 * 1024) {
+          toast.error(`File ${file.name} exceeds 20MB limit.`);
+          return null;
+        }
+
+        let toastId: string | number | undefined;
+        try {
+          toastId = toast.loading(`Uploading ${file.name}...`);
+
+          const newBlob = await upload(file.name, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload",
+          });
+
+          toast.dismiss(toastId);
+          toast.success(`${file.name} uploaded!`);
+
+          return {
+            name: file.name,
+            contentType: file.type,
+            url: newBlob.url,
+          } as Attachment;
+        } catch (error) {
+          console.error("Upload failed:", error);
+          if (toastId) toast.dismiss(toastId); // Dismiss loading toast
+          toast.error(`Failed to upload ${file.name}`);
+          return null;
+        }
       });
+
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter(
+        (result): result is Attachment => result !== null,
+      );
+
+      setAttachments((prev) => [...prev, ...successfulUploads]);
+
+      // Reset input so same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     },
-    [setAttachments]
+    [attachments, setAttachments],
   );
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   return (
     <div className="relative w-full flex flex-col gap-2">
@@ -128,7 +161,15 @@ export function MultimodalInput({
       {attachments.length > 0 && (
         <div className="flex flex-row gap-2 overflow-x-scroll">
           {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
+            <PreviewAttachment
+              key={attachment.url}
+              attachment={attachment}
+              onRemove={() => {
+                setAttachments((prev) =>
+                  prev.filter((a) => a.url !== attachment.url),
+                );
+              }}
+            />
           ))}
         </div>
       )}
@@ -146,7 +187,9 @@ export function MultimodalInput({
               event.preventDefault();
 
               if (isLoading) {
-                toast.error("Please wait for the model to finish its response!");
+                toast.error(
+                  "Please wait for the model to finish its response!",
+                );
               } else {
                 submitForm();
               }

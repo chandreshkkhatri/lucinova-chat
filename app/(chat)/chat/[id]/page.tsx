@@ -100,10 +100,19 @@ export default async function Page({
   const uiMessages: Message[] = rawMessages.map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId.toString() === userId ? "user" : "assistant";
+
+    // Convert DB files back to AI SDK attachment format
+    const attachments = (msg.files || []).map((f: any) => ({
+      name: f.name,
+      url: f.url,
+      contentType: f.mime,
+    }));
+
     return {
       id: msg._id?.toString() || generateId(),
       role,
       content: msg.body,
+      ...(attachments.length > 0 && { experimental_attachments: attachments }),
     };
   });
   const isThread = false;
