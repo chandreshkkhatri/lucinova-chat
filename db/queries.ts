@@ -13,7 +13,7 @@ export async function createUser(
   avatarUrl?: string,
   isBot = false,
   oauthProvider?: "google" | null,
-  oauthProviderId?: string
+  oauthProviderId?: string,
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
@@ -36,7 +36,7 @@ export async function getUserById(id: string) {
   if (!userDoc) {
     return null;
   }
-  
+
   // Same subscription expiry logic as getUserByEmail
   const now = new Date();
   const currentPeriodEnd = userDoc.currentPeriodEnd;
@@ -62,14 +62,11 @@ export async function getUserById(id: string) {
       await userDoc.save();
     }
   }
-  
+
   return userDoc.toObject();
 }
 
-export async function getUserByOAuth(
-  provider: "google",
-  providerId: string
-) {
+export async function getUserByOAuth(provider: "google", providerId: string) {
   await ensureConnection();
   const userDoc = await User.findOne({
     oauthProvider: provider,
@@ -78,7 +75,7 @@ export async function getUserByOAuth(
   if (!userDoc) {
     return null;
   }
-  
+
   // Same subscription expiry logic
   const now = new Date();
   const currentPeriodEnd = userDoc.currentPeriodEnd;
@@ -104,7 +101,7 @@ export async function getUserByOAuth(
       await userDoc.save();
     }
   }
-  
+
   return userDoc.toObject();
 }
 export async function getUserByEmail(email: string) {
@@ -152,7 +149,7 @@ export async function getUserByEmail(email: string) {
 export async function activateProSubscriptionByEmail(
   email: string,
   periodInDays = 30,
-  provider: "razorpay" | "manual" = "razorpay"
+  provider: "razorpay" | "manual" = "razorpay",
 ) {
   await ensureConnection();
   // Normalize email and check if user exists
@@ -170,9 +167,10 @@ export async function activateProSubscriptionByEmail(
   let proSince: Date;
 
   // Check if user already has an active subscription
-  const hasActiveSub = (existingUser as any).isPro &&
-                      (existingUser as any).currentPeriodEnd &&
-                      new Date((existingUser as any).currentPeriodEnd).getTime() > now.getTime();
+  const hasActiveSub =
+    (existingUser as any).isPro &&
+    (existingUser as any).currentPeriodEnd &&
+    new Date((existingUser as any).currentPeriodEnd).getTime() > now.getTime();
 
   if (hasActiveSub) {
     // Extend from existing end date (renewal)
@@ -250,7 +248,7 @@ export async function recordPaymentOnce({
         raw,
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   ).lean();
 
   return doc;
@@ -274,7 +272,7 @@ export async function createChat(
   userId: string,
   aiId: string,
   title?: string,
-  chatId?: string
+  chatId?: string,
 ) {
   await ensureConnection();
   const chatData: any = { userId, aiId };
@@ -294,7 +292,10 @@ export async function createChat(
 }
 export async function getChatsByUserId(userId: string) {
   await ensureConnection();
-  const chats = await Chat.find({ userId }).sort({ lastMsgAt: -1 }).lean();
+  const chats = await Chat.find({ userId })
+    .sort({ lastMsgAt: -1 })
+    .limit(100) // Limit to 100 recent chats for performance
+    .lean();
 
   // Ensure each chat has an `id` field (lean documents don\'t include the virtual by default)
   return chats.map((chat: any) => ({
@@ -429,7 +430,9 @@ export async function deleteAnnotation(id: string) {
 
 export async function getAnnotationThreadMessages(annotationId: string) {
   await ensureConnection();
-  return Message.find({ parentMsgId: annotationId }).sort({ createdAt: 1 }).lean();
+  return Message.find({ parentMsgId: annotationId })
+    .sort({ createdAt: 1 })
+    .lean();
 }
 
 export async function getAnnotationThreadCount(annotationId: string) {
@@ -441,13 +444,13 @@ export async function getAnnotationThreadCount(annotationId: string) {
 export async function setPasswordResetToken(
   email: string,
   token: string,
-  expiryDate: Date
+  expiryDate: Date,
 ) {
   await ensureConnection();
   return User.findOneAndUpdate(
     { email },
     { resetToken: token, resetTokenExpiry: expiryDate },
-    { new: true }
+    { new: true },
   ).lean();
 }
 
@@ -468,6 +471,6 @@ export async function updatePassword(email: string, hashedPassword: string) {
       resetToken: undefined,
       resetTokenExpiry: undefined,
     },
-    { new: true }
+    { new: true },
   ).lean();
 }

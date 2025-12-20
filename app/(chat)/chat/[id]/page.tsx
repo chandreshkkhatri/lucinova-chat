@@ -1,10 +1,15 @@
 import { generateId, Message } from "ai";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 
 import { auth } from "@/app/(auth)/auth";
 import { Chat as PreviewChat } from "@/components/custom/chat";
 import { getChatById, getMessages, getUserByEmail } from "@/db/queries";
+
+// Cache the database calls to prevent duplicate fetching in generateMetadata and Page
+const getCachedChatById = cache(getChatById);
+const getCachedMessages = cache(getMessages);
 
 export async function generateMetadata({
   params,
@@ -21,7 +26,7 @@ export async function generateMetadata({
   }
 
   try {
-    const chatFromDb = await getChatById({ id });
+    const chatFromDb = await getCachedChatById({ id });
 
     if (!chatFromDb) {
       return {
@@ -30,19 +35,22 @@ export async function generateMetadata({
       };
     }
 
-    const messages = await getMessages(id);
-    const firstMessage = messages[0]?.body || "";
-    const truncatedMessage =
-      firstMessage.length > 100
-        ? firstMessage.substring(0, 100) + "..."
-        : firstMessage;
+    // Use chat title if available, otherwise fetch first message
+    let title = chatFromDb.title;
+
+    if (!title || title === "New Chat") {
+      const messages = await getCachedMessages(id);
+      const firstMessage = messages[0]?.body || "";
+      const truncatedMessage =
+        firstMessage.length > 100
+          ? firstMessage.substring(0, 100) + "..."
+          : firstMessage;
+      title = truncatedMessage || "AI Assistant";
+    }
 
     return {
-      title: `Chat Conversation - ${truncatedMessage || "AI Assistant"}`,
-      description: `Continue your conversation with our AI assistant. ${
-        truncatedMessage ||
-        "Get intelligent responses and boost your productivity."
-      }`,
+      title: `Lucidity - ${title}`,
+      description: `Continue your conversation: ${title}`,
       robots: {
         index: false, // Don't index private chat conversations
         follow: false,
@@ -72,7 +80,7 @@ export default async function Page({
     redirect("/");
   }
 
-  const chatFromDb = await getChatById({ id });
+  const chatFromDb = await getCachedChatById({ id });
 
   if (!chatFromDb) redirect("/");
 
@@ -96,7 +104,7 @@ export default async function Page({
   }
 
   // fetch top-level messages from DB and map to UI-friendly format
-  const rawMessages = await getMessages(id);
+  const rawMessages = await getCachedMessages(id);
   const uiMessages: Message[] = rawMessages.map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId.toString() === userId ? "user" : "assistant";

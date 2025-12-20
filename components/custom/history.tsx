@@ -12,20 +12,6 @@ import useSWR from "swr";
 import { IChat } from "@/db/models";
 import { fetcher } from "@/lib/utils";
 
-// Strip common markdown formatting from titles
-const stripMarkdown = (text: string): string => {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "$1") // Bold **text**
-    .replace(/\*(.+?)\*/g, "$1")     // Italic *text*
-    .replace(/__(.+?)__/g, "$1")     // Bold __text__
-    .replace(/_(.+?)_/g, "$1")       // Italic _text_
-    .replace(/~~(.+?)~~/g, "$1")     // Strikethrough ~~text~~
-    .replace(/`(.+?)`/g, "$1")       // Inline code `text`
-    .replace(/^#+\s*/gm, "")         // Headers # text
-    .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Links [text](url)
-    .trim();
-};
-
 import {
   InfoIcon,
   MoreHorizontalIcon,
@@ -51,7 +37,13 @@ import {
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
 
-export const History = ({ user, inSheet = false }: { user: User | undefined; inSheet?: boolean }) => {
+export const History = ({
+  user,
+  inSheet = false,
+}: {
+  user: User | undefined;
+  inSheet?: boolean;
+}) => {
   const { id } = useParams();
   const pathname = usePathname();
 
@@ -93,9 +85,11 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
     mutate(
       (history) =>
         history?.map((c) =>
-          (c as any)._id.toString() === editingChatId ? { ...c, title: editingTitle } : c
+          (c as any)._id.toString() === editingChatId
+            ? { ...c, title: editingTitle }
+            : c,
         ) as IChat[],
-      false
+      false,
     );
 
     const updatePromise = fetch(`/api/chat`, {
@@ -123,7 +117,9 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
       success: () => {
         mutate((history) => {
           if (history) {
-            return history.filter((h) => (h as any)._id.toString() !== deleteId);
+            return history.filter(
+              (h) => (h as any)._id.toString() !== deleteId,
+            );
           }
         });
         return "Chat deleted.";
@@ -147,7 +143,9 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
       <div className={containerClasses}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Chats</h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Chats
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {history === undefined
               ? "Loading chats..."
@@ -204,7 +202,10 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                   key={(chat as any)._id.toString()}
                   className={cx(
                     "group flex items-center justify-between p-3 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors",
-                    { "bg-white dark:bg-gray-800 shadow-sm": (chat as any)._id.toString() === id }
+                    {
+                      "bg-white dark:bg-gray-800 shadow-sm":
+                        (chat as any)._id.toString() === id,
+                    },
                   )}
                 >
                   {editingChatId === (chat as any)._id.toString() ? (
@@ -213,7 +214,9 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                       value={editingTitle}
                       onChange={(e) => setEditingTitle(e.target.value)}
                       onBlur={handleTitleUpdate}
-                      onKeyDown={(e) => e.key === "Enter" && handleTitleUpdate()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleTitleUpdate()
+                      }
                       className="h-8 text-sm"
                     />
                   ) : (
@@ -226,10 +229,10 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                         <Link
                           href={`/chat/${(chat as any)._id.toString()}`}
                           className="block truncate"
-                          title={stripMarkdown(chat.title || "Untitled Chat")}
+                          title={chat.title || "Untitled Chat"}
                         >
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {stripMarkdown(chat.title || "Untitled Chat")}
+                            {chat.title || "Untitled Chat"}
                           </div>
                         </Link>
                       </Button>
