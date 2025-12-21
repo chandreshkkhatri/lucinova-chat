@@ -159,7 +159,7 @@ export async function POST(request: Request) {
           if (lastUserMsg) {
             const { text: title } = await generateText({
               model: geminiProModel,
-              prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words). Do NOT use markdown formatting (no bold **, italics *, etc). just plain text:\n\nUser: ${String(
+              prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words). Do NOT use markdown formatting (no bold **, italics *, etc). Just plain text:\n\nUser: ${String(
                 lastUserMsg.content,
               )}\nAssistant: ${toPlainText(responseMessages[0].content)}`,
             });
