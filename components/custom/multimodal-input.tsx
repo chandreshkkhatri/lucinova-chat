@@ -124,7 +124,6 @@ export function MultimodalInput({
             url: newBlob.url,
           } as Attachment;
         } catch (error) {
-          console.error("Upload failed:", error);
           if (toastId) toast.dismiss(toastId); // Dismiss loading toast
           toast.error(`Failed to upload ${file.name}`);
           return null;
