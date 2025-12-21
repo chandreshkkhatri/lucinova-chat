@@ -15,16 +15,25 @@ import {
 import { appConfig } from "@/lib/config";
 
 export async function POST(request: Request) {
-  const { id, messages, modelId }: { id: string; messages: Array<Message>; modelId?: string } =
+  const {
+    id,
+    messages,
+    modelId,
+  }: { id: string; messages: Array<Message>; modelId?: string } =
     await request.json();
 
   const session = await auth();
   const isGuest = !session || !session.user;
 
-  console.log("[Chat API] Request received - isGuest:", isGuest, "messageCount:", messages.length);
+  console.log(
+    "[Chat API] Request received - isGuest:",
+    isGuest,
+    "messageCount:",
+    messages.length,
+  );
 
   const coreMessages = convertToCoreMessages(messages).filter(
-    (message) => message.content.length > 0
+    (message) => message.content.length > 0,
   );
 
   let userId: string | null = null;
@@ -38,7 +47,12 @@ export async function POST(request: Request) {
     userId = (user as any)._id.toString();
   }
 
-  console.log("[Chat API] Processing - userId:", userId, "coreMessages:", coreMessages.length);
+  console.log(
+    "[Chat API] Processing - userId:",
+    userId,
+    "coreMessages:",
+    coreMessages.length,
+  );
 
   // Only persist chat to DB for authenticated users
   if (!isGuest && userId) {
@@ -58,7 +72,7 @@ export async function POST(request: Request) {
           undefined, // password
           "AI Assistant", // displayName
           undefined, // avatarUrl
-          true // isBot
+          true, // isBot
         );
       }
 
@@ -66,27 +80,44 @@ export async function POST(request: Request) {
         userId,
         (aiUser as any)._id.toString(),
         "New Chat",
-        id
+        id,
       );
     }
 
     // Persist the latest user message (the last user role in the array)
     const userMessages = coreMessages.filter(
-      (m) => m.role === "user" && m.content
+      (m) => m.role === "user" && m.content,
     );
     const lastUserMsg = userMessages[userMessages.length - 1];
 
-    if (lastUserMsg) {
+    // Use the raw message for persistence to preserve attachment metadata
+    const rawUserMessages = messages.filter((m) => m.role === "user");
+    const lastRawUserMsg = rawUserMessages[rawUserMessages.length - 1];
+
+    if (lastRawUserMsg) {
+      const textContent = lastRawUserMsg.content;
+      const attachments =
+        (lastRawUserMsg as any).experimental_attachments || [];
+
+      const files = attachments.map((a: any) => ({
+        name: a.name || "file",
+        url: a.url,
+        mime: a.contentType || "application/octet-stream",
+      }));
+
       await createMessage({
         chatId: id,
         senderId: userId,
-        body: String(lastUserMsg.content),
+        body: textContent,
+        files,
       });
     }
   }
 
   // Use the requested model or fall back to default
-  const model = modelId ? getModelById(modelId) : getModelById(DEFAULT_MODEL_ID);
+  const model = modelId
+    ? getModelById(modelId)
+    : getModelById(DEFAULT_MODEL_ID);
 
   const result = await streamText({
     model,
@@ -120,14 +151,16 @@ export async function POST(request: Request) {
 
         // After the first exchange, generate a title
         if (messages.length === 1) {
-          const userMessages = coreMessages.filter((m) => m.role === "user" && m.content);
+          const userMessages = coreMessages.filter(
+            (m) => m.role === "user" && m.content,
+          );
           const lastUserMsg = userMessages[userMessages.length - 1];
 
           if (lastUserMsg) {
             const { text: title } = await generateText({
               model: geminiProModel,
-              prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words):\n\nUser: ${String(
-                lastUserMsg.content
+              prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words). Do NOT use markdown formatting (no bold **, italics *, etc). Just plain text:\n\nUser: ${String(
+                lastUserMsg.content,
               )}\nAssistant: ${toPlainText(responseMessages[0].content)}`,
             });
 

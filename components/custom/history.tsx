@@ -37,7 +37,13 @@ import {
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
 
-export const History = ({ user, inSheet = false }: { user: User | undefined; inSheet?: boolean }) => {
+export const History = ({
+  user,
+  inSheet = false,
+}: {
+  user: User | undefined;
+  inSheet?: boolean;
+}) => {
   const { id } = useParams();
   const pathname = usePathname();
 
@@ -79,9 +85,11 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
     mutate(
       (history) =>
         history?.map((c) =>
-          (c as any)._id.toString() === editingChatId ? { ...c, title: editingTitle } : c
+          (c as any)._id.toString() === editingChatId
+            ? { ...c, title: editingTitle }
+            : c,
         ) as IChat[],
-      false
+      false,
     );
 
     const updatePromise = fetch(`/api/chat`, {
@@ -109,7 +117,9 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
       success: () => {
         mutate((history) => {
           if (history) {
-            return history.filter((h) => (h as any)._id.toString() !== deleteId);
+            return history.filter(
+              (h) => (h as any)._id.toString() !== deleteId,
+            );
           }
         });
         return "Chat deleted.";
@@ -133,7 +143,9 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
       <div className={containerClasses}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Chats</h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Chats
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {history === undefined
               ? "Loading chats..."
@@ -190,7 +202,10 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                   key={(chat as any)._id.toString()}
                   className={cx(
                     "group flex items-center justify-between p-3 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors",
-                    { "bg-white dark:bg-gray-800 shadow-sm": (chat as any)._id.toString() === id }
+                    {
+                      "bg-white dark:bg-gray-800 shadow-sm":
+                        (chat as any)._id.toString() === id,
+                    },
                   )}
                 >
                   {editingChatId === (chat as any)._id.toString() ? (
@@ -199,7 +214,9 @@ export const History = ({ user, inSheet = false }: { user: User | undefined; inS
                       value={editingTitle}
                       onChange={(e) => setEditingTitle(e.target.value)}
                       onBlur={handleTitleUpdate}
-                      onKeyDown={(e) => e.key === "Enter" && handleTitleUpdate()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleTitleUpdate()
+                      }
                       className="h-8 text-sm"
                     />
                   ) : (
