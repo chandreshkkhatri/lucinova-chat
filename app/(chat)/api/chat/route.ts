@@ -100,9 +100,9 @@ export async function POST(request: Request) {
         (lastRawUserMsg as any).experimental_attachments || [];
 
       const files = attachments.map((a: any) => ({
-        name: a.name || "image",
+        name: a.name || "file",
         url: a.url,
-        mime: a.contentType || "image/png",
+        mime: a.contentType || "application/octet-stream",
       }));
 
       await createMessage({

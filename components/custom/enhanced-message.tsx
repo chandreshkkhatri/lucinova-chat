@@ -127,10 +127,15 @@ export function EnhancedMessage({
   const controlY = wireStartY - curveHeight;
 
   // Fix for issues where content comes in as stringified objects
+  const rawContent = message.content;
   const content =
-    message.content && message.content.startsWith("[object Object]")
-      ? ""
-      : message.content;
+    typeof rawContent === "string"
+      ? rawContent.startsWith("[object Object]")
+        ? ""
+        : rawContent
+      : rawContent == null
+        ? ""
+        : JSON.stringify(rawContent);
 
   return (
     <div className="relative group">

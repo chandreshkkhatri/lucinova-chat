@@ -34,8 +34,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
         console.log("blob uploaded", blob.url);
-        // access authentication token payload if needed
-        // const { userId } = JSON.parse(tokenPayload!);
       },
     });
 
