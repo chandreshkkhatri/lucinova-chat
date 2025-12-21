@@ -224,7 +224,7 @@ export function MultimodalInput({
               <DropdownMenuContent align="start">
                 <DropdownMenuItem
                   onClick={() => {
-                    alert("Coming soon");
+                    toast("Image generation is coming soon");
                   }}
                 >
                   <ImageIcon className="mr-2 size-4" />
