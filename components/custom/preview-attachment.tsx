@@ -1,4 +1,4 @@
-import { Attachment } from "ai";
+import { Attachment } from "./types";
 import { X } from "lucide-react";
 
 import { LoaderIcon } from "./icons";

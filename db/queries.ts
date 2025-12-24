@@ -13,7 +13,7 @@ export async function createUser(
   avatarUrl?: string,
   isBot = false,
   oauthProvider?: "google" | null,
-  oauthProviderId?: string,
+  oauthProviderId?: string
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
@@ -149,7 +149,7 @@ export async function getUserByEmail(email: string) {
 export async function activateProSubscriptionByEmail(
   email: string,
   periodInDays = 30,
-  provider: "razorpay" | "manual" = "razorpay",
+  provider: "razorpay" | "manual" = "razorpay"
 ) {
   await ensureConnection();
   // Normalize email and check if user exists
@@ -248,7 +248,7 @@ export async function recordPaymentOnce({
         raw,
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, new: true }
   ).lean();
 
   return doc;
@@ -272,7 +272,7 @@ export async function createChat(
   userId: string,
   aiId: string,
   title?: string,
-  chatId?: string,
+  chatId?: string
 ) {
   await ensureConnection();
   const chatData: any = { userId, aiId };
@@ -373,7 +373,7 @@ export async function deleteThreadMessages(parentMsgId: string) {
   return Message.deleteMany({ parentMsgId });
 }
 
-// Annotation functions (Ask Taara threads)
+// Annotation functions (Ask Lucinova threads)
 export async function createAnnotation({
   messageId,
   chatId,
@@ -444,13 +444,13 @@ export async function getAnnotationThreadCount(annotationId: string) {
 export async function setPasswordResetToken(
   email: string,
   token: string,
-  expiryDate: Date,
+  expiryDate: Date
 ) {
   await ensureConnection();
   return User.findOneAndUpdate(
     { email },
     { resetToken: token, resetTokenExpiry: expiryDate },
-    { new: true },
+    { new: true }
   ).lean();
 }
 
@@ -471,6 +471,6 @@ export async function updatePassword(email: string, hashedPassword: string) {
       resetToken: undefined,
       resetTokenExpiry: undefined,
     },
-    { new: true },
+    { new: true }
   ).lean();
 }

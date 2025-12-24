@@ -29,7 +29,7 @@ Enable users to create threaded conversations from any message or selected text 
 
 Users need a way to have side discussions about specific topics without derailing the main conversation. The current implementation allows:
 
-- Clicking "Ask Taara" on any message
+- Clicking "Ask Lucinova" on any message
 - Selecting text and using the context menu
 - Viewing threads in a modal overlay
 
@@ -41,7 +41,7 @@ This spec documents the existing implementation and defines the expected behavio
 
 **Must Have:**
 
-- [x] Create thread from any message via "Ask Taara" button
+- [x] Create thread from any message via "Ask Lucinova" button
 - [x] Create thread from selected text via context menu
 - [x] Display thread count badge on messages with threads
 - [x] Modal view for thread conversations
@@ -76,7 +76,7 @@ This spec documents the existing implementation and defines the expected behavio
 ### Architecture
 
 ```
-[Main Chat] ──> [EnhancedMessage] ──> onAskTaara event
+[Main Chat] ──> [EnhancedMessage] ──> onAskLucinova event
                       │
                       ├──> [SelectionContextMenu]
                       │         │
@@ -135,8 +135,8 @@ Response: {
 
 **EnhancedMessage** (`components/custom/enhanced-message.tsx`)
 
-- Props: `message`, `onAskTaara`, `isThreadMessage`
-- Emits `onAskTaara(messageId, selectedText?)` on button click or text selection
+- Props: `message`, `onAskLucinova`, `isThreadMessage`
+- Emits `onAskLucinova(messageId, selectedText?)` on button click or text selection
 - Shows thread count badge from `useThreadCount` hook
 
 **ThreadView** (`components/custom/thread-view.tsx`)
@@ -148,7 +148,7 @@ Response: {
 
 **SelectionContextMenu** (`components/custom/selection-context-menu.tsx`)
 
-- Shows "Ask Taara" option on text selection
+- Shows "Ask Lucinova" option on text selection
 - Emits `onStartThread(selectedText)` callback
 
 ### Database Changes
@@ -164,7 +164,7 @@ Response: {
 **Starting a Thread:**
 
 1. User hovers over a message
-2. Clicks "Ask Taara" button OR selects text and uses context menu
+2. Clicks "Ask Lucinova" button OR selects text and uses context menu
 3. Thread modal opens with parent message context
 4. User types question/comment
 5. AI responds in thread context
@@ -173,7 +173,7 @@ Response: {
 **Viewing Threads:**
 
 1. User sees thread count badge on message
-2. Clicks "Ask Taara" to view existing threads
+2. Clicks "Ask Lucinova" to view existing threads
 3. Modal shows all thread messages
 4. User can continue conversation
 

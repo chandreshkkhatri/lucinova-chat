@@ -1,7 +1,14 @@
-import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
+import {
+  convertToModelMessages,
+  UIMessage as Message,
+  streamText,
+  ModelMessage,
+} from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
+import { ensureConnection } from "@/db/connection";
+import { Message as DbMessage } from "@/db/models";
 import {
   getChatById,
   createMessage,
@@ -10,15 +17,14 @@ import {
   getAnnotationThreadMessages,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
-import { Message as DbMessage } from "@/db/models";
-import { ensureConnection } from "@/db/connection";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: annotationId } = await params;
-  const { messages, modelId }: { messages: Array<Message>; modelId?: string } = await request.json();
+  const { messages, modelId }: { messages: Array<Message>; modelId?: string } =
+    await request.json();
 
   const session = await auth();
   if (!session || !session.user) {
@@ -34,7 +40,7 @@ export async function POST(
   const messageId = (annotation as any).messageId.toString();
   const selectedText = (annotation as any).selectedText;
 
-  const coreMessages = convertToCoreMessages(messages).filter(
+  const coreMessages = (await convertToModelMessages(messages)).filter(
     (message) => message.content.length > 0
   );
 
@@ -71,7 +77,7 @@ export async function POST(
   // Build context: the parent message + selected text context
   const chatDoc = await getChatById({ id: chatId });
 
-  let additionalContext: Array<CoreMessage> = [];
+  let additionalContext: Array<ModelMessage> = [];
 
   if (chatDoc) {
     await ensureConnection();
@@ -82,7 +88,7 @@ export async function POST(
     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
       const aiId = (chatDoc as any).aiId?.toString();
 
-      const toCore = (m: any): CoreMessage => ({
+      const toCore = (m: any): ModelMessage => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -91,10 +97,12 @@ export async function POST(
     }
   }
 
-  const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
-  const model = modelId ? getModelById(modelId) : getModelById(DEFAULT_MODEL_ID);
+  const model = modelId
+    ? getModelById(modelId)
+    : getModelById(DEFAULT_MODEL_ID);
 
   const result = await streamText({
     model,
@@ -111,29 +119,18 @@ IMPORTANT INSTRUCTIONS:
 - Only elaborate if the user explicitly asks for more detail
 - Focus specifically on the selected text and the user's question`,
     messages: fullContext,
-    onFinish: async ({ responseMessages }) => {
-      const toPlainText = (content: any): string => {
-        if (typeof content === "string") return content;
-        if (Array.isArray(content)) {
-          return content
-            .filter((p) => p.type === "text")
-            .map((p: any) => p.text)
-            .join("");
-        }
-        return "";
-      };
-
-      for (const msg of responseMessages) {
+    onFinish: async ({ text }) => {
+      // Persist AI response
+      if (text) {
         await createMessage({
           chatId,
           senderId: (await getChatById({ id: chatId })).aiId.toString(),
           parentMsgId: annotationId,
-          body: toPlainText(msg.content),
+          body: text,
         });
       }
     },
   });
 
-  return result.toDataStreamResponse({});
+  return result.toTextStreamResponse();
 }
-

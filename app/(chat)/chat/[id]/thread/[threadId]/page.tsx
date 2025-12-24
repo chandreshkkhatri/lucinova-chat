@@ -1,4 +1,4 @@
-import { Message, generateId } from "ai";
+import { UIMessage as Message, generateId } from "ai";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/app/(auth)/auth";
@@ -61,12 +61,19 @@ export default async function ThreadPage({
   const uiMessages: Message[] = (threadData.messages || []).map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId?.toString() === userId ? "user" : "assistant";
+
+    // Build parts array (SDK v6 format)
+    const parts: any[] = [];
+    if (msg.body) {
+      parts.push({ type: "text", text: msg.body });
+    }
+
     return {
       id: msg._id?.toString() || generateId(),
       role,
-      content: msg.body,
+      parts,
     };
-  });
+  }) as Message[];
 
   return (
     <PreviewChat

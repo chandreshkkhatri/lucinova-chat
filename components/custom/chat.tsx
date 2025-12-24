@@ -1,7 +1,8 @@
 "use client";
 
-import { Attachment, Message } from "ai";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
+import { UIMessage as Message, TextStreamChatTransport } from "ai";
+import { Attachment } from "./types";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -26,10 +27,10 @@ import {
 } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
 
+import { AnnotationThreadView } from "./annotation-thread-view";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { ThreadView } from "./thread-view";
-import { AnnotationThreadView } from "./annotation-thread-view";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -61,46 +62,66 @@ export function Chat({
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
-  
+
   // Model selection state - must be declared before useChat
-  const [selectedModel, setSelectedModel] =
-    useState<string>(defaultModelId);
-    
-  const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
-    useChat({
-      id: chatIdForSubmit,
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
+  const [input, setInput] = useState("");
+
+  const { messages, sendMessage, status, stop } = useChat({
+    id: chatIdForSubmit,
+    transport: new TextStreamChatTransport({
+      api: isThread ? "/api/thread" : "/api/chat",
       body: {
         id: chatIdForSubmit,
         modelId: selectedModel,
         ...(isThread && { parentMessageId, mainChatId, selectedText }),
       },
-      initialMessages,
-      maxSteps: 10,
-      api: isThread ? "/api/thread" : "/api/chat",
-      onFinish: () => {
-        const url = `/chat/${chatIdForSubmit}`;
-        window.history.replaceState({}, "", url);
-        onFinish?.();
-      },
-    });
+    }),
+    messages: initialMessages,
+    onFinish: () => {
+      const url = `/chat/${chatIdForSubmit}`;
+      window.history.replaceState({}, "", url);
+      onFinish?.();
+    },
+  });
+
+  const isLoading = status === "submitted" || status === "streaming";
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() && attachments.length === 0) return;
+
+    sendMessage({
+      role: "user",
+      content: input,
+      experimental_attachments: attachments,
+    } as any);
+
+    setInput("");
+    setAttachments([]);
+  };
+
+  const append = (message: any) => {
+    sendMessage(message);
+  };
 
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
-  
+
   // Reply thread state
   const [activeThread, setActiveThread] = useState<{
     parentMessage: Message;
     selectedText?: string;
   } | null>(null);
-  
-  // Annotation (Ask Taara) thread state
+
+  // Annotation (Ask Lucinova) thread state
   const [activeAnnotation, setActiveAnnotation] = useState<{
     id: string;
     selectedText: string;
   } | null>(null);
-  
+
   // Pending annotation (before first message is sent)
   const [pendingAnnotation, setPendingAnnotation] = useState<{
     messageId: string;
@@ -116,16 +137,13 @@ export function Chat({
   const annotations: SavedAnnotation[] = annotationsData?.annotations || [];
 
   // Group annotations by messageId
-  const annotationsByMessage = annotations.reduce(
-    (acc, ann) => {
-      if (!acc[ann.messageId]) {
-        acc[ann.messageId] = [];
-      }
-      acc[ann.messageId].push(ann);
-      return acc;
-    },
-    {} as Record<string, SavedAnnotation[]>
-  );
+  const annotationsByMessage = annotations.reduce((acc, ann) => {
+    if (!acc[ann.messageId]) {
+      acc[ann.messageId] = [];
+    }
+    acc[ann.messageId].push(ann);
+    return acc;
+  }, {} as Record<string, SavedAnnotation[]>);
 
   const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
@@ -143,8 +161,8 @@ export function Chat({
     }
   };
 
-  // Handle "Ask Taara" click - create pending annotation
-  const handleAskTaara = useCallback(
+  // Handle "Ask Lucinova" click - create pending annotation
+  const handleAskLucinova = useCallback(
     (messageId: string, selectedText: string) => {
       setPendingAnnotation({ messageId, selectedText });
       setActiveThread(null);
@@ -192,10 +210,10 @@ export function Chat({
       if (!res.ok) throw new Error("Failed to create annotation");
 
       const { annotation } = await res.json();
-      
+
       // Update annotations list
       mutateAnnotations();
-      
+
       // Switch from pending to active annotation
       setActiveAnnotation({
         id: annotation.id,
@@ -259,8 +277,8 @@ export function Chat({
                     message={message}
                     chatId={id}
                     annotations={messageAnnotations}
-                    onAskTaara={(selectedText) =>
-                      handleAskTaara(message.id, selectedText)
+                    onAskLucinova={(selectedText) =>
+                      handleAskLucinova(message.id, selectedText)
                     }
                     onOpenAnnotation={handleOpenAnnotation}
                   />
@@ -295,7 +313,7 @@ export function Chat({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Tip: Select text in a message to see "Ask Taara".
+                      Tip: Select text in a message to see "Ask Lucinova".
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -486,7 +504,9 @@ export function Chat({
                     {/* Quick suggestions for main chat */}
                     <div className="flex flex-col gap-2 mb-4">
                       <button
-                        onClick={() => setInput("Explain a complex concept to me")}
+                        onClick={() =>
+                          setInput("Explain a complex concept to me")
+                        }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -496,7 +516,9 @@ export function Chat({
 
                       <button
                         onClick={() =>
-                          setInput("Help me create a study plan for a new subject")
+                          setInput(
+                            "Help me create a study plan for a new subject"
+                          )
                         }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
@@ -507,7 +529,9 @@ export function Chat({
 
                       <button
                         onClick={() =>
-                          setInput("Summarize this text and extract key learning points")
+                          setInput(
+                            "Summarize this text and extract key learning points"
+                          )
                         }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
@@ -731,7 +755,7 @@ function PendingAnnotationView({
       if (!res.ok) throw new Error("Failed to create annotation");
 
       const { annotation } = await res.json();
-      
+
       // Switch to the annotation thread view which will handle the chat
       onAnnotationCreated(annotation.id, selectedText);
     } catch (error) {
@@ -745,14 +769,14 @@ function PendingAnnotationView({
       className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <Sparkles className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Taara
+              Ask Lucinova
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               New annotation
@@ -768,7 +792,7 @@ function PendingAnnotationView({
       </div>
 
       {/* Selected Text Display */}
-      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
           "{selectedText}"
         </div>
@@ -827,7 +851,7 @@ function PendingAnnotationView({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question about this text..."
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
             disabled={isCreating}
           />
           <button
