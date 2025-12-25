@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { UIMessage as Message, TextStreamChatTransport } from "ai";
+import { Message } from "ai";
 import { X, MessageSquareText, Trash2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -56,12 +56,10 @@ export function AnnotationThreadView({
 
   const { messages, sendMessage, status, stop } = useChat({
     id: annotationId,
-    transport: new TextStreamChatTransport({
-      api: `/api/annotations/${annotationId}/chat`,
-      body: {
-        modelId,
-      },
-    }),
+    api: `/api/annotations/${annotationId}/chat`,
+    body: {
+      modelId,
+    },
     messages: initialMessages,
   });
 

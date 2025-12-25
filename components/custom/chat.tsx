@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { UIMessage as Message, TextStreamChatTransport } from "ai";
+import { Message } from "ai";
 import { Attachment } from "./types";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
@@ -69,14 +69,12 @@ export function Chat({
 
   const { messages, sendMessage, status, stop } = useChat({
     id: chatIdForSubmit,
-    transport: new TextStreamChatTransport({
-      api: isThread ? "/api/thread" : "/api/chat",
-      body: {
-        id: chatIdForSubmit,
-        modelId: selectedModel,
-        ...(isThread && { parentMessageId, mainChatId, selectedText }),
-      },
-    }),
+    api: isThread ? "/api/thread" : "/api/chat",
+    body: {
+      id: chatIdForSubmit,
+      modelId: selectedModel,
+      ...(isThread && { parentMessageId, mainChatId, selectedText }),
+    },
     messages: initialMessages,
     onFinish: () => {
       const url = `/chat/${chatIdForSubmit}`;
