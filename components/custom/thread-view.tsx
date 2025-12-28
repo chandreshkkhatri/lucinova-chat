@@ -1,7 +1,7 @@
 import { X, MessageSquare, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chat } from "./chat";
-import { UIMessage as Message } from "ai";
+import { Message } from "ai";
 import { useState, useEffect } from "react";
 import { mutate as revalidateSWR } from "swr";
 

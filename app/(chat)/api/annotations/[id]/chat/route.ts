@@ -1,8 +1,8 @@
 import {
-  convertToModelMessages,
-  UIMessage as Message,
+  convertToCoreMessages,
+  Message,
   streamText,
-  ModelMessage,
+  CoreMessage,
 } from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
@@ -40,7 +40,7 @@ export async function POST(
   const messageId = (annotation as any).messageId.toString();
   const selectedText = (annotation as any).selectedText;
 
-  const coreMessages = (await convertToModelMessages(messages)).filter(
+  const coreMessages = convertToCoreMessages(messages).filter(
     (message) => message.content.length > 0
   );
 
@@ -77,7 +77,7 @@ export async function POST(
   // Build context: the parent message + selected text context
   const chatDoc = await getChatById({ id: chatId });
 
-  let additionalContext: Array<ModelMessage> = [];
+  let additionalContext: Array<CoreMessage> = [];
 
   if (chatDoc) {
     await ensureConnection();
@@ -88,7 +88,7 @@ export async function POST(
     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
       const aiId = (chatDoc as any).aiId?.toString();
 
-      const toCore = (m: any): ModelMessage => ({
+      const toCore = (m: any): CoreMessage => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -97,7 +97,7 @@ export async function POST(
     }
   }
 
-  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
   const model = modelId
@@ -132,5 +132,5 @@ IMPORTANT INSTRUCTIONS:
     },
   });
 
-  return result.toTextStreamResponse();
+  return result.toDataStreamResponse();
 }

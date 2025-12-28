@@ -1,8 +1,8 @@
 import {
-  convertToModelMessages,
-  UIMessage as Message,
+  convertToCoreMessages,
+  Message,
   streamText,
-  ModelMessage,
+  CoreMessage,
 } from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const coreMessages = (await convertToModelMessages(messages)).filter(
+  const coreMessages = convertToCoreMessages(messages).filter(
     (message) => message.content.length > 0
   );
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   // Build extended context: up to four messages before the parent + the parent message itself + the entire thread conversation
   const chatDoc = await getChatById({ id: mainChatId });
 
-  let additionalContext: Array<ModelMessage> = [];
+  let additionalContext: Array<CoreMessage> = [];
 
   if (chatDoc) {
     // Ensure connection for direct database operations
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         .limit(4)
         .lean();
 
-      const toCore = (m: any): ModelMessage => ({
+      const toCore = (m: any): CoreMessage => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
   const model = modelId
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return result.toTextStreamResponse();
+  return result.toDataStreamResponse();
 }
 
 export async function DELETE(request: Request) {

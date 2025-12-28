@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage as Message } from "ai";
+import { Message } from "ai";
 import { Attachment } from "./types";
 import { Mic, MicOff, Paperclip, Send, Square, X } from "lucide-react";
 import Image from "next/image";

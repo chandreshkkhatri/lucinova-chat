@@ -54,26 +54,22 @@ export function AnnotationThreadView({
 
   const [input, setInput] = useState("");
 
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, append, isLoading: chatIsLoading, stop } = useChat({
     id: annotationId,
     api: `/api/annotations/${annotationId}/chat`,
     body: {
       modelId,
     },
-    messages: initialMessages,
+    initialMessages,
   });
 
-  const isChatLoading = status === "submitted" || status === "streaming";
+  const isChatLoading = chatIsLoading;
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
-    sendMessage({ role: "user", content: input } as any);
+    append({ role: "user", content: input });
     setInput("");
-  };
-
-  const append = (message: any) => {
-    sendMessage(message);
   };
 
   // Scroll to bottom when messages change
@@ -239,10 +235,10 @@ export function AnnotationThreadView({
                   >
                     <div className="prose prose-sm dark:prose-invert max-w-none">
                       <Markdown>
-                        {message.parts
-                          ? message.parts
-                              .filter((p) => p.type === "text")
-                              .map((p) => (p as any).text)
+                        {(message as any).parts
+                          ? (message as any).parts
+                              .filter((p: any) => p.type === "text")
+                              .map((p: any) => p.text)
                               .join("")
                           : (message as any).content || ""}
                       </Markdown>

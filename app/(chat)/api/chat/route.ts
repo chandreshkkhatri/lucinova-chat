@@ -1,9 +1,9 @@
 import {
-  convertToModelMessages,
+  convertToCoreMessages,
   generateText,
-  UIMessage as Message,
+  Message,
   streamText,
-  ModelMessage,
+  CoreMessage,
 } from "ai";
 
 import { geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
@@ -22,13 +22,13 @@ import { appConfig } from "@/lib/config";
 
 /**
  * Convert messages to core format while properly handling audio/file attachments.
- * The default convertToModelMessages may not properly convert audio attachments
+ * The default convertToCoreMessages may not properly convert audio attachments
  * to file parts that Gemini can understand.
  */
 async function convertMessagesWithAttachments(
   messages: Array<Message>
-): Promise<ModelMessage[]> {
-  const modelMessages: ModelMessage[] = [];
+): Promise<CoreMessage[]> {
+  const coreMessages: CoreMessage[] = [];
 
   for (const msg of messages) {
     const attachments = (msg as any).experimental_attachments || [];
@@ -73,15 +73,15 @@ async function convertMessagesWithAttachments(
         }
 
         // Clean content type (remove codecs parameters)
-        let mediaType = attachment.contentType || "audio/webm";
-        if (mediaType.includes(";")) {
-          mediaType = mediaType.split(";")[0].trim();
+        let mimeType = attachment.contentType || "audio/webm";
+        if (mimeType.includes(";")) {
+          mimeType = mimeType.split(";")[0].trim();
         }
 
         contentParts.push({
           type: "file",
           data: audioData,
-          mediaType,
+          mimeType,
         });
       }
 
@@ -95,18 +95,18 @@ async function convertMessagesWithAttachments(
         }
       }
 
-      modelMessages.push({
+      coreMessages.push({
         role: "user",
         content: contentParts,
       });
     } else {
       // Use default conversion for non-audio messages
-      const converted = await convertToModelMessages([msg]);
-      modelMessages.push(...converted);
+      const converted = convertToCoreMessages([msg]);
+      coreMessages.push(...converted);
     }
   }
 
-  return modelMessages.filter((message) => {
+  return coreMessages.filter((message) => {
     if (typeof message.content === "string") {
       return message.content.length > 0;
     }
@@ -280,7 +280,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return result.toTextStreamResponse();
+  return result.toDataStreamResponse();
 }
 
 export async function PUT(request: Request) {

@@ -67,7 +67,7 @@ export function Chat({
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
 
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, append, isLoading, stop } = useChat({
     id: chatIdForSubmit,
     api: isThread ? "/api/thread" : "/api/chat",
     body: {
@@ -75,7 +75,7 @@ export function Chat({
       modelId: selectedModel,
       ...(isThread && { parentMessageId, mainChatId, selectedText }),
     },
-    messages: initialMessages,
+    initialMessages,
     onFinish: () => {
       const url = `/chat/${chatIdForSubmit}`;
       window.history.replaceState({}, "", url);
@@ -83,24 +83,18 @@ export function Chat({
     },
   });
 
-  const isLoading = status === "submitted" || status === "streaming";
-
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
 
-    sendMessage({
+    append({
       role: "user",
       content: input,
       experimental_attachments: attachments,
-    } as any);
+    });
 
     setInput("");
     setAttachments([]);
-  };
-
-  const append = (message: any) => {
-    sendMessage(message);
   };
 
   const [messagesContainerRef, messagesEndRef] =

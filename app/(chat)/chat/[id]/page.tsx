@@ -1,4 +1,4 @@
-import { generateId, UIMessage as Message } from "ai";
+import { generateId, Message } from "ai";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -134,6 +134,7 @@ export default async function Page({
     return {
       id: msg._id?.toString() || generateId(),
       role,
+      content: msg.body || "",
       parts,
       ...(attachments.length > 0 && { experimental_attachments: attachments }),
     };

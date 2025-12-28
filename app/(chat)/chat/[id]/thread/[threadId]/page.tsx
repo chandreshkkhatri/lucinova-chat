@@ -1,4 +1,4 @@
-import { UIMessage as Message, generateId } from "ai";
+import { Message, generateId } from "ai";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/app/(auth)/auth";
@@ -71,6 +71,7 @@ export default async function ThreadPage({
     return {
       id: msg._id?.toString() || generateId(),
       role,
+      content: msg.body || "",
       parts,
     };
   }) as Message[];

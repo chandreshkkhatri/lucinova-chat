@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage as Message } from "ai";
+import { Message } from "ai";
 import { MessageSquareText } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -129,10 +129,10 @@ export function EnhancedMessage({
   // Fix for issues where content comes in as stringified objects
   // Fix for issues where content comes in as stringified objects
   let content = "";
-  if (message.parts) {
-    content = message.parts
-      .filter((p) => p.type === "text")
-      .map((p) => (p as any).text)
+  if ((message as any).parts) {
+    content = (message as any).parts
+      .filter((p: any) => p.type === "text")
+      .map((p: any) => p.text)
       .join("");
   }
 

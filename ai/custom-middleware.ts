@@ -1,5 +1,3 @@
-import { LanguageModelMiddleware } from "ai";
+import { Experimental_LanguageModelV1Middleware as LanguageModelMiddleware } from "ai";
 
-export const customMiddleware: LanguageModelMiddleware = {
-  specificationVersion: "v3",
-};
+export const customMiddleware: LanguageModelMiddleware = {};
