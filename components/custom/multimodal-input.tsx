@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage, FileUIPart } from "ai";
+import { UIMessage } from "ai";
 import { Mic, MicOff, Paperclip, Send, Square, X } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
@@ -15,8 +15,8 @@ interface MultimodalInputProps {
   setInput: (value: string) => void;
   isLoading: boolean;
   stop: () => void;
-  attachments: FileUIPart[];
-  setAttachments: Dispatch<SetStateAction<FileUIPart[]>>;
+  attachments: Attachment[];
+  setAttachments: Dispatch<SetStateAction<Attachment[]>>;
   messages: UIMessage[];
   sendMessage: (message: {
     text: string;

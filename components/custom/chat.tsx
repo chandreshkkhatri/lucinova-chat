@@ -1,7 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, FileUIPart, UIMessage } from "ai";
+import { DefaultChatTransport, UIMessage } from "ai";
+import type { FileUIPart } from "ai";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -82,16 +83,27 @@ export function Chat({
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
 
-    sendMessage({
-      text: input,
-      files: attachments,
-    }, {
-      body: {
-        id: chatIdForSubmit,
-        modelId: selectedModel,
-        ...(isThread && { parentMessageId, mainChatId, selectedText }),
+    // Convert local Attachment objects to FileUIPart expected by the chat transport
+    const fileParts: FileUIPart[] = attachments.map((a) => ({
+      type: "file",
+      mediaType: a.contentType ?? "",
+      filename: a.name ?? "attachment",
+      data: a.url,
+    } as unknown as FileUIPart));
+
+    sendMessage(
+      {
+        text: input,
+        files: fileParts,
       },
-    });
+      {
+        body: {
+          id: chatIdForSubmit,
+          modelId: selectedModel,
+          ...(isThread && { parentMessageId, mainChatId, selectedText }),
+        },
+      }
+    );
 
     setInput("");
     setAttachments([]);
@@ -100,7 +112,7 @@ export function Chat({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  const [attachments, setAttachments] = useState<FileUIPart[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   // Reply thread state
   const [activeThread, setActiveThread] = useState<{
