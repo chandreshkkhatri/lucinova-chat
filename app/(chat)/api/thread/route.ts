@@ -1,11 +1,21 @@
-import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
+import {
+  convertToModelMessages,
+  UIMessage,
+  streamText,
+  ModelMessage,
+} from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
-import { getChatById, createMessage, getUserByEmail, deleteThreadMessages } from "@/db/queries";
-import { appConfig } from "@/lib/config";
-import { Message as DbMessage } from "@/db/models";
 import { ensureConnection } from "@/db/connection";
+import { Message as DbMessage } from "@/db/models";
+import {
+  getChatById,
+  createMessage,
+  getUserByEmail,
+  deleteThreadMessages,
+} from "@/db/queries";
+import { appConfig } from "@/lib/config";
 
 export async function POST(request: Request) {
   const {
@@ -15,7 +25,7 @@ export async function POST(request: Request) {
     selectedText,
     modelId,
   }: {
-    messages: Array<Message>;
+    messages: Array<UIMessage>;
     parentMessageId: string;
     mainChatId: string;
     selectedText?: string;
@@ -28,7 +38,7 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const coreMessages = convertToCoreMessages(messages).filter(
+  const coreMessages = (await convertToModelMessages(messages)).filter(
     (message) => message.content.length > 0
   );
 
@@ -66,12 +76,12 @@ export async function POST(request: Request) {
   // Build extended context: up to four messages before the parent + the parent message itself + the entire thread conversation
   const chatDoc = await getChatById({ id: mainChatId });
 
-  let additionalContext: Array<CoreMessage> = [];
+  let additionalContext: Array<ModelMessage> = [];
 
   if (chatDoc) {
     // Ensure connection for direct database operations
     await ensureConnection();
-    
+
     const aiId = (chatDoc as any).aiId?.toString();
 
     // Fetch the parent message (top-level)
@@ -88,7 +98,7 @@ export async function POST(request: Request) {
         .limit(4)
         .lean();
 
-      const toCore = (m: any): CoreMessage => ({
+      const toCore = (m: any): ModelMessage => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -101,43 +111,38 @@ export async function POST(request: Request) {
     }
   }
 
-  const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
-  const model = modelId ? getModelById(modelId) : getModelById(DEFAULT_MODEL_ID);
+  const model = modelId
+    ? getModelById(modelId)
+    : getModelById(DEFAULT_MODEL_ID);
 
   const result = await streamText({
     model,
     system: `${appConfig.getModelIdentity()}
     You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
 
-    IMPORTANT: You are responding in a reply thread.${selectedText ? `\n\nThe user has selected the following text from the parent message and is asking about it:\n"${selectedText}"\n\nFocus your response on this selected text and the user's question about it.` : " Only answer based on the user's follow-up question."}`,
+    IMPORTANT: You are responding in a reply thread.${
+      selectedText
+        ? `\n\nThe user has selected the following text from the parent message and is asking about it:\n"${selectedText}"\n\nFocus your response on this selected text and the user's question about it.`
+        : " Only answer based on the user's follow-up question."
+    }`,
     messages: fullContext,
-    onFinish: async ({ responseMessages }) => {
-      // Persist AI response(s)
-      const toPlainText = (content: any): string => {
-        if (typeof content === "string") return content;
-        if (Array.isArray(content)) {
-          return content
-            .filter((p) => p.type === "text")
-            .map((p: any) => p.text)
-            .join("");
-        }
-        return "";
-      };
-
-      for (const msg of responseMessages) {
+    onFinish: async ({ text }) => {
+      // Persist AI response
+      if (text) {
         await createMessage({
           chatId: mainChatId,
           senderId: (await getChatById({ id: mainChatId })).aiId.toString(),
           parentMsgId: parentMessageId,
-          body: toPlainText(msg.content),
+          body: text,
         });
       }
     },
   });
 
-  return result.toDataStreamResponse({});
+  return result.toTextStreamResponse();
 }
 
 export async function DELETE(request: Request) {

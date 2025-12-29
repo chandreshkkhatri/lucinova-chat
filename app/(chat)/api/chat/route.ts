@@ -1,4 +1,10 @@
-import { convertToCoreMessages, generateText, Message, streamText } from "ai";
+import {
+  convertToModelMessages,
+  generateText,
+  UIMessage,
+  streamText,
+  ModelMessage,
+} from "ai";
 
 import { geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
@@ -14,12 +20,109 @@ import {
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
 
+/**
+ * Convert messages to core format while properly handling audio/file attachments.
+ * The default convertToModelMessages may not properly convert audio attachments
+ * to file parts that Gemini can understand.
+ */
+async function convertMessagesWithAttachments(
+  messages: Array<UIMessage>
+): Promise<ModelMessage[]> {
+  const coreMessages: ModelMessage[] = [];
+
+  for (const msg of messages) {
+    const attachments = (msg as any).experimental_attachments || [];
+    const msgContent = (msg as any).content || "";
+
+    // Check if there are any audio attachments
+    const audioAttachments = attachments.filter((a: any) =>
+      a.contentType?.startsWith("audio/")
+    );
+    const otherAttachments = attachments.filter(
+      (a: any) => !a.contentType?.startsWith("audio/")
+    );
+
+    if (audioAttachments.length > 0 && msg.role === "user") {
+      // Build content array with text and audio file parts
+      const contentParts: any[] = [];
+
+      // Add text part first
+      if (msgContent && msgContent !== "[Voice message]") {
+        contentParts.push({
+          type: "text",
+          text: msgContent,
+        });
+      } else {
+        // For voice-only messages, add a prompt for the AI
+        contentParts.push({
+          type: "text",
+          text: "Please listen to this audio message and respond appropriately:",
+        });
+      }
+
+      // Add audio file parts
+      for (const attachment of audioAttachments) {
+        // Extract base64 data from data URL if present
+        let audioData = attachment.url;
+        if (audioData.startsWith("data:")) {
+          // It's a data URL, extract the base64 part
+          const base64Match = audioData.match(/^data:[^;]+;base64,(.+)$/);
+          if (base64Match) {
+            audioData = base64Match[1];
+          }
+        }
+
+        // Clean content type (remove codecs parameters)
+        let mimeType = attachment.contentType || "audio/webm";
+        if (mimeType.includes(";")) {
+          mimeType = mimeType.split(";")[0].trim();
+        }
+
+        contentParts.push({
+          type: "file",
+          data: audioData,
+          mimeType,
+        });
+      }
+
+      // Add image attachments if any
+      for (const attachment of otherAttachments) {
+        if (attachment.contentType?.startsWith("image/")) {
+          contentParts.push({
+            type: "image",
+            image: attachment.url,
+          });
+        }
+      }
+
+      coreMessages.push({
+        role: "user",
+        content: contentParts,
+      });
+    } else {
+      // Use default conversion for non-audio messages
+      const converted = await convertToModelMessages([msg]);
+      coreMessages.push(...converted);
+    }
+  }
+
+  return coreMessages.filter((message) => {
+    if (typeof message.content === "string") {
+      return message.content.length > 0;
+    }
+    if (Array.isArray(message.content)) {
+      return message.content.length > 0;
+    }
+    return true;
+  });
+}
+
 export async function POST(request: Request) {
   const {
     id,
     messages,
     modelId,
-  }: { id: string; messages: Array<Message>; modelId?: string } =
+  }: { id: string; messages: Array<UIMessage>; modelId?: string } =
     await request.json();
 
   const session = await auth();
@@ -29,11 +132,29 @@ export async function POST(request: Request) {
     "[Chat API] Request received - isGuest:",
     isGuest,
     "messageCount:",
-    messages.length,
+    messages.length
   );
 
-  const coreMessages = convertToCoreMessages(messages).filter(
-    (message) => message.content.length > 0,
+  // Use custom conversion that handles audio attachments properly
+  const coreMessages = await convertMessagesWithAttachments(messages);
+
+  // Debug: Log what we're sending to Gemini
+  console.log(
+    "[Chat API] Core messages prepared:",
+    JSON.stringify(
+      coreMessages.map((m) => ({
+        role: m.role,
+        contentType: typeof m.content,
+        contentLength: Array.isArray(m.content)
+          ? m.content.length
+          : (m.content as string)?.length,
+        parts: Array.isArray(m.content)
+          ? m.content.map((p: any) => ({ type: p.type, hasData: !!p.data }))
+          : undefined,
+      })),
+      null,
+      2
+    )
   );
 
   let userId: string | null = null;
@@ -51,7 +172,7 @@ export async function POST(request: Request) {
     "[Chat API] Processing - userId:",
     userId,
     "coreMessages:",
-    coreMessages.length,
+    coreMessages.length
   );
 
   // Only persist chat to DB for authenticated users
@@ -72,7 +193,7 @@ export async function POST(request: Request) {
           undefined, // password
           "AI Assistant", // displayName
           undefined, // avatarUrl
-          true, // isBot
+          true // isBot
         );
       }
 
@@ -80,13 +201,13 @@ export async function POST(request: Request) {
         userId,
         (aiUser as any)._id.toString(),
         "New Chat",
-        id,
+        id
       );
     }
 
     // Persist the latest user message (the last user role in the array)
     const userMessages = coreMessages.filter(
-      (m) => m.role === "user" && m.content,
+      (m) => m.role === "user" && m.content
     );
     const lastUserMsg = userMessages[userMessages.length - 1];
 
@@ -95,7 +216,7 @@ export async function POST(request: Request) {
     const lastRawUserMsg = rawUserMessages[rawUserMessages.length - 1];
 
     if (lastRawUserMsg) {
-      const textContent = lastRawUserMsg.content;
+      const textContent = (lastRawUserMsg as any).content || "";
       const attachments =
         (lastRawUserMsg as any).experimental_attachments || [];
 
@@ -123,36 +244,23 @@ export async function POST(request: Request) {
     model,
     system: `${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
     messages: coreMessages,
-    onFinish: async ({ responseMessages }) => {
+    onFinish: async ({ text }) => {
       // Only persist for authenticated users
       if (isGuest || !userId) return;
 
-      // Persist AI response messages
+      // Persist AI response
       const currentChat = await getChatById({ id });
-      if (currentChat) {
-        const toPlainText = (content: any): string => {
-          if (typeof content === "string") return content;
-          if (Array.isArray(content)) {
-            return content
-              .filter((p) => p.type === "text")
-              .map((p: any) => p.text)
-              .join("");
-          }
-          return "";
-        };
-
-        for (const msg of responseMessages) {
-          await createMessage({
-            chatId: id,
-            senderId: (currentChat as any).aiId,
-            body: toPlainText(msg.content),
-          });
-        }
+      if (currentChat && text) {
+        await createMessage({
+          chatId: id,
+          senderId: (currentChat as any).aiId,
+          body: text,
+        });
 
         // After the first exchange, generate a title
         if (messages.length === 1) {
           const userMessages = coreMessages.filter(
-            (m) => m.role === "user" && m.content,
+            (m) => m.role === "user" && m.content
           );
           const lastUserMsg = userMessages[userMessages.length - 1];
 
@@ -160,8 +268,8 @@ export async function POST(request: Request) {
             const { text: title } = await generateText({
               model: geminiProModel,
               prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words). Do NOT use markdown formatting (no bold **, italics *, etc). Just plain text:\n\nUser: ${String(
-                lastUserMsg.content,
-              )}\nAssistant: ${toPlainText(responseMessages[0].content)}`,
+                lastUserMsg.content
+              )}\nAssistant: ${text}`,
             });
 
             await ensureConnection();
@@ -172,7 +280,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return result.toDataStreamResponse({});
+  return result.toTextStreamResponse();
 }
 
 export async function PUT(request: Request) {

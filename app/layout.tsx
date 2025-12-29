@@ -77,7 +77,7 @@ export default async function RootLayout({
         <meta name="theme-color" content="#000000" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="antialiased" suppressHydrationWarning>
+      <body className="subpixel-antialiased" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

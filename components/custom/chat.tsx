@@ -1,7 +1,8 @@
 "use client";
 
-import { Attachment, Message } from "ai";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, UIMessage } from "ai";
+import type { FileUIPart } from "ai";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -26,10 +27,11 @@ import {
 } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
 
+import { AnnotationThreadView } from "./annotation-thread-view";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { ThreadView } from "./thread-view";
-import { AnnotationThreadView } from "./annotation-thread-view";
+import { Attachment } from "./types";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -48,7 +50,7 @@ export function Chat({
   defaultModelId = "gemini-2.5-flash",
 }: {
   id: string;
-  initialMessages: Array<Message>;
+  initialMessages: Array<UIMessage>;
   isThread?: boolean;
   parentMessageId?: string;
   mainChatId?: string;
@@ -61,46 +63,69 @@ export function Chat({
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
-  
+
   // Model selection state - must be declared before useChat
-  const [selectedModel, setSelectedModel] =
-    useState<string>(defaultModelId);
-    
-  const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
-    useChat({
-      id: chatIdForSubmit,
-      body: {
-        id: chatIdForSubmit,
-        modelId: selectedModel,
-        ...(isThread && { parentMessageId, mainChatId, selectedText }),
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
+  const [input, setInput] = useState("");
+
+  const { messages, sendMessage, status, stop } = useChat({
+    id: chatIdForSubmit,
+    transport: new DefaultChatTransport({ api: isThread ? "/api/thread" : "/api/chat" }),
+    messages: initialMessages,
+    onFinish: () => {
+      const url = `/chat/${chatIdForSubmit}`;
+      window.history.replaceState({}, "", url);
+      onFinish?.();
+    },
+  });
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() && attachments.length === 0) return;
+
+    // Convert local Attachment objects to FileUIPart expected by the chat transport
+    const fileParts: FileUIPart[] = attachments.map((a) => ({
+      type: "file",
+      mediaType: a.contentType ?? "",
+      filename: a.name ?? "attachment",
+      data: a.url,
+    } as unknown as FileUIPart));
+
+    sendMessage(
+      {
+        text: input,
+        files: fileParts,
       },
-      initialMessages,
-      maxSteps: 10,
-      api: isThread ? "/api/thread" : "/api/chat",
-      onFinish: () => {
-        const url = `/chat/${chatIdForSubmit}`;
-        window.history.replaceState({}, "", url);
-        onFinish?.();
-      },
-    });
+      {
+        body: {
+          id: chatIdForSubmit,
+          modelId: selectedModel,
+          ...(isThread && { parentMessageId, mainChatId, selectedText }),
+        },
+      }
+    );
+
+    setInput("");
+    setAttachments([]);
+  };
 
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  const [attachments, setAttachments] = useState<Array<Attachment>>([]);
-  
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+
   // Reply thread state
   const [activeThread, setActiveThread] = useState<{
-    parentMessage: Message;
+    parentMessage: UIMessage;
     selectedText?: string;
   } | null>(null);
-  
-  // Annotation (Ask Taara) thread state
+
+  // Annotation (Ask Lucinova) thread state
   const [activeAnnotation, setActiveAnnotation] = useState<{
     id: string;
     selectedText: string;
   } | null>(null);
-  
+
   // Pending annotation (before first message is sent)
   const [pendingAnnotation, setPendingAnnotation] = useState<{
     messageId: string;
@@ -116,16 +141,13 @@ export function Chat({
   const annotations: SavedAnnotation[] = annotationsData?.annotations || [];
 
   // Group annotations by messageId
-  const annotationsByMessage = annotations.reduce(
-    (acc, ann) => {
-      if (!acc[ann.messageId]) {
-        acc[ann.messageId] = [];
-      }
-      acc[ann.messageId].push(ann);
-      return acc;
-    },
-    {} as Record<string, SavedAnnotation[]>
-  );
+  const annotationsByMessage = annotations.reduce((acc, ann) => {
+    if (!acc[ann.messageId]) {
+      acc[ann.messageId] = [];
+    }
+    acc[ann.messageId].push(ann);
+    return acc;
+  }, {} as Record<string, SavedAnnotation[]>);
 
   const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
@@ -143,8 +165,8 @@ export function Chat({
     }
   };
 
-  // Handle "Ask Taara" click - create pending annotation
-  const handleAskTaara = useCallback(
+  // Handle "Ask Lucinova" click - create pending annotation
+  const handleAskLucinova = useCallback(
     (messageId: string, selectedText: string) => {
       setPendingAnnotation({ messageId, selectedText });
       setActiveThread(null);
@@ -192,10 +214,10 @@ export function Chat({
       if (!res.ok) throw new Error("Failed to create annotation");
 
       const { annotation } = await res.json();
-      
+
       // Update annotations list
       mutateAnnotations();
-      
+
       // Switch from pending to active annotation
       setActiveAnnotation({
         id: annotation.id,
@@ -214,7 +236,7 @@ export function Chat({
     message,
     showReply = true,
   }: {
-    message: Message;
+    message: UIMessage;
     showReply?: boolean;
   }) => {
     const { threadCount } = useThreadCount(message.id, id);
@@ -223,9 +245,8 @@ export function Chat({
     return (
       <div className="group relative">
         <div
-          className={`flex gap-2 p-2 sm:p-3 ${
-            message.role === "user" ? "justify-end" : ""
-          }`}
+          className={`flex gap-2 p-2 sm:p-3 ${message.role === "user" ? "justify-end" : ""
+            }`}
         >
           {message.role === "assistant" && (
             <Avatar className="size-8 shrink-0">
@@ -233,8 +254,9 @@ export function Chat({
                 <Image
                   src="/images/lucidity-logo.png"
                   alt="Lucidity"
-                  width={28}
-                  height={28}
+                        width={28}
+                        height={28}
+                        quality={90}
                   className="size-full object-contain"
                 />
               </AvatarFallback>
@@ -242,16 +264,14 @@ export function Chat({
           )}
 
           <div
-            className={`flex-1 max-w-[90%] sm:max-w-[85%] md:max-w-2xl ${
-              message.role === "user" ? "text-right" : ""
-            }`}
+            className={`flex-1 max-w-[90%] sm:max-w-[85%] md:max-w-2xl ${message.role === "user" ? "text-right" : ""
+              }`}
           >
             <div
-              className={`inline-block ${
-                message.role === "user"
-                  ? "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
-                  : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
-              }`}
+              className={`inline-block ${message.role === "user"
+                ? "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
+                : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
+                }`}
             >
               <div className="flex items-start gap-2">
                 <div className="flex-1">
@@ -259,8 +279,8 @@ export function Chat({
                     message={message}
                     chatId={id}
                     annotations={messageAnnotations}
-                    onAskTaara={(selectedText) =>
-                      handleAskTaara(message.id, selectedText)
+                    onAskLucinova={(selectedText) =>
+                      handleAskLucinova(message.id, selectedText)
                     }
                     onOpenAnnotation={handleOpenAnnotation}
                   />
@@ -295,7 +315,7 @@ export function Chat({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Tip: Select text in a message to see "Ask Taara".
+                      Tip: Select text in a message to see &quot;Ask Lucinova&quot;.
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -320,15 +340,13 @@ export function Chat({
 
   return (
     <div
-      className={`flex h-full ${className} ${
-        isThread ? "max-h-full overflow-hidden" : ""
-      } bg-paper`}
+      className={`flex h-full ${className} ${isThread ? "max-h-full overflow-hidden" : ""
+        } bg-paper`}
     >
       {/* Main Chat Area */}
       <div
-        className={`flex-1 flex flex-col min-w-0 ${
-          showSidebar ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
-        } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
+        className={`flex-1 flex flex-col min-w-0 ${showSidebar ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
+          } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
       >
         {/* Model Selector Header */}
         {!isThread && (
@@ -383,9 +401,8 @@ export function Chat({
 
         {/* Messages */}
         <div
-          className={`flex-1 overflow-y-auto min-h-0 ${
-            isThread ? "max-h-full" : ""
-          }`}
+          className={`flex-1 overflow-y-auto min-h-0 ${isThread ? "max-h-full" : ""
+            }`}
           ref={messagesContainerRef}
         >
           {messages.length === 0 ? (
@@ -486,7 +503,9 @@ export function Chat({
                     {/* Quick suggestions for main chat */}
                     <div className="flex flex-col gap-2 mb-4">
                       <button
-                        onClick={() => setInput("Explain a complex concept to me")}
+                        onClick={() =>
+                          setInput("Explain a complex concept to me")
+                        }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -496,7 +515,9 @@ export function Chat({
 
                       <button
                         onClick={() =>
-                          setInput("Help me create a study plan for a new subject")
+                          setInput(
+                            "Help me create a study plan for a new subject"
+                          )
                         }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
@@ -507,7 +528,9 @@ export function Chat({
 
                       <button
                         onClick={() =>
-                          setInput("Summarize this text and extract key learning points")
+                          setInput(
+                            "Summarize this text and extract key learning points"
+                          )
                         }
                         className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
@@ -536,7 +559,7 @@ export function Chat({
             </div>
           )}
 
-          {isLoading && (
+          {(status === "streaming" || status === "submitted") && (
             <div className="p-3">
               <div className="flex items-center gap-2">
                 <Avatar className="size-8 shrink-0">
@@ -571,14 +594,14 @@ export function Chat({
         <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0">
           <div className="max-w-4xl mx-auto">
             {isGuest &&
-            messages.filter((m) => m.role === "user").length >= 5 ? (
+              messages.filter((m) => m.role === "user").length >= 5 ? (
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
                 <Sparkles className="size-12 mx-auto mb-3 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Ready for more?
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  You've reached the guest message limit. Sign up to continue
+                  You&apos;ve reached the guest message limit. Sign up to continue
                   chatting and unlock unlimited messages!
                 </p>
                 <button
@@ -593,12 +616,12 @@ export function Chat({
               <MultimodalInput
                 input={input}
                 setInput={setInput}
-                isLoading={isLoading}
+                isLoading={status === "streaming" || status === "submitted"}
                 stop={stop}
                 attachments={attachments}
                 setAttachments={setAttachments}
                 messages={messages}
-                append={append}
+                sendMessage={sendMessage}
                 handleSubmit={handleSubmit}
               />
             )}
@@ -731,7 +754,7 @@ function PendingAnnotationView({
       if (!res.ok) throw new Error("Failed to create annotation");
 
       const { annotation } = await res.json();
-      
+
       // Switch to the annotation thread view which will handle the chat
       onAnnotationCreated(annotation.id, selectedText);
     } catch (error) {
@@ -745,14 +768,14 @@ function PendingAnnotationView({
       className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <Sparkles className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Taara
+              Ask Lucinova
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               New annotation
@@ -768,9 +791,9 @@ function PendingAnnotationView({
       </div>
 
       {/* Selected Text Display */}
-      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-          "{selectedText}"
+          {'"'}{selectedText}{'"'}
         </div>
       </div>
 
@@ -827,7 +850,7 @@ function PendingAnnotationView({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question about this text..."
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
             disabled={isCreating}
           />
           <button

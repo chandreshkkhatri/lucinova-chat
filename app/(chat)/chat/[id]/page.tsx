@@ -1,4 +1,4 @@
-import { generateId, Message } from "ai";
+import { generateId, UIMessage } from "ai";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -105,7 +105,7 @@ export default async function Page({
 
   // fetch top-level messages from DB and map to UI-friendly format
   const rawMessages = await getCachedMessages(id);
-  const uiMessages: Message[] = rawMessages.map((msg: any) => {
+  const uiMessages: UIMessage[] = rawMessages.map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId.toString() === userId ? "user" : "assistant";
 
@@ -116,13 +116,29 @@ export default async function Page({
       contentType: f.mime,
     }));
 
+    // Build parts array (SDK v6 format)
+    const parts: any[] = [];
+    if (msg.body) {
+      parts.push({ type: "text", text: msg.body });
+    }
+    // Add file parts for attachments
+    for (const attachment of attachments) {
+      if (attachment.contentType?.startsWith("image/")) {
+        parts.push({
+          type: "file",
+          file: { url: attachment.url, mediaType: attachment.contentType },
+        });
+      }
+    }
+
     return {
       id: msg._id?.toString() || generateId(),
       role,
-      content: msg.body,
+      content: msg.body || "",
+      parts,
       ...(attachments.length > 0 && { experimental_attachments: attachments }),
     };
-  });
+  }) as UIMessage[];
   const isThread = false;
 
   return (

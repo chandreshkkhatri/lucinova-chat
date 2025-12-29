@@ -122,7 +122,7 @@ messageSchema.index({ parentMsgId: 1, createdAt: 1 });
 export const Message =
   mongoose.models.Message || mongoose.model<IMessage>("Message", messageSchema);
 
-// Annotation schema - for "Ask Taara" threads tied to selected text
+// Annotation schema - for "Ask Lucinova" threads tied to selected text
 export interface IAnnotation extends Document {
   messageId: mongoose.Types.ObjectId | string; // The message containing the selected text
   chatId: mongoose.Types.ObjectId | string;
@@ -148,7 +148,8 @@ const annotationSchema = new Schema<IAnnotation>(
 annotationSchema.index({ messageId: 1, createdAt: 1 });
 annotationSchema.index({ chatId: 1 });
 export const Annotation =
-  mongoose.models.Annotation || mongoose.model<IAnnotation>("Annotation", annotationSchema);
+  mongoose.models.Annotation ||
+  mongoose.model<IAnnotation>("Annotation", annotationSchema);
 
 // Payment schema (records payment events/orders from Razorpay)
 export interface IPayment extends Document {

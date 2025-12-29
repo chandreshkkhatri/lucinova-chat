@@ -9,10 +9,10 @@ export const appConfig = {
   // Model name mappings
   modelNames: {
     custom: {
-      "gemini-2.5-flash": "Taara 2.5",
-      "gemini-2.5-pro": "Taara 2.5 Pro",
-      "gemini-3.0-flash": "Taara 3.0",
-      "gemini-3.0-pro": "Taara 3.0 Pro",
+      "gemini-2.5-flash": "Lucinova 2.5",
+      "gemini-2.5-pro": "Lucinova 2.5 Pro",
+      "gemini-3.0-flash": "Lucinova 3.0",
+      "gemini-3.0-pro": "Lucinova 3.0 Pro",
     } as Record<string, string>,
     original: {
       "gemini-2.5-flash": "Gemini 2.5 Flash",
@@ -25,7 +25,7 @@ export const appConfig = {
   // System prompt identity configuration
   getModelIdentity: () => {
     if (useCustomModelNames) {
-      return "You are Taara, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself (only when asked) as Taara, not as Gemini or any other AI model.";
+      return "You are Lucinova, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself (only when asked) as Lucinova, not as Gemini or any other AI model.";
     } else {
       return "You are a helpful AI assistant powered by Gemini.";
     }

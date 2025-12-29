@@ -1,14 +1,16 @@
 "use client";
 
+import { useChat } from "@ai-sdk/react";
+import { UIMessage, DefaultChatTransport } from "ai";
 import { X, MessageSquareText, Trash2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Message } from "ai";
-import { useState, useEffect, useRef } from "react";
-import { useChat } from "ai/react";
-import { MultimodalInput } from "./multimodal-input";
-import { Markdown } from "./markdown";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+
+import { Markdown } from "./markdown";
+import { MultimodalInput } from "./multimodal-input";
 
 interface AnnotationThreadViewProps {
   annotationId: string;
@@ -29,7 +31,7 @@ export function AnnotationThreadView({
   className = "",
   modelId,
 }: AnnotationThreadViewProps) {
-  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,22 +52,26 @@ export function AnnotationThreadView({
     loadMessages();
   }, [annotationId]);
 
-  const {
-    messages,
-    handleSubmit,
-    input,
-    setInput,
-    append,
-    isLoading: isChatLoading,
-    stop,
-  } = useChat({
+  const [input, setInput] = useState("");
+
+  const { messages, sendMessage, status, stop } = useChat({
     id: annotationId,
-    api: `/api/annotations/${annotationId}/chat`,
-    body: {
-      modelId,
-    },
-    initialMessages,
+    transport: new DefaultChatTransport({ api: `/api/annotations/${annotationId}/chat` }),
+    messages: initialMessages,
   });
+
+  const isChatLoading = status === "submitted" || status === "streaming";
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim()) return;
+    sendMessage({ text: input }, {
+      body: {
+        modelId,
+      }
+    });
+    setInput("");
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -97,14 +103,14 @@ export function AnnotationThreadView({
       className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <MessageSquareText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <MessageSquareText className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-              Ask Taara
+              Ask Lucinova
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               About selected text
@@ -119,7 +125,7 @@ export function AnnotationThreadView({
             className="rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
             title="Delete Annotation"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="size-4" />
           </Button>
           <Button
             variant="ghost"
@@ -127,16 +133,16 @@ export function AnnotationThreadView({
             onClick={onClose}
             className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </Button>
         </div>
       </div>
 
       {/* Selected Text Display */}
-      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="flex items-start gap-2">
           <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-            "{selectedText}"
+            {'"'}{selectedText}{'"'}
           </div>
         </div>
       </div>
@@ -198,18 +204,18 @@ export function AnnotationThreadView({
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-2 p-2 sm:p-3 ${
-                  message.role === "user" ? "justify-end" : ""
-                }`}
+                className={`flex gap-2 p-2 sm:p-3 ${message.role === "user" ? "justify-end" : ""
+                  }`}
               >
                 {message.role === "assistant" && (
                   <Avatar className="size-8 shrink-0">
                     <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
-                        alt="Taara"
+                        alt="Lucinova"
                         width={28}
                         height={28}
+                        quality={90}
                         className="size-full object-contain"
                       />
                     </AvatarFallback>
@@ -217,19 +223,24 @@ export function AnnotationThreadView({
                 )}
 
                 <div
-                  className={`flex-1 max-w-[90%] sm:max-w-[85%] ${
-                    message.role === "user" ? "text-right" : ""
-                  }`}
+                  className={`flex-1 max-w-[90%] sm:max-w-[85%] ${message.role === "user" ? "text-right" : ""
+                    }`}
                 >
                   <div
-                    className={`inline-block ${
-                      message.role === "user"
-                        ? "bg-purple-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
-                        : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
-                    }`}
+                    className={`inline-block ${message.role === "user"
+                      ? "bg-purple-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
+                      : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
+                      }`}
                   >
                     <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <Markdown>{message.content}</Markdown>
+                      <Markdown>
+                        {(message as any).parts
+                          ? (message as any).parts
+                            .filter((p: any) => p.type === "text")
+                            .map((p: any) => p.text)
+                            .join("")
+                          : (message as any).content || ""}
+                      </Markdown>
                     </div>
                   </div>
                 </div>
@@ -251,7 +262,7 @@ export function AnnotationThreadView({
                     <AvatarFallback className="bg-transparent p-0.5">
                       <Image
                         src="/images/lucidity-logo.png"
-                        alt="Taara"
+                        alt="Lucinova"
                         width={28}
                         height={28}
                         className="size-full object-contain"
@@ -276,7 +287,10 @@ export function AnnotationThreadView({
             )}
           </div>
         )}
-        <div ref={messagesEndRef} className="shrink-0 min-w-[24px] min-h-[24px]" />
+        <div
+          ref={messagesEndRef}
+          className="shrink-0 min-w-[24px] min-h-[24px]"
+        />
       </div>
 
       {/* Input */}
@@ -287,13 +301,12 @@ export function AnnotationThreadView({
           isLoading={isChatLoading}
           stop={stop}
           attachments={[]}
-          setAttachments={() => {}}
+          setAttachments={() => { }}
           messages={messages}
-          append={append}
+          sendMessage={sendMessage}
           handleSubmit={handleSubmit}
         />
       </div>
     </div>
   );
 }
-

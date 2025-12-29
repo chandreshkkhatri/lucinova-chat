@@ -1,12 +1,12 @@
 "use client";
 
-import { Message } from "ai";
+import { UIMessage } from "ai";
 import { MessageSquareText } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Markdown } from "./markdown";
 
-// Annotation type for saved "Ask Taara" threads
+// Annotation type for saved "Ask Lucinova" threads
 export interface SavedAnnotation {
   id: string;
   messageId: string;
@@ -15,10 +15,10 @@ export interface SavedAnnotation {
 }
 
 interface EnhancedMessageProps {
-  message: Message;
+  message: UIMessage;
   chatId: string;
   annotations?: SavedAnnotation[];
-  onAskTaara?: (selectedText: string) => void;
+  onAskLucinova?: (selectedText: string) => void;
   onOpenAnnotation?: (annotationId: string, selectedText: string) => void;
 }
 
@@ -26,7 +26,7 @@ export function EnhancedMessage({
   message,
   chatId,
   annotations = [],
-  onAskTaara,
+  onAskLucinova,
   onOpenAnnotation,
 }: EnhancedMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,8 +84,8 @@ export function EnhancedMessage({
             r.left - containerRect.left,
             r.top - containerRect.top,
             r.width,
-            r.height,
-          ),
+            r.height
+          )
       );
 
       setSelectionRects(relativeRects);
@@ -98,9 +98,9 @@ export function EnhancedMessage({
     };
   }, []);
 
-  const handleAskTaara = (e: React.MouseEvent) => {
+  const handleAskLucinova = (e: React.MouseEvent) => {
     e.preventDefault();
-    onAskTaara?.(capturedText);
+    onAskLucinova?.(capturedText);
     // Clear selection
     window.getSelection()?.removeAllRanges();
     setHasSelection(false);
@@ -127,50 +127,63 @@ export function EnhancedMessage({
   const controlY = wireStartY - curveHeight;
 
   // Fix for issues where content comes in as stringified objects
-  const rawContent = message.content;
-  const content =
-    typeof rawContent === "string"
-      ? rawContent.startsWith("[object Object]")
-        ? ""
-        : rawContent
-      : rawContent == null
+  // Fix for issues where content comes in as stringified objects
+  let content = "";
+  if ((message as any).parts) {
+    content = (message as any).parts
+      .filter((p: any) => p.type === "text")
+      .map((p: any) => p.text)
+      .join("");
+  }
+
+  if (!content) {
+    const rawContent = (message as any).content;
+    content =
+      typeof rawContent === "string"
+        ? rawContent.startsWith("[object Object]")
+          ? ""
+          : rawContent
+        : rawContent == null
         ? ""
         : JSON.stringify(rawContent);
+  }
 
   return (
     <div className="relative group">
       <div ref={containerRef} className="message-content relative z-10">
         <Markdown>{content}</Markdown>
 
-        {message.experimental_attachments &&
-          message.experimental_attachments.length > 0 && (
+        {(message as any).experimental_attachments &&
+          (message as any).experimental_attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {message.experimental_attachments.map((attachment, index) => (
-                <div key={index} className="relative max-w-[300px] w-full">
-                  {attachment.contentType?.startsWith("image") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={attachment.url}
-                      alt={attachment.name ?? `Attachment ${index + 1}`}
-                      className="rounded-lg w-full h-auto object-contain border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                      <div className="size-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs uppercase">
-                        {attachment.contentType?.split("/")[1] || "FILE"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
-                          {attachment.name || "Attachment"}
+              {(message as any).experimental_attachments.map(
+                (attachment: any, index: number) => (
+                  <div key={index} className="relative max-w-[300px] w-full">
+                    {attachment.contentType?.startsWith("image") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={attachment.url}
+                        alt={attachment.name ?? `Attachment ${index + 1}`}
+                        className="rounded-lg w-full h-auto object-contain border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                        <div className="size-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs uppercase">
+                          {attachment.contentType?.split("/")[1] || "FILE"}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {attachment.contentType}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
+                            {attachment.name || "Attachment"}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {attachment.contentType}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                )
+              )}
             </div>
           )}
       </div>
@@ -185,7 +198,7 @@ export function EnhancedMessage({
         />
       )}
 
-      {/* Selection Highlights and "Ask Taara" UI Overlay */}
+      {/* Selection Highlights and "Ask Lucinova" UI Overlay */}
       {hasSelection && selectionRects.length > 0 && lastRect && (
         <div
           className="absolute inset-0 pointer-events-none z-20"
@@ -222,7 +235,7 @@ export function EnhancedMessage({
             />
           </svg>
 
-          {/* "Ask Taara" Button */}
+          {/* "Ask Lucinova" Button */}
           <div
             className="absolute flex items-center justify-center"
             style={{
@@ -234,11 +247,11 @@ export function EnhancedMessage({
             }}
           >
             <button
-              onClick={handleAskTaara}
+              onClick={handleAskLucinova}
               className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-sm hover:scale-105 transition-all whitespace-nowrap"
             >
               <MessageSquareText className="size-3" />
-              <span>Ask Taara</span>
+              <span>Ask Lucinova</span>
             </button>
           </div>
         </div>
@@ -294,8 +307,8 @@ function SavedAnnotationsOverlay({
               r.left - containerRect.left,
               r.top - containerRect.top,
               r.width,
-              r.height,
-            ),
+              r.height
+            )
         );
 
         if (relativeRects.length > 0) {
@@ -431,7 +444,7 @@ function SavedAnnotationsOverlay({
 // Helper to find text ranges in DOM
 const findTextRanges = (
   container: HTMLElement,
-  searchText: string,
+  searchText: string
 ): Range[] => {
   const ranges: Range[] = [];
   if (!searchText) return ranges;
@@ -439,7 +452,7 @@ const findTextRanges = (
   const walker = document.createTreeWalker(
     container,
     NodeFilter.SHOW_TEXT,
-    null,
+    null
   );
   const textNodes: { node: Node; start: number; length: number }[] = [];
   let fullText = "";
@@ -461,7 +474,7 @@ const findTextRanges = (
   while (true) {
     const foundIndex = normalizedFullText.indexOf(
       normalizedSearchText,
-      searchIndex,
+      searchIndex
     );
     if (foundIndex === -1) break;
 
@@ -472,10 +485,10 @@ const findTextRanges = (
 
       const range = document.createRange();
       const startNodeInfo = textNodes.find(
-        (n) => startGlobal >= n.start && startGlobal < n.start + n.length,
+        (n) => startGlobal >= n.start && startGlobal < n.start + n.length
       );
       const endNodeInfo = textNodes.find(
-        (n) => endGlobal > n.start && endGlobal <= n.start + n.length,
+        (n) => endGlobal > n.start && endGlobal <= n.start + n.length
       );
 
       if (startNodeInfo && endNodeInfo) {
