@@ -1,8 +1,8 @@
 import {
-  convertToCoreMessages,
-  Message,
+  convertToModelMessages,
+  UIMessage,
   streamText,
-  CoreMessage,
+  ModelMessage,
 } from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
@@ -23,7 +23,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: annotationId } = await params;
-  const { messages, modelId }: { messages: Array<Message>; modelId?: string } =
+  const { messages, modelId }: { messages: Array<UIMessage>; modelId?: string } =
     await request.json();
 
   const session = await auth();
@@ -40,7 +40,7 @@ export async function POST(
   const messageId = (annotation as any).messageId.toString();
   const selectedText = (annotation as any).selectedText;
 
-  const coreMessages = convertToCoreMessages(messages).filter(
+  const coreMessages = (await convertToModelMessages(messages)).filter(
     (message) => message.content.length > 0
   );
 
@@ -77,7 +77,7 @@ export async function POST(
   // Build context: the parent message + selected text context
   const chatDoc = await getChatById({ id: chatId });
 
-  let additionalContext: Array<CoreMessage> = [];
+  let additionalContext: Array<ModelMessage> = [];
 
   if (chatDoc) {
     await ensureConnection();
@@ -88,7 +88,7 @@ export async function POST(
     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
       const aiId = (chatDoc as any).aiId?.toString();
 
-      const toCore = (m: any): CoreMessage => ({
+      const toCore = (m: any): ModelMessage => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -97,7 +97,7 @@ export async function POST(
     }
   }
 
-  const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
   const model = modelId
@@ -132,5 +132,5 @@ IMPORTANT INSTRUCTIONS:
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }

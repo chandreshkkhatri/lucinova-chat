@@ -1,4 +1,4 @@
-import { generateId, Message } from "ai";
+import { generateId, UIMessage } from "ai";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -105,7 +105,7 @@ export default async function Page({
 
   // fetch top-level messages from DB and map to UI-friendly format
   const rawMessages = await getCachedMessages(id);
-  const uiMessages: Message[] = rawMessages.map((msg: any) => {
+  const uiMessages: UIMessage[] = rawMessages.map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId.toString() === userId ? "user" : "assistant";
 
@@ -138,7 +138,7 @@ export default async function Page({
       parts,
       ...(attachments.length > 0 && { experimental_attachments: attachments }),
     };
-  }) as Message[];
+  }) as UIMessage[];
   const isThread = false;
 
   return (

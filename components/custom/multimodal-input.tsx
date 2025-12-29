@@ -1,27 +1,28 @@
 "use client";
 
-import { Message } from "ai";
-import { Attachment } from "./types";
+import { UIMessage, FileUIPart } from "ai";
 import { Mic, MicOff, Paperclip, Send, Square, X } from "lucide-react";
 import Image from "next/image";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+
+import { Attachment } from "./types";
 
 interface MultimodalInputProps {
   input: string;
   setInput: (value: string) => void;
   isLoading: boolean;
   stop: () => void;
-  attachments: Attachment[];
-  setAttachments: (attachments: Attachment[]) => void;
-  messages: Message[];
-  append: (message: {
-    role: "user";
-    content: string;
-    experimental_attachments?: Attachment[];
-  }) => void;
+  attachments: FileUIPart[];
+  setAttachments: Dispatch<SetStateAction<FileUIPart[]>>;
+  messages: UIMessage[];
+  sendMessage: (message: {
+    text: string;
+    attachments?: Attachment[];
+    options?: { body?: any }
+  }) => Promise<void>;
   handleSubmit: (e?: React.FormEvent) => void;
 }
 
@@ -36,7 +37,7 @@ export function MultimodalInput({
   attachments,
   setAttachments,
   messages,
-  append,
+  sendMessage,
   handleSubmit,
 }: MultimodalInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -135,8 +136,8 @@ export function MultimodalInput({
       const mimeType = MediaRecorder.isTypeSupported("audio/webm")
         ? "audio/webm"
         : MediaRecorder.isTypeSupported("audio/mp4")
-        ? "audio/mp4"
-        : "audio/ogg";
+          ? "audio/mp4"
+          : "audio/ogg";
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
@@ -173,10 +174,9 @@ export function MultimodalInput({
           };
 
           // Append message with audio attachment
-          append({
-            role: "user",
-            content: "[Voice message]",
-            experimental_attachments: [audioAttachment],
+          sendMessage({
+            text: "[Voice message]",
+            attachments: [audioAttachment],
           });
         };
         reader.readAsDataURL(audioBlob);
@@ -215,7 +215,7 @@ export function MultimodalInput({
         alert("Failed to start recording. Please try again.");
       }
     }
-  }, [append]);
+  }, [sendMessage]);
 
   // Stop audio recording
   const stopRecording = useCallback(() => {

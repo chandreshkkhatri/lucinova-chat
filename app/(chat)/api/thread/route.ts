@@ -1,8 +1,8 @@
 import {
-  convertToCoreMessages,
-  Message,
+  convertToModelMessages,
+  UIMessage,
   streamText,
-  CoreMessage,
+  ModelMessage,
 } from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     selectedText,
     modelId,
   }: {
-    messages: Array<Message>;
+    messages: Array<UIMessage>;
     parentMessageId: string;
     mainChatId: string;
     selectedText?: string;
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const coreMessages = convertToCoreMessages(messages).filter(
+  const coreMessages = (await convertToModelMessages(messages)).filter(
     (message) => message.content.length > 0
   );
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   // Build extended context: up to four messages before the parent + the parent message itself + the entire thread conversation
   const chatDoc = await getChatById({ id: mainChatId });
 
-  let additionalContext: Array<CoreMessage> = [];
+  let additionalContext: Array<ModelMessage> = [];
 
   if (chatDoc) {
     // Ensure connection for direct database operations
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         .limit(4)
         .lean();
 
-      const toCore = (m: any): CoreMessage => ({
+      const toCore = (m: any): ModelMessage => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const fullContext: CoreMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
   const model = modelId
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }
 
 export async function DELETE(request: Request) {

@@ -1,9 +1,9 @@
 import {
-  convertToCoreMessages,
+  convertToModelMessages,
   generateText,
-  Message,
+  UIMessage,
   streamText,
-  CoreMessage,
+  ModelMessage,
 } from "ai";
 
 import { geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
@@ -22,13 +22,13 @@ import { appConfig } from "@/lib/config";
 
 /**
  * Convert messages to core format while properly handling audio/file attachments.
- * The default convertToCoreMessages may not properly convert audio attachments
+ * The default convertToModelMessages may not properly convert audio attachments
  * to file parts that Gemini can understand.
  */
 async function convertMessagesWithAttachments(
-  messages: Array<Message>
-): Promise<CoreMessage[]> {
-  const coreMessages: CoreMessage[] = [];
+  messages: Array<UIMessage>
+): Promise<ModelMessage[]> {
+  const coreMessages: ModelMessage[] = [];
 
   for (const msg of messages) {
     const attachments = (msg as any).experimental_attachments || [];
@@ -101,7 +101,7 @@ async function convertMessagesWithAttachments(
       });
     } else {
       // Use default conversion for non-audio messages
-      const converted = convertToCoreMessages([msg]);
+      const converted = await convertToModelMessages([msg]);
       coreMessages.push(...converted);
     }
   }
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     id,
     messages,
     modelId,
-  }: { id: string; messages: Array<Message>; modelId?: string } =
+  }: { id: string; messages: Array<UIMessage>; modelId?: string } =
     await request.json();
 
   const session = await auth();
@@ -280,7 +280,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }
 
 export async function PUT(request: Request) {

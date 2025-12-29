@@ -1,12 +1,14 @@
+import { UIMessage } from "ai";
 import { X, MessageSquare, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Chat } from "./chat";
-import { Message } from "ai";
 import { useState, useEffect } from "react";
 import { mutate as revalidateSWR } from "swr";
 
+import { Button } from "@/components/ui/button";
+
+import { Chat } from "./chat";
+
 interface ThreadViewProps {
-  parentMessage: Message;
+  parentMessage: UIMessage;
   selectedText?: string;
   mainChatId: string;
   onClose: () => void;
@@ -22,7 +24,7 @@ export function ThreadView({
   className = "",
   modelId,
 }: ThreadViewProps) {
-  const [threadMessages, setThreadMessages] = useState<Message[]>([]);
+  const [threadMessages, setThreadMessages] = useState<UIMessage[]>([]);
 
   const handleNewReply = () => {
     revalidateSWR(
@@ -82,10 +84,10 @@ export function ThreadView({
       className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Thread Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <MessageSquare className="w-4 h-4 text-primary" />
+          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <MessageSquare className="size-4 text-primary" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">
@@ -104,7 +106,7 @@ export function ThreadView({
             className="rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
             title="Delete Thread"
           >
-            <Trash className="w-4 h-4" />
+            <Trash className="size-4" />
           </Button>
           <Button
             variant="ghost"
@@ -112,17 +114,17 @@ export function ThreadView({
             onClick={onClose}
             className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </Button>
         </div>
       </div>
 
       {/* Selected Text Display (if present) */}
       {selectedText && (
-        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <div className="flex items-center justify-center">
             <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 max-w-2xl">
-              "{selectedText}"
+              {'"'}{selectedText}{'"'}
             </div>
           </div>
         </div>
@@ -130,7 +132,7 @@ export function ThreadView({
 
       {/* Thread Separator */}
       {!selectedText && (
-        <div className="px-4 py-2 bg-gradient-to-b from-gray-100 to-gray-50 dark:from-gray-900 dark:to-gray-950 flex-shrink-0">
+        <div className="px-4 py-2 bg-gradient-to-b from-gray-100 to-gray-50 dark:from-gray-900 dark:to-gray-950 shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent"></div>
             <span className="text-xs text-gray-500 dark:text-gray-400 px-2">
@@ -142,7 +144,7 @@ export function ThreadView({
       )}
 
       {/* Thread Chat */}
-      <div className="min-h-0 flex-grow bg-white dark:bg-gray-900">
+      <div className="min-h-0 grow bg-white dark:bg-gray-900">
         <Chat
           id={mainChatId}
           initialMessages={threadMessages}

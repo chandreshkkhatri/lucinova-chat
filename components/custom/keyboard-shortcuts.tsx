@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Command,
@@ -12,6 +11,7 @@ import {
   Copy,
   X,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 interface ShortcutItem {
   keys: string[];
@@ -24,59 +24,62 @@ export function KeyboardShortcuts() {
   const [showHelp, setShowHelp] = useState(false);
   const [recentCommand, setRecentCommand] = useState<string | null>(null);
 
-  const shortcuts: ShortcutItem[] = [
-    {
-      keys: ["⌘", "K"],
-      label: "Command palette",
-      action: () => console.log("Open command palette"),
-      icon: Command,
-    },
-    {
-      keys: ["⌘", "/"],
-      label: "Search messages",
-      action: () => console.log("Search"),
-      icon: Search,
-    },
-    {
-      keys: ["⌘", "N"],
-      label: "New chat",
-      action: () => window.location.href = "/",
-      icon: MessageSquare,
-    },
-    {
-      keys: ["⌘", ","],
-      label: "Settings",
-      action: () => console.log("Open settings"),
-      icon: Settings,
-    },
-    {
-      keys: ["⌘", "⇧", "P"],
-      label: "Profile",
-      action: () => console.log("Open profile"),
-      icon: User,
-    },
-    {
-      keys: ["⌘", "E"],
-      label: "Export chat",
-      action: () => console.log("Export"),
-      icon: FileText,
-    },
-    {
-      keys: ["⌘", "C"],
-      label: "Copy last message",
-      action: () => {
-        const messages = document.querySelectorAll(".message-content");
-        if (messages.length > 0) {
-          const lastMessage = messages[messages.length - 1];
-          const text = lastMessage.textContent || "";
-          navigator.clipboard.writeText(text);
-          setRecentCommand("Copied to clipboard!");
-          setTimeout(() => setRecentCommand(null), 2000);
-        }
+  const shortcuts: ShortcutItem[] = useMemo(
+    () => [
+      {
+        keys: ["⌘", "K"],
+        label: "Command palette",
+        action: () => console.log("Open command palette"),
+        icon: Command,
       },
-      icon: Copy,
-    },
-  ];
+      {
+        keys: ["⌘", "/"],
+        label: "Search messages",
+        action: () => console.log("Search"),
+        icon: Search,
+      },
+      {
+        keys: ["⌘", "N"],
+        label: "New chat",
+        action: () => window.location.href = "/",
+        icon: MessageSquare,
+      },
+      {
+        keys: ["⌘", ","],
+        label: "Settings",
+        action: () => console.log("Open settings"),
+        icon: Settings,
+      },
+      {
+        keys: ["⌘", "⇧", "P"],
+        label: "Profile",
+        action: () => console.log("Open profile"),
+        icon: User,
+      },
+      {
+        keys: ["⌘", "E"],
+        label: "Export chat",
+        action: () => console.log("Export"),
+        icon: FileText,
+      },
+      {
+        keys: ["⌘", "C"],
+        label: "Copy last message",
+        action: () => {
+          const messages = document.querySelectorAll(".message-content");
+          if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            const text = lastMessage.textContent || "";
+            navigator.clipboard.writeText(text);
+            setRecentCommand("Copied to clipboard!");
+            setTimeout(() => setRecentCommand(null), 2000);
+          }
+        },
+        icon: Copy,
+      },
+    ],
+    [setRecentCommand]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -159,7 +162,7 @@ export function KeyboardShortcuts() {
                     onClick={() => setShowHelp(false)}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="size-4" />
                   </button>
                 </div>
 
@@ -173,7 +176,7 @@ export function KeyboardShortcuts() {
                       className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <shortcut.icon className="w-4 h-4 text-gray-500" />
+                        <shortcut.icon className="size-4 text-gray-500" />
                         <span className="text-sm font-medium">{shortcut.label}</span>
                       </div>
                       <div className="flex gap-1">
@@ -209,9 +212,9 @@ export function KeyboardShortcuts() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowHelp(true)}
-        className="fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow z-30"
+        className="fixed bottom-6 right-6 size-12 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow z-30"
       >
-        <Command className="w-5 h-5" />
+        <Command className="size-5" />
       </motion.button>
 
       <style jsx global>{`

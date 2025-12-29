@@ -1,8 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { Message } from "ai";
-import { Attachment } from "./types";
+import { DefaultChatTransport, FileUIPart, UIMessage } from "ai";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -31,6 +30,7 @@ import { AnnotationThreadView } from "./annotation-thread-view";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { ThreadView } from "./thread-view";
+import { Attachment } from "./types";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -49,7 +49,7 @@ export function Chat({
   defaultModelId = "gemini-2.5-flash",
 }: {
   id: string;
-  initialMessages: Array<Message>;
+  initialMessages: Array<UIMessage>;
   isThread?: boolean;
   parentMessageId?: string;
   mainChatId?: string;
@@ -67,15 +67,10 @@ export function Chat({
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
 
-  const { messages, append, isLoading, stop } = useChat({
+  const { messages, sendMessage, status, stop } = useChat({
     id: chatIdForSubmit,
-    api: isThread ? "/api/thread" : "/api/chat",
-    body: {
-      id: chatIdForSubmit,
-      modelId: selectedModel,
-      ...(isThread && { parentMessageId, mainChatId, selectedText }),
-    },
-    initialMessages,
+    transport: new DefaultChatTransport({ api: isThread ? "/api/thread" : "/api/chat" }),
+    messages: initialMessages,
     onFinish: () => {
       const url = `/chat/${chatIdForSubmit}`;
       window.history.replaceState({}, "", url);
@@ -87,10 +82,15 @@ export function Chat({
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
 
-    append({
-      role: "user",
-      content: input,
-      experimental_attachments: attachments,
+    sendMessage({
+      text: input,
+      files: attachments,
+    }, {
+      body: {
+        id: chatIdForSubmit,
+        modelId: selectedModel,
+        ...(isThread && { parentMessageId, mainChatId, selectedText }),
+      },
     });
 
     setInput("");
@@ -100,11 +100,11 @@ export function Chat({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  const [attachments, setAttachments] = useState<Array<Attachment>>([]);
+  const [attachments, setAttachments] = useState<FileUIPart[]>([]);
 
   // Reply thread state
   const [activeThread, setActiveThread] = useState<{
-    parentMessage: Message;
+    parentMessage: UIMessage;
     selectedText?: string;
   } | null>(null);
 
@@ -224,7 +224,7 @@ export function Chat({
     message,
     showReply = true,
   }: {
-    message: Message;
+    message: UIMessage;
     showReply?: boolean;
   }) => {
     const { threadCount } = useThreadCount(message.id, id);
@@ -233,9 +233,8 @@ export function Chat({
     return (
       <div className="group relative">
         <div
-          className={`flex gap-2 p-2 sm:p-3 ${
-            message.role === "user" ? "justify-end" : ""
-          }`}
+          className={`flex gap-2 p-2 sm:p-3 ${message.role === "user" ? "justify-end" : ""
+            }`}
         >
           {message.role === "assistant" && (
             <Avatar className="size-8 shrink-0">
@@ -252,16 +251,14 @@ export function Chat({
           )}
 
           <div
-            className={`flex-1 max-w-[90%] sm:max-w-[85%] md:max-w-2xl ${
-              message.role === "user" ? "text-right" : ""
-            }`}
+            className={`flex-1 max-w-[90%] sm:max-w-[85%] md:max-w-2xl ${message.role === "user" ? "text-right" : ""
+              }`}
           >
             <div
-              className={`inline-block ${
-                message.role === "user"
-                  ? "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
-                  : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
-              }`}
+              className={`inline-block ${message.role === "user"
+                ? "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
+                : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
+                }`}
             >
               <div className="flex items-start gap-2">
                 <div className="flex-1">
@@ -305,7 +302,7 @@ export function Chat({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Tip: Select text in a message to see "Ask Lucinova".
+                      Tip: Select text in a message to see &quot;Ask Lucinova&quot;.
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -330,15 +327,13 @@ export function Chat({
 
   return (
     <div
-      className={`flex h-full ${className} ${
-        isThread ? "max-h-full overflow-hidden" : ""
-      } bg-paper`}
+      className={`flex h-full ${className} ${isThread ? "max-h-full overflow-hidden" : ""
+        } bg-paper`}
     >
       {/* Main Chat Area */}
       <div
-        className={`flex-1 flex flex-col min-w-0 ${
-          showSidebar ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
-        } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
+        className={`flex-1 flex flex-col min-w-0 ${showSidebar ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
+          } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
       >
         {/* Model Selector Header */}
         {!isThread && (
@@ -393,9 +388,8 @@ export function Chat({
 
         {/* Messages */}
         <div
-          className={`flex-1 overflow-y-auto min-h-0 ${
-            isThread ? "max-h-full" : ""
-          }`}
+          className={`flex-1 overflow-y-auto min-h-0 ${isThread ? "max-h-full" : ""
+            }`}
           ref={messagesContainerRef}
         >
           {messages.length === 0 ? (
@@ -552,7 +546,7 @@ export function Chat({
             </div>
           )}
 
-          {isLoading && (
+          {(status === "streaming" || status === "submitted") && (
             <div className="p-3">
               <div className="flex items-center gap-2">
                 <Avatar className="size-8 shrink-0">
@@ -587,14 +581,14 @@ export function Chat({
         <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0">
           <div className="max-w-4xl mx-auto">
             {isGuest &&
-            messages.filter((m) => m.role === "user").length >= 5 ? (
+              messages.filter((m) => m.role === "user").length >= 5 ? (
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
                 <Sparkles className="size-12 mx-auto mb-3 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Ready for more?
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  You've reached the guest message limit. Sign up to continue
+                  You&apos;ve reached the guest message limit. Sign up to continue
                   chatting and unlock unlimited messages!
                 </p>
                 <button
@@ -609,12 +603,12 @@ export function Chat({
               <MultimodalInput
                 input={input}
                 setInput={setInput}
-                isLoading={isLoading}
+                isLoading={status === "streaming" || status === "submitted"}
                 stop={stop}
                 attachments={attachments}
                 setAttachments={setAttachments}
                 messages={messages}
-                append={append}
+                sendMessage={sendMessage}
                 handleSubmit={handleSubmit}
               />
             )}
@@ -786,7 +780,7 @@ function PendingAnnotationView({
       {/* Selected Text Display */}
       <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-          "{selectedText}"
+          {'"'}{selectedText}{'"'}
         </div>
       </div>
 
