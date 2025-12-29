@@ -3,7 +3,7 @@ import { NextAuthConfig } from "next-auth";
 export const authConfig = {
   pages: {
     signIn: "/login",
-    newUser: "/",
+    newUser: "/chat",
     error: "/login", // Redirect errors back to login page
   },
   providers: [
@@ -38,7 +38,7 @@ export const authConfig = {
         isLoggedIn &&
         (pathname.startsWith("/login") || pathname.startsWith("/register"))
       ) {
-        return Response.redirect(new URL("/", nextUrl));
+        return Response.redirect(new URL("/chat", nextUrl));
       }
 
       // Allow access to public routes

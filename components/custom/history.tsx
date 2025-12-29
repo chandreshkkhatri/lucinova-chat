@@ -160,7 +160,7 @@ export const History = ({
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               asChild
             >
-              <Link href="/">
+              <Link href="/chat">
                 <PencilEditIcon size={14} />
                 <span className="ml-2">New Chat</span>
               </Link>

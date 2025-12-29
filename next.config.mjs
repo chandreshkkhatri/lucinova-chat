@@ -8,10 +8,6 @@ const nextConfig = {
     unoptimized: false, // Keep optimization enabled
     minimumCacheTTL: 60,
   },
-  eslint: {
-    // Allow production builds to complete even if there are ESLint errors
-    ignoreDuringBuilds: true,
-  },
   // Enable compression for better performance
   compress: true,
   // Generate static sitemap and robots.txt

@@ -87,7 +87,6 @@ export default async function RootLayout({
           <StructuredData />
           <ProfileGate />
           <Toaster position="top-center" />
-          <Navbar />
           {children}
         </ThemeProvider>
       </body>

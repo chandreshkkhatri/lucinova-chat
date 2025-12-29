@@ -29,7 +29,7 @@ export const Navbar = async () => {
           )}
 
           <Link
-            href="/"
+            href="/chat"
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             prefetch={false}
           >
