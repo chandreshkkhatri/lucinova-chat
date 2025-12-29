@@ -35,14 +35,27 @@ export function AnnotationThreadView({
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load existing messages for this annotation
+  const [input, setInput] = useState("");
+
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
+    id: annotationId,
+    transport: new TextStreamChatTransport({
+      api: `/api/annotations/${annotationId}/chat`,
+    }),
+    messages: initialMessages,
+  });
+
+  // Load existing messages for this annotation and hydrate the chat state
   useEffect(() => {
     async function loadMessages() {
       try {
         const res = await fetch(`/api/annotations/${annotationId}`);
         if (!res.ok) return;
         const data = await res.json();
-        setInitialMessages(data.messages || []);
+        const loaded = data.messages || [];
+        setInitialMessages(loaded);
+        // Seed the AI SDK chat state so history and user messages render
+        setMessages((prev) => (prev.length > 0 ? prev : loaded));
       } catch {
         // ignore errors
       } finally {
@@ -50,17 +63,7 @@ export function AnnotationThreadView({
       }
     }
     loadMessages();
-  }, [annotationId]);
-
-  const [input, setInput] = useState("");
-
-  const { messages, sendMessage, status, stop } = useChat({
-    id: annotationId,
-    transport: new TextStreamChatTransport({
-      api: `/api/annotations/${annotationId}/chat`,
-    }),
-    messages: initialMessages,
-  });
+  }, [annotationId, setMessages]);
 
   const isChatLoading = status === "submitted" || status === "streaming";
 

@@ -150,7 +150,10 @@ export function EnhancedMessage({
 
   return (
     <div className="relative group">
-      <div ref={containerRef} className="message-content relative z-10">
+      <div
+        ref={containerRef}
+        className="message-content relative z-10 max-w-full break-words whitespace-pre-wrap"
+      >
         <Markdown>{content}</Markdown>
 
         {(message as any).experimental_attachments &&
