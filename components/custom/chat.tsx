@@ -2,7 +2,6 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, UIMessage } from "ai";
-import type { FileUIPart } from "ai";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -32,6 +31,8 @@ import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { ThreadView } from "./thread-view";
 import { Attachment } from "./types";
+
+import type { FileUIPart } from "ai";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -254,9 +255,9 @@ export function Chat({
                 <Image
                   src="/images/lucidity-logo.png"
                   alt="Lucidity"
-                        width={28}
-                        height={28}
-                        quality={90}
+                  width={28}
+                  height={28}
+                  quality={90}
                   className="size-full object-contain"
                 />
               </AvatarFallback>
