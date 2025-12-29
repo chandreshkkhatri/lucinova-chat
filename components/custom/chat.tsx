@@ -74,7 +74,7 @@ export function Chat({
     setIsMounted(true);
   }, []);
 
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
     id: chatIdForSubmit,
     // Use text-stream transport because the API returns plain text streaming responses
     transport: new TextStreamChatTransport({
@@ -117,6 +117,12 @@ export function Chat({
     setInput("");
     setAttachments([]);
   };
+
+  useEffect(() => {
+    if (messages.length === 0 && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    }
+  }, [initialMessages, messages.length, setMessages]);
 
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
@@ -273,17 +279,19 @@ export function Chat({
           )}
 
           <div
-            className={`flex-1 max-w-[90%] sm:max-w-[85%] md:max-w-2xl ${message.role === "user" ? "text-right" : ""
-              }`}
+            className={`flex-1 ${isThread ? "max-w-[90%] sm:max-w-[85%]" : "max-w-[90%] sm:max-w-[85%] md:max-w-2xl"
+              } ${message.role === "user" ? "text-right" : ""}`}
           >
             <div
               className={`inline-block ${message.role === "user"
-                ? "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
+                ? isThread
+                  ? "bg-purple-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
+                  : "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
                 : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
                 }`}
             >
               <div className="flex items-start gap-2">
-                <div className="flex-1">
+                <div className="flex-1 break-words">
                   <EnhancedMessage
                     message={message}
                     chatId={id}
@@ -349,8 +357,8 @@ export function Chat({
 
   return (
     <div
-      className={`flex h-full ${className} ${isThread ? "max-h-full overflow-hidden" : ""
-        } bg-paper`}
+      className={`flex h-full bg-paper ${className} ${isThread ? "max-h-full overflow-hidden" : ""
+        }`}
     >
       {/* Main Chat Area */}
       <div

@@ -151,7 +151,7 @@ export function ThreadView({
           isThread={true}
           parentMessageId={parentMessage.id}
           mainChatId={mainChatId}
-          className="h-full max-h-full flex flex-col"
+          className="h-full max-h-full bg-white dark:bg-gray-900"
           onFinish={handleNewReply}
           selectedText={selectedText}
           defaultModelId={modelId}
