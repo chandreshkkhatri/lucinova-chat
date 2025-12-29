@@ -25,8 +25,8 @@ import { appConfig } from "@/lib/config";
  * The default convertToModelMessages may not properly convert audio attachments
  * to file parts that Gemini can understand.
  */
-async function convertMessagesWithAttachments(
-  messages: Array<UIMessage>
+export async function convertMessagesWithAttachments(
+  messages: Array<UIMessage>,
 ): Promise<ModelMessage[]> {
   const coreMessages: ModelMessage[] = [];
 
@@ -36,10 +36,10 @@ async function convertMessagesWithAttachments(
 
     // Check if there are any audio attachments
     const audioAttachments = attachments.filter((a: any) =>
-      a.contentType?.startsWith("audio/")
+      a.contentType?.startsWith("audio/"),
     );
     const otherAttachments = attachments.filter(
-      (a: any) => !a.contentType?.startsWith("audio/")
+      (a: any) => !a.contentType?.startsWith("audio/"),
     );
 
     if (audioAttachments.length > 0 && msg.role === "user") {
@@ -132,13 +132,12 @@ export async function POST(request: Request) {
     "[Chat API] Request received - isGuest:",
     isGuest,
     "messageCount:",
-    messages.length
+    messages.length,
   );
 
   // Use custom conversion that handles audio attachments properly
   const coreMessages = await convertMessagesWithAttachments(messages);
 
-  // Debug: Log what we're sending to Gemini
   console.log(
     "[Chat API] Core messages prepared:",
     JSON.stringify(
@@ -153,8 +152,8 @@ export async function POST(request: Request) {
           : undefined,
       })),
       null,
-      2
-    )
+      2,
+    ),
   );
 
   let userId: string | null = null;
@@ -172,7 +171,7 @@ export async function POST(request: Request) {
     "[Chat API] Processing - userId:",
     userId,
     "coreMessages:",
-    coreMessages.length
+    coreMessages.length,
   );
 
   // Only persist chat to DB for authenticated users
@@ -193,7 +192,7 @@ export async function POST(request: Request) {
           undefined, // password
           "AI Assistant", // displayName
           undefined, // avatarUrl
-          true // isBot
+          true, // isBot
         );
       }
 
@@ -201,13 +200,13 @@ export async function POST(request: Request) {
         userId,
         (aiUser as any)._id.toString(),
         "New Chat",
-        id
+        id,
       );
     }
 
     // Persist the latest user message (the last user role in the array)
     const userMessages = coreMessages.filter(
-      (m) => m.role === "user" && m.content
+      (m) => m.role === "user" && m.content,
     );
     const lastUserMsg = userMessages[userMessages.length - 1];
 
@@ -215,23 +214,67 @@ export async function POST(request: Request) {
     const rawUserMessages = messages.filter((m) => m.role === "user");
     const lastRawUserMsg = rawUserMessages[rawUserMessages.length - 1];
 
+    console.log("[Chat API Debug] Last user message detection:", {
+      coreMessagesCount: coreMessages.length,
+      userMessagesCount: userMessages.length,
+      rawMessagesCount: messages.length,
+      rawUserMessagesCount: rawUserMessages.length,
+      hasLastUserMsg: !!lastUserMsg,
+      hasLastRawUserMsg: !!lastRawUserMsg,
+      lastRawUserMsgContent: (lastRawUserMsg as any)?.content?.substring(0, 50),
+      // Need to cast because type doesn't know experimental_attachments
+      rawAttachments: (lastRawUserMsg as any)?.experimental_attachments?.length,
+    });
+
+    let bodyToSave = "";
+    let filesToSave: any[] = [];
+
+    // Strategy 1: Try to extract from Raw Message (preserves attachments)
     if (lastRawUserMsg) {
       const textContent = (lastRawUserMsg as any).content || "";
       const attachments =
         (lastRawUserMsg as any).experimental_attachments || [];
 
-      const files = attachments.map((a: any) => ({
-        name: a.name || "file",
-        url: a.url,
-        mime: a.contentType || "application/octet-stream",
-      }));
+      // If textContent is empty but we have attachments, use a placeholder
+      if (!textContent && attachments.length > 0) {
+        bodyToSave = "[Attachment]";
+      } else {
+        bodyToSave = textContent;
+      }
 
+      if (attachments.length > 0) {
+        filesToSave = attachments.map((a: any) => ({
+          name: a.name || "file",
+          url: a.url,
+          mime: a.contentType || "application/octet-stream",
+        }));
+      }
+    }
+
+    // Strategy 2: If Body is still empty, try to extract from Core Message
+    // This handles cases where raw message content string is empty, but parts are present (and converted by AI SDK)
+    if (!bodyToSave && filesToSave.length === 0 && lastUserMsg) {
+      console.log("[Chat API] Falling back to core message content extraction");
+      if (typeof lastUserMsg.content === "string") {
+        bodyToSave = lastUserMsg.content;
+      } else if (Array.isArray(lastUserMsg.content)) {
+        bodyToSave = lastUserMsg.content
+          .filter((p: any) => p.type === "text")
+          .map((p: any) => p.text)
+          .join("");
+      }
+    }
+
+    if (bodyToSave || filesToSave.length > 0) {
+      console.log("[Chat API] Persisting fallback user message");
       await createMessage({
         chatId: id,
         senderId: userId,
-        body: textContent,
-        files,
+        body: bodyToSave || " ", // Final safety fallback
+        files: filesToSave,
       });
+    } else {
+      console.log("[Chat API] WARNING: No content to save for user message");
     }
   }
 
@@ -260,7 +303,7 @@ export async function POST(request: Request) {
         // After the first exchange, generate a title
         if (messages.length === 1) {
           const userMessages = coreMessages.filter(
-            (m) => m.role === "user" && m.content
+            (m) => m.role === "user" && m.content,
           );
           const lastUserMsg = userMessages[userMessages.length - 1];
 
@@ -268,7 +311,7 @@ export async function POST(request: Request) {
             const { text: title } = await generateText({
               model: geminiProModel,
               prompt: `Summarize the following conversation with a short, descriptive title (less than 5 words). Do NOT use markdown formatting (no bold **, italics *, etc). Just plain text:\n\nUser: ${String(
-                lastUserMsg.content
+                lastUserMsg.content,
               )}\nAssistant: ${text}`,
             });
 
@@ -280,6 +323,7 @@ export async function POST(request: Request) {
     },
   });
 
+  // Return a simple text stream that matches TextStreamChatTransport on the client
   return result.toTextStreamResponse();
 }
 

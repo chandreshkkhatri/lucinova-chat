@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, UIMessage } from "ai";
+import { TextStreamChatTransport, UIMessage } from "ai";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -68,10 +68,18 @@ export function Chat({
   // Model selection state - must be declared before useChat
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { messages, sendMessage, status, stop } = useChat({
     id: chatIdForSubmit,
-    transport: new DefaultChatTransport({ api: isThread ? "/api/thread" : "/api/chat" }),
+    // Use text-stream transport because the API returns plain text streaming responses
+    transport: new TextStreamChatTransport({
+      api: isThread ? "/api/thread" : "/api/chat",
+    }),
     messages: initialMessages,
     onFinish: () => {
       const url = `/chat/${chatIdForSubmit}`;
@@ -350,7 +358,7 @@ export function Chat({
           } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
       >
         {/* Model Selector Header */}
-        {!isThread && (
+        {!isThread && isMounted && (
           <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
             <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
               <div className="">
@@ -396,6 +404,14 @@ export function Chat({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+        )}
+        {/* Placeholder for server render to prevent layout shift */}
+        {!isThread && !isMounted && (
+          <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
+            <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
+              <div className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
             </div>
           </div>
         )}
