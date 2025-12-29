@@ -5,7 +5,7 @@ import { TextStreamChatTransport, UIMessage } from "ai";
 import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
 
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
@@ -69,6 +69,13 @@ export function Chat({
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(384);
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const MIN_SIDEBAR_WIDTH = 240;
+  const MAX_SIDEBAR_WIDTH = 720;
+  const MIN_MAIN_WIDTH = 240;
 
   useEffect(() => {
     setIsMounted(true);
@@ -355,10 +362,63 @@ export function Chat({
   // Determine if sidebar should be shown
   const showSidebar = activeThread || activeAnnotation || pendingAnnotation;
 
+  useEffect(() => {
+    if (!showSidebar) return;
+
+    const handleResize = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const { width } = container.getBoundingClientRect();
+      const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, width - MIN_MAIN_WIDTH);
+      setSidebarWidth((prev) =>
+        Math.min(Math.max(prev, MIN_SIDEBAR_WIDTH), maxWidth)
+      );
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [showSidebar]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const bounds = container.getBoundingClientRect();
+      const nextWidth = bounds.right - event.clientX;
+      const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, bounds.width - MIN_MAIN_WIDTH);
+      const clampedWidth = Math.min(
+        Math.max(nextWidth, MIN_SIDEBAR_WIDTH),
+        maxWidth
+      );
+      setSidebarWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
+
   return (
     <div
-      className={`flex h-full bg-paper ${className} ${isThread ? "max-h-full overflow-hidden" : ""
-        }`}
+      ref={containerRef}
+      className={`flex h-full bg-paper ${className} ${
+        isThread ? "max-h-full overflow-hidden" : ""
+      }`}
     >
       {/* Main Chat Area */}
       <div
@@ -696,7 +756,23 @@ export function Chat({
           </div>
 
           {/* Desktop: Sidebar */}
-          <div className="hidden lg:block h-full overflow-hidden border-l border-gray-200 dark:border-gray-700 w-96">
+          <div
+            className="hidden lg:flex w-3 shrink-0 items-stretch cursor-col-resize bg-gray-100/70 dark:bg-gray-800/70"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              setIsResizing(true);
+            }}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize thread panel"
+          >
+            <div className="w-px bg-gray-300 dark:bg-gray-600" />
+            <div className="flex-1 hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors" />
+          </div>
+          <div
+            className="hidden lg:block h-full min-w-0 overflow-hidden border-l border-gray-200 dark:border-gray-700"
+            style={{ width: sidebarWidth }}
+          >
             {activeThread ? (
               <ThreadView
                 parentMessage={activeThread.parentMessage}
