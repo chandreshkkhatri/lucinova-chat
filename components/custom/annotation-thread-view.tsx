@@ -215,6 +215,7 @@ export function AnnotationThreadView({
                         alt="Lucinova"
                         width={28}
                         height={28}
+                        quality={90}
                         className="size-full object-contain"
                       />
                     </AvatarFallback>

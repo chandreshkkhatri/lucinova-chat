@@ -39,6 +39,7 @@ export const Navbar = async () => {
                 height={100}
                 width={100}
                 alt="Lucidity logo"
+                quality={90}
                 className="size-full object-contain"
               />
             </div>

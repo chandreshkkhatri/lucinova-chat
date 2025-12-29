@@ -256,6 +256,7 @@ export function MultimodalInput({
                   alt={attachment.name || "Attachment"}
                   width={40}
                   height={40}
+                  unoptimized
                   className="size-10 object-cover rounded"
                 />
               ) : (
