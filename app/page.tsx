@@ -68,7 +68,7 @@ export default function LandingPage() {
                 </Link>
               </Button>
               <p className="text-sm text-muted-foreground">
-                Become one of first 300 to join to earn the &apos;Early Bird&apos; badge
+                Become one of the first 300 to join to earn the &apos;Early Bird&apos; badge
               </p>
             </div>
 
