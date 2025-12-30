@@ -77,12 +77,12 @@ export default async function Page({
 
   // Check if id is valid before making database call
   if (!id || id === "undefined" || id === "null") {
-    redirect("/");
+    redirect("/beta");
   }
 
   const chatFromDb = await getCachedChatById({ id });
 
-  if (!chatFromDb) redirect("/");
+  if (!chatFromDb) redirect("/beta");
 
   // verify access
   const session = await auth();

@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { auth, signOut } from "@/app/(auth)/auth";
 
 import { History } from "./history";
 import { MobileMenuButton } from "./mobile-menu-button";
+import { NavbarLogo } from "./navbar-logo";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
 import {
@@ -28,25 +28,7 @@ export const Navbar = async () => {
             </MobileMenuButton>
           )}
 
-          <Link
-            href="/"
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            prefetch={false}
-          >
-            <div className="size-12 rounded-xl flex items-center justify-center">
-              <Image
-                src="/images/lucidity-logo.svg"
-                height={100}
-                width={100}
-                alt="Lucidity logo"
-                quality={90}
-                className="size-full object-contain"
-              />
-            </div>
-            <span className="font-bold text-lg text-foreground hidden sm:inline">
-              Lucidity
-            </span>
-          </Link>
+          <NavbarLogo />
         </div>
 
         <div className="flex items-center gap-4">
