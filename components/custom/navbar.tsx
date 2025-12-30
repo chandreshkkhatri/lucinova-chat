@@ -19,7 +19,7 @@ export const Navbar = async () => {
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-950 fixed top-0 inset-x-0 h-16 px-4 flex items-center justify-between z-30 border-b border-gray-200 dark:border-gray-800">
+      <div className="bg-card fixed top-0 inset-x-0 h-16 px-4 flex items-center justify-between z-30 border-b border-border">
         <div className="flex items-center gap-2">
           {/* Mobile menu button - only show when user is logged in */}
           {session && (
@@ -43,7 +43,7 @@ export const Navbar = async () => {
                 className="size-full object-contain"
               />
             </div>
-            <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:inline">
+            <span className="font-bold text-lg text-foreground hidden sm:inline">
               Lucidity
             </span>
           </Link>
@@ -53,7 +53,7 @@ export const Navbar = async () => {
           <div className="hidden md:flex items-center gap-4">
             <Link
               href="/pricing"
-              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+              className="text-muted-foreground hover:text-foreground font-medium transition-colors"
               prefetch={false}
             >
               Pricing
@@ -66,17 +66,17 @@ export const Navbar = async () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  className="p-2 h-fit bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg"
+                  className="p-2 h-fit bg-muted hover:bg-muted/80 rounded-lg"
                   variant="secondary"
                 >
-                  <div className="size-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                  <div className="size-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-semibold">
                     {session.user?.email?.charAt(0).toUpperCase()}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-56 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800"
+                className="w-56 bg-card border border-border"
               >
                 <DropdownMenuItem disabled className="text-sm">
                   {session.user?.email}
@@ -84,12 +84,12 @@ export const Navbar = async () => {
                 <DropdownMenuItem className="p-1">
                   <Link
                     href="/account"
-                    className="w-full text-left px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors block"
+                    className="w-full text-left px-3 py-2 text-muted-foreground hover:bg-muted rounded-md transition-colors block"
                   >
                     Account Settings
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="focus:bg-gray-100 dark:focus:bg-gray-800 p-0">
+                <DropdownMenuItem className="focus:bg-muted p-0">
                   <ThemeToggle inDropdown={true} />
                 </DropdownMenuItem>
                 <DropdownMenuItem className="p-1 z-50">
@@ -115,7 +115,7 @@ export const Navbar = async () => {
             </DropdownMenu>
           ) : (
             <Button
-              className="px-4 py-2 h-fit font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              className="px-4 py-2 h-fit font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
               asChild
             >
               <Link href="/login">Sign In</Link>

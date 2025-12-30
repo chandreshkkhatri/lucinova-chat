@@ -105,19 +105,19 @@ export function AnnotationThreadView({
 
   return (
     <div
-      className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
+      className={`flex flex-col bg-secondary h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 border-b border-border bg-card flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <MessageSquareText className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="font-semibold text-foreground">
               Ask Lucinova
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               About selected text
             </p>
           </div>
@@ -127,7 +127,7 @@ export function AnnotationThreadView({
             variant="ghost"
             size="sm"
             onClick={handleDelete}
-            className="rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+            className="rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
             title="Delete Annotation"
           >
             <Trash2 className="size-4" />
@@ -136,7 +136,7 @@ export function AnnotationThreadView({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-lg hover:bg-muted"
           >
             <X className="size-4" />
           </Button>
@@ -146,17 +146,17 @@ export function AnnotationThreadView({
       {/* Selected Text Display */}
       <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="flex items-start gap-2">
-          <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
+          <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
             {'"'}{selectedText}{'"'}
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0 bg-white dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto min-h-0 bg-card">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-gray-500">Loading...</div>
+            <div className="text-muted-foreground">Loading...</div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full p-8">
@@ -164,10 +164,10 @@ export function AnnotationThreadView({
               <div className="size-12 mx-auto mb-4 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 flex items-center justify-center">
                 <Sparkles className="size-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Ask about this text
               </h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+              <p className="text-muted-foreground mb-6 text-sm">
                 What would you like to know about the selected text?
               </p>
 
@@ -177,27 +177,27 @@ export function AnnotationThreadView({
                   onClick={() =>
                     setInput("Can you explain this in simpler terms?")
                   }
-                  className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                 >
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <p className="text-sm text-foreground/80">
                     Explain this in simpler terms
                   </p>
                 </button>
 
                 <button
                   onClick={() => setInput("What are the key points here?")}
-                  className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                 >
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <p className="text-sm text-foreground/80">
                     What are the key points?
                   </p>
                 </button>
 
                 <button
                   onClick={() => setInput("Can you give me an example?")}
-                  className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                 >
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <p className="text-sm text-foreground/80">
                     Give me an example
                   </p>
                 </button>
@@ -233,8 +233,8 @@ export function AnnotationThreadView({
                 >
                   <div
                     className={`inline-block ${message.role === "user"
-                      ? "bg-purple-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
-                      : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
+                      ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2"
+                      : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"
                       }`}
                   >
                     <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -252,7 +252,7 @@ export function AnnotationThreadView({
 
                 {message.role === "user" && (
                   <Avatar className="size-8 shrink-0">
-                    <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                       U
                     </AvatarFallback>
                   </Avatar>
@@ -274,15 +274,15 @@ export function AnnotationThreadView({
                       />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
+                  <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2">
                     <div className="typing-indicator flex gap-1">
-                      <span className="size-2 bg-gray-400 rounded-full animate-bounce"></span>
+                      <span className="size-2 bg-muted-foreground rounded-full animate-bounce"></span>
                       <span
-                        className="size-2 bg-gray-400 rounded-full animate-bounce"
+                        className="size-2 bg-muted-foreground rounded-full animate-bounce"
                         style={{ animationDelay: "0.1s" }}
                       ></span>
                       <span
-                        className="size-2 bg-gray-400 rounded-full animate-bounce"
+                        className="size-2 bg-muted-foreground rounded-full animate-bounce"
                         style={{ animationDelay: "0.2s" }}
                       ></span>
                     </div>
@@ -299,7 +299,7 @@ export function AnnotationThreadView({
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0 bg-white dark:bg-gray-900">
+      <div className="border-t border-border p-3 sm:p-4 shrink-0 bg-card">
         <MultimodalInput
           input={input}
           setInput={setInput}

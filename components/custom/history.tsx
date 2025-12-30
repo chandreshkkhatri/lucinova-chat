@@ -134,19 +134,19 @@ export const History = ({
   // If in sheet (mobile), always show the sidebar
   // If not in sheet (desktop), only show when screen is large
   const containerClasses = inSheet
-    ? "flex w-full bg-gray-50 dark:bg-gray-900 h-full flex-col"
-    : "hidden lg:flex w-64 bg-gray-50 dark:bg-gray-900 h-full border-r border-gray-200 dark:border-gray-700 flex-col";
+    ? "flex w-full bg-secondary h-full flex-col"
+    : "hidden lg:flex w-64 bg-secondary h-full border-r border-border flex-col";
 
   return (
     <>
       {/* Single sidebar component that works for both mobile and desktop */}
       <div className={containerClasses}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="p-4 border-b border-border">
+          <h1 className="text-lg font-semibold text-foreground">
             Chats
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             {history === undefined
               ? "Loading chats..."
               : `${history.length} conversations`}
@@ -155,9 +155,9 @@ export const History = ({
 
         {/* New Chat Button */}
         {user && (
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-border">
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               asChild
             >
               <Link href="/">
@@ -171,14 +171,14 @@ export const History = ({
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto p-2">
           {!user ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm text-center p-4">
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm text-center p-4">
               <InfoIcon size={32} />
               <p className="mt-2">Please log in to see your chat history.</p>
             </div>
           ) : null}
 
           {!isLoading && history?.length === 0 && user ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm text-center p-4">
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm text-center p-4">
               <InfoIcon size={32} />
               <p className="mt-2">You have no saved chats.</p>
             </div>
@@ -188,8 +188,8 @@ export const History = ({
             <div className="space-y-2">
               {[1, 2, 3, 4].map((item) => (
                 <div key={item} className="p-3 rounded-lg">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse mb-2" />
-                  <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                  <div className="h-4 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
                 </div>
               ))}
             </div>
@@ -201,9 +201,9 @@ export const History = ({
                 <div
                   key={(chat as any)._id.toString()}
                   className={cx(
-                    "group flex items-center justify-between p-3 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors",
+                    "group flex items-center justify-between p-3 rounded-lg hover:bg-card transition-colors",
                     {
-                      "bg-white dark:bg-gray-800 shadow-sm":
+                      "bg-card shadow-sm":
                         (chat as any)._id.toString() === id,
                     },
                   )}
@@ -231,7 +231,7 @@ export const History = ({
                           className="block truncate"
                           title={chat.title || "Untitled Chat"}
                         >
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          <div className="text-sm font-medium text-foreground truncate">
                             {chat.title || "Untitled Chat"}
                           </div>
                         </Link>

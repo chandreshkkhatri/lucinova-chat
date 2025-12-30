@@ -167,18 +167,18 @@ export function EnhancedMessage({
                       <img
                         src={attachment.url}
                         alt={attachment.name ?? `Attachment ${index + 1}`}
-                        className="rounded-lg w-full h-auto object-contain border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                        className="rounded-lg w-full h-auto object-contain border border-border bg-card"
                       />
                     ) : (
-                      <div className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                        <div className="size-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs uppercase">
+                      <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted">
+                        <div className="size-8 rounded bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase">
                           {attachment.contentType?.split("/")[1] || "FILE"}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
+                          <div className="text-sm font-medium truncate text-foreground">
                             {attachment.name || "Attachment"}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="text-xs text-muted-foreground">
                             {attachment.contentType}
                           </div>
                         </div>
@@ -417,7 +417,7 @@ function SavedAnnotationsOverlay({
                 className={`pointer-events-auto flex items-center justify-center size-6 rounded-full border shadow-sm transition-all ${
                   isHovered
                     ? "bg-amber-100 dark:bg-amber-900 border-amber-400 text-amber-700 dark:text-amber-300 scale-110"
-                    : "bg-white dark:bg-gray-800 border-amber-200 dark:border-amber-800/50 text-amber-500 dark:text-amber-400/70 scale-100"
+                    : "bg-card border-amber-200 dark:border-amber-800/50 text-amber-500 dark:text-amber-400/70 scale-100"
                 }`}
                 title="View thread"
               >

@@ -64,7 +64,7 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
         {/* Pro Plan */}
         <Card className="relative border-primary">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 px-3 py-1 rounded-full text-sm font-semibold">
+            <span className="bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm font-semibold">
               Coming Soon
             </span>
           </div>
@@ -104,7 +104,7 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
             ) : (
               <Button
                 disabled
-                className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
+                className="w-full bg-muted text-muted-foreground border border-dashed border-border cursor-not-allowed"
               >
                 Coming Soon
               </Button>

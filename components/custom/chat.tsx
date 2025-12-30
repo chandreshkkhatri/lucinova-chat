@@ -291,10 +291,8 @@ export function Chat({
           >
             <div
               className={`inline-block ${message.role === "user"
-                ? isThread
-                  ? "bg-purple-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
-                  : "bg-blue-500 text-white rounded-2xl rounded-tr-sm px-3 py-2"
-                : "bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2"
+                ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2"
+                : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"
                 }`}
             >
               <div className="flex items-start gap-2">
@@ -318,7 +316,7 @@ export function Chat({
                 {threadCount > 0 && (
                   <button
                     onClick={() => handleStartThread(message.id)}
-                    className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full transition-all duration-200"
+                    className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-all duration-200"
                   >
                     <ChevronRight className="size-3" />
                     <span>
@@ -332,7 +330,7 @@ export function Chat({
                     <TooltipTrigger asChild>
                       <button
                         onClick={() => handleStartThread(message.id)}
-                        className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-muted-foreground hover:text-primary hover:bg-muted rounded-full transition-all duration-200"
                       >
                         <Reply className="size-3" />
                         <span>Reply</span>
@@ -349,7 +347,7 @@ export function Chat({
 
           {message.role === "user" && (
             <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-gray-500 text-white text-xs font-semibold">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                 U
               </AvatarFallback>
             </Avatar>
@@ -422,27 +420,27 @@ export function Chat({
     >
       {/* Main Chat Area */}
       <div
-        className={`flex-1 flex flex-col min-w-0 ${showSidebar ? "lg:border-r border-gray-200 dark:border-gray-700" : ""
+        className={`flex-1 flex flex-col min-w-0 ${showSidebar ? "lg:border-r border-border" : ""
           } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
       >
         {/* Model Selector Header */}
         {!isThread && isMounted && (
-          <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
+          <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3 shrink-0">
             <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
               <div className="">
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm sm:text-base">
+                  <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-card border-border text-sm sm:text-base">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="size-4 text-blue-500" />
+                      <Sparkles className="size-4 text-primary" />
                       <SelectValue placeholder="Select a model" />
                     </div>
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <SelectContent className="bg-card border-border">
                     <SelectItem
                       value="gemini-3.0-flash"
                       className={
                         isUserPro
-                          ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                          ? "hover:bg-muted"
                           : "opacity-50 cursor-not-allowed"
                       }
                       disabled={!isUserPro}
@@ -453,7 +451,7 @@ export function Chat({
                         </span>
                         <Crown className="size-3 text-yellow-500" />
                         {!isUserPro && (
-                          <span className="text-xs text-gray-500 ml-1">
+                          <span className="text-xs text-muted-foreground ml-1">
                             Pro
                           </span>
                         )}
@@ -461,7 +459,7 @@ export function Chat({
                     </SelectItem>
                     <SelectItem
                       value="gemini-2.5-flash"
-                      className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="hover:bg-muted"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
@@ -477,9 +475,9 @@ export function Chat({
         )}
         {/* Placeholder for server render to prevent layout shift */}
         {!isThread && !isMounted && (
-          <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 shrink-0">
+          <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3 shrink-0">
             <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
-              <div className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-muted rounded animate-pulse" />
             </div>
           </div>
         )}
@@ -496,13 +494,13 @@ export function Chat({
                 {isThread && selectedText ? (
                   // Thread with selected text - show query suggestions
                   <>
-                    <div className="size-12 mx-auto mb-4 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
-                      <Sparkles className="size-6 text-blue-600 dark:text-blue-400" />
+                    <div className="size-12 mx-auto mb-4 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
+                      <Sparkles className="size-6 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
                       Ask about your selection
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+                    <p className="text-muted-foreground mb-6 text-sm">
                       What would you like to know about the selected text?
                     </p>
 
@@ -512,9 +510,9 @@ export function Chat({
                         onClick={() =>
                           setInput("Can you explain this in simpler terms?")
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           Can you explain this in simpler terms?
                         </p>
                       </button>
@@ -523,9 +521,9 @@ export function Chat({
                         onClick={() =>
                           setInput("What are the key points here?")
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           What are the key points here?
                         </p>
                       </button>
@@ -534,9 +532,9 @@ export function Chat({
                         onClick={() =>
                           setInput("Can you provide more context about this?")
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           Can you provide more context about this?
                         </p>
                       </button>
@@ -545,9 +543,9 @@ export function Chat({
                         onClick={() =>
                           setInput("How does this relate to the main topic?")
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           How does this relate to the main topic?
                         </p>
                       </button>
@@ -556,13 +554,13 @@ export function Chat({
                 ) : isThread ? (
                   // Regular thread - minimal content
                   <>
-                    <div className="size-12 mx-auto mb-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                      <Reply className="size-6 text-gray-600 dark:text-gray-400" />
+                    <div className="size-12 mx-auto mb-4 rounded-xl bg-muted border border-border flex items-center justify-center">
+                      <Reply className="size-6 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
                       Thread Discussion
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+                    <p className="text-muted-foreground mb-6 text-sm">
                       Continue the conversation about the parent message.
                     </p>
                   </>
@@ -578,10 +576,10 @@ export function Chat({
                         className="size-full object-contain"
                       />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
                       Welcome to Lucidity
                     </h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    <p className="text-muted-foreground mb-6">
                       Think in threads, learn in layers.
                     </p>
 
@@ -591,9 +589,9 @@ export function Chat({
                         onClick={() =>
                           setInput("Explain a complex concept to me")
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           Explain a complex concept simply
                         </p>
                       </button>
@@ -604,9 +602,9 @@ export function Chat({
                             "Help me create a study plan for a new subject"
                           )
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           Create a personalized study plan
                         </p>
                       </button>
@@ -617,15 +615,15 @@ export function Chat({
                             "Summarize this text and extract key learning points"
                           )
                         }
-                        className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-sm text-foreground/80">
                           Summarize and extract key points
                         </p>
                       </button>
                     </div>
 
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       Type your message below to start our conversation
                     </div>
                   </>
@@ -648,7 +646,7 @@ export function Chat({
             <div className="p-3">
               <div className="flex items-center gap-2">
                 <Avatar className="size-8 shrink-0">
-                  <AvatarFallback className="bg-white border border-gray-200 dark:border-gray-700 p-1">
+                  <AvatarFallback className="bg-card border border-border p-1">
                     <Image
                       src="/images/lucidity-logo.png"
                       alt="Lucidity"
@@ -658,11 +656,11 @@ export function Chat({
                     />
                   </AvatarFallback>
                 </Avatar>
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
+                <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2">
                   <div className="typing-indicator flex gap-1">
-                    <span className="size-2 bg-gray-400 rounded-full"></span>
-                    <span className="size-2 bg-gray-400 rounded-full"></span>
-                    <span className="size-2 bg-gray-400 rounded-full"></span>
+                    <span className="size-2 bg-muted-foreground rounded-full"></span>
+                    <span className="size-2 bg-muted-foreground rounded-full"></span>
+                    <span className="size-2 bg-muted-foreground rounded-full"></span>
                   </div>
                 </div>
               </div>
@@ -676,22 +674,22 @@ export function Chat({
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0">
+        <div className="border-t border-border p-3 sm:p-4 shrink-0">
           <div className="max-w-4xl mx-auto">
             {isGuest &&
               messages.filter((m) => m.role === "user").length >= 5 ? (
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
-                <Sparkles className="size-12 mx-auto mb-3 text-blue-600 dark:text-blue-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
+                <Sparkles className="size-12 mx-auto mb-3 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                   Ready for more?
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                <p className="text-muted-foreground mb-4">
                   You&apos;ve reached the guest message limit. Sign up to continue
                   chatting and unlock unlimited messages!
                 </p>
                 <button
                   onClick={() => router.push("/register")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
                 >
                   <Sparkles className="size-5" />
                   Sign Up Free
@@ -718,7 +716,7 @@ export function Chat({
       {!isThread && showSidebar && (
         <>
           {/* Mobile: Full screen modal */}
-          <div className="fixed inset-0 z-50 lg:hidden bg-white dark:bg-gray-900">
+          <div className="fixed inset-0 z-50 lg:hidden bg-card">
             {activeThread ? (
               <ThreadView
                 parentMessage={activeThread.parentMessage}
@@ -757,7 +755,7 @@ export function Chat({
 
           {/* Desktop: Sidebar */}
           <div
-            className="hidden lg:flex w-3 shrink-0 items-stretch cursor-col-resize bg-gray-100/70 dark:bg-gray-800/70"
+            className="hidden lg:flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
             onMouseDown={(event) => {
               event.preventDefault();
               setIsResizing(true);
@@ -766,11 +764,11 @@ export function Chat({
             aria-orientation="vertical"
             aria-label="Resize thread panel"
           >
-            <div className="w-px bg-gray-300 dark:bg-gray-600" />
-            <div className="flex-1 hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors" />
+            <div className="w-px bg-border" />
+            <div className="flex-1 hover:bg-muted/60 transition-colors" />
           </div>
           <div
-            className="hidden lg:block h-full min-w-0 overflow-hidden border-l border-gray-200 dark:border-gray-700"
+            className="hidden lg:block h-full min-w-0 overflow-hidden border-l border-border"
             style={{ width: sidebarWidth }}
           >
             {activeThread ? (
@@ -866,26 +864,26 @@ function PendingAnnotationView({
 
   return (
     <div
-      className={`flex flex-col bg-gray-50 dark:bg-gray-950 h-full max-h-full overflow-hidden ${className}`}
+      className={`flex flex-col bg-secondary h-full max-h-full overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 border-b border-border bg-card flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <Sparkles className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="font-semibold text-foreground">
               Ask Lucinova
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               New annotation
             </p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+          className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
         >
           ×
         </button>
@@ -893,21 +891,21 @@ function PendingAnnotationView({
 
       {/* Selected Text Display */}
       <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
-        <div className="text-sm italic text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
+        <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
           {'"'}{selectedText}{'"'}
         </div>
       </div>
 
       {/* Empty state with suggestions */}
-      <div className="flex-1 overflow-y-auto p-4 bg-white dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-4 bg-card">
         <div className="text-center max-w-md mx-auto py-8">
           <div className="size-12 mx-auto mb-4 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 flex items-center justify-center">
             <Sparkles className="size-6 text-purple-600 dark:text-purple-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             Ask about this text
           </h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm">
+          <p className="text-muted-foreground mb-6 text-sm">
             What would you like to know about the selected text?
           </p>
 
@@ -915,27 +913,27 @@ function PendingAnnotationView({
           <div className="flex flex-col gap-2 mb-4">
             <button
               onClick={() => setInput("Can you explain this in simpler terms?")}
-              className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
             >
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+              <p className="text-sm text-foreground/80">
                 Explain this in simpler terms
               </p>
             </button>
 
             <button
               onClick={() => setInput("What are the key points here?")}
-              className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
             >
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+              <p className="text-sm text-foreground/80">
                 What are the key points?
               </p>
             </button>
 
             <button
               onClick={() => setInput("Can you give me an example?")}
-              className="p-3 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
             >
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+              <p className="text-sm text-foreground/80">
                 Give me an example
               </p>
             </button>
@@ -944,20 +942,20 @@ function PendingAnnotationView({
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 shrink-0 bg-white dark:bg-gray-900">
+      <div className="border-t border-border p-3 sm:p-4 shrink-0 bg-card">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question about this text..."
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 px-4 py-2 rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
             disabled={isCreating}
           />
           <button
             type="submit"
             disabled={!input.trim() || isCreating}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-muted disabled:cursor-not-allowed text-white rounded-lg transition-colors"
           >
             {isCreating ? "..." : "Ask"}
           </button>

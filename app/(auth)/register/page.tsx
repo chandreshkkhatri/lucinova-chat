@@ -59,14 +59,14 @@ export default function Page() {
   };
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-secondary via-background to-secondary">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 size-96 bg-blue-200/20 dark:bg-blue-800/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 size-96 bg-purple-200/20 dark:bg-purple-800/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-0 left-1/4 size-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 size-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
       </div>
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-2xl">
         <div className="p-8">
           <div className="flex flex-col items-center justify-center gap-6 text-center">
             {/* Logo and branding */}
@@ -84,20 +84,20 @@ export default function Page() {
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-bold text-foreground">
                   Join Lucidity
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Think in threads, learn in layers
                 </p>
               </div>
             </div>
 
             <div className="w-full">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Create Account
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Create an account with your email and password
               </p>
             </div>
@@ -110,10 +110,10 @@ export default function Page() {
             
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-700" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
@@ -146,11 +146,11 @@ export default function Page() {
               Sign up with Google
             </Button>
             
-            <p className="text-center text-sm text-gray-600 mt-4 dark:text-gray-400">
+            <p className="text-center text-sm text-muted-foreground mt-4">
               {"Already have an account? "}
               <Link
                 href="/login"
-                className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                className="font-semibold text-primary hover:text-primary/80 transition-colors"
               >
                 Sign in
               </Link>

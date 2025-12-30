@@ -12,7 +12,7 @@ export function MobileMenuButton({ children }: { children: React.ReactNode }) {
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <button
-          className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
           aria-label="Open menu"
         >
           <MenuIcon size={20} />

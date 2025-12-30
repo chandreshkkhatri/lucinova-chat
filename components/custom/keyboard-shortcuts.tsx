@@ -155,12 +155,12 @@ export function KeyboardShortcuts() {
             >
               <div className="glass-card rounded-2xl p-6 max-h-[80vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                  <h2 className="text-2xl font-bold text-primary">
                     Keyboard Shortcuts
                   </h2>
                   <button
                     onClick={() => setShowHelp(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    className="p-2 hover:bg-muted rounded-lg transition-colors"
                   >
                     <X className="size-4" />
                   </button>
@@ -173,17 +173,17 @@ export function KeyboardShortcuts() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors"
+                      className="flex items-center justify-between p-3 hover:bg-muted rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <shortcut.icon className="size-4 text-gray-500" />
+                        <shortcut.icon className="size-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{shortcut.label}</span>
                       </div>
                       <div className="flex gap-1">
                         {shortcut.keys.map((key, i) => (
                           <kbd
                             key={i}
-                            className="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md font-mono"
+                            className="px-2 py-1 text-xs bg-muted border border-border rounded-md font-mono"
                           >
                             {key}
                           </kbd>
@@ -193,9 +193,9 @@ export function KeyboardShortcuts() {
                   ))}
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-800">
-                  <p className="text-xs text-gray-500 text-center">
-                    Press <kbd className="px-2 py-1 bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded text-xs">⌘</kbd> + <kbd className="px-2 py-1 bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded text-xs">?</kbd> to toggle this help
+                <div className="mt-6 pt-6 border-t border-border">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Press <kbd className="px-2 py-1 bg-muted border border-border rounded text-xs">⌘</kbd> + <kbd className="px-2 py-1 bg-muted border border-border rounded text-xs">?</kbd> to toggle this help
                   </p>
                 </div>
               </div>
@@ -212,22 +212,22 @@ export function KeyboardShortcuts() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowHelp(true)}
-        className="fixed bottom-6 right-6 size-12 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow z-30"
+        className="fixed bottom-6 right-6 size-12 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow z-30"
       >
         <Command className="size-5" />
       </motion.button>
 
       <style jsx global>{`
         .glass-card {
-          background: rgba(255, 255, 255, 0.95);
+          background: hsl(var(--card) / 0.95);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          border: 1px solid hsl(var(--border));
           box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
         }
 
         .dark .glass-card {
-          background: rgba(24, 24, 27, 0.95);
-          border: 1px solid rgba(63, 63, 70, 0.3);
+          background: hsl(var(--card) / 0.95);
+          border: 1px solid hsl(var(--border));
           box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
         }
       `}</style>
