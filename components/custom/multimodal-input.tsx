@@ -244,11 +244,11 @@ export function MultimodalInput({
     <div className="relative">
       {/* Attachments Preview */}
       {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="flex flex-wrap gap-2 mb-2 p-2 bg-muted rounded-lg">
           {attachments.map((attachment, index) => (
             <div
               key={index}
-              className="relative group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+              className="relative group flex items-center gap-2 px-3 py-2 bg-card rounded-lg border border-border"
             >
               {attachment.contentType?.startsWith("image/") ? (
                 <Image
@@ -260,16 +260,16 @@ export function MultimodalInput({
                   className="size-10 object-cover rounded"
                 />
               ) : (
-                <Paperclip className="size-4 text-gray-500" />
+                <Paperclip className="size-4 text-muted-foreground" />
               )}
-              <span className="text-sm text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
+              <span className="text-sm text-foreground/80 max-w-[100px] truncate">
                 {attachment.name}
               </span>
               <button
                 onClick={() => removeAttachment(index)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full"
+                className="p-1 hover:bg-muted rounded-full"
               >
-                <X className="size-3 text-gray-500" />
+                <X className="size-3 text-muted-foreground" />
               </button>
             </div>
           ))}
@@ -293,17 +293,17 @@ export function MultimodalInput({
       )}
 
       {/* Main Input Container */}
-      <div className="flex items-end gap-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
+      <div className="flex items-end gap-2 p-2 bg-card border border-border rounded-2xl shadow-sm">
         {/* Attachment Button */}
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="shrink-0 size-10 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="shrink-0 size-10 rounded-xl hover:bg-muted"
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading || isRecording}
         >
-          <Paperclip className="size-5 text-gray-500" />
+          <Paperclip className="size-5 text-muted-foreground" />
         </Button>
         <input
           ref={fileInputRef}
@@ -322,7 +322,7 @@ export function MultimodalInput({
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? "Recording audio..." : "Type a message..."}
           disabled={isLoading || isRecording}
-          className="flex-1 min-h-[40px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400"
+          className="flex-1 min-h-[40px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
           rows={1}
         />
 
@@ -333,7 +333,7 @@ export function MultimodalInput({
             <Button
               type="button"
               size="icon"
-              className="size-10 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+              className="size-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               onClick={startRecording}
             >
               <Mic className="size-5" />
@@ -357,7 +357,7 @@ export function MultimodalInput({
             <Button
               type="submit"
               size="icon"
-              className="size-10 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+              className="size-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               onClick={(e) => {
                 e.preventDefault();
                 handleSubmit();
@@ -383,7 +383,7 @@ export function MultimodalInput({
       </div>
 
       {/* Typing hints */}
-      <div className="mt-1.5 px-2 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
+      <div className="mt-1.5 px-2 flex items-center gap-4 text-xs text-muted-foreground">
         <span>Press Enter to send</span>
         <span>Shift+Enter for new line</span>
         {micSupported && <span>Click mic to record</span>}

@@ -109,53 +109,53 @@ export default function AccountClient({ user }: AccountClientProps) {
       case "account":
         return (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
               Account Information
             </h2>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+            <div className="bg-muted rounded-lg p-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Email
                   </label>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-muted-foreground">
                     {user.email || "No email provided"}
                   </p>
                 </div>
                 {user.name && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Name
                     </label>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-muted-foreground">
                       {user.name}
                     </p>
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Phone Number
                   </label>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-muted-foreground">
                     {formatPhoneNumber(user.phone, user.countryCode) ||
                       "Not provided"}
                   </p>
                   {!user.phone && (
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Update your profile from the app menu to add a contact
                       number.
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Current Plan
                   </label>
                   {user.isPro ? (
-                    <div className="text-gray-600 dark:text-gray-400">
+                    <div className="text-muted-foreground">
                       <p>Pro Plan</p>
                       {user.currentPeriodEnd && (
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Plan expires{" "}
                           {new Date(user.currentPeriodEnd).toLocaleDateString(
                             "en-IN"
@@ -164,7 +164,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                       )}
                     </div>
                   ) : (
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-muted-foreground">
                       Free Plan
                     </p>
                   )}
@@ -180,16 +180,16 @@ export default function AccountClient({ user }: AccountClientProps) {
       case "pricing":
         return (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
               Pricing & Plans
             </h2>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <div className="bg-muted rounded-lg p-6">
+              <p className="text-muted-foreground mb-4">
                 Manage your subscription and view available plans.
               </p>
               <button
                 onClick={() => router.push("/pricing")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md transition-colors"
               >
                 View Pricing Plans
               </button>
@@ -200,7 +200,7 @@ export default function AccountClient({ user }: AccountClientProps) {
       case "billing":
         return (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
               Billing History
             </h2>
             <BillingHistory payments={payments} loading={loadingPayments} />
@@ -210,7 +210,7 @@ export default function AccountClient({ user }: AccountClientProps) {
       case "delete":
         return (
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
               Delete Account
             </h2>
             <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
@@ -237,14 +237,14 @@ export default function AccountClient({ user }: AccountClientProps) {
     <main className="flex min-h-screen flex-col pt-20">
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-8">
             Account Settings
           </h1>
 
           <div className="flex flex-col md:flex-row gap-8">
             {/* Sidebar Navigation */}
             <div className="md:w-64 shrink-0">
-              <nav className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4">
+              <nav className="bg-card rounded-lg shadow-lg p-4">
                 <ul className="space-y-1">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
@@ -257,10 +257,10 @@ export default function AccountClient({ user }: AccountClientProps) {
                           disabled={item.disabled}
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
                             activeSection === item.id
-                              ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                              ? "bg-primary/10 text-primary"
                               : item.disabled
-                              ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
-                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              ? "text-muted-foreground/50 cursor-not-allowed"
+                              : "text-foreground hover:bg-muted"
                           }`}
                         >
                           <Icon className="size-5" />
@@ -268,7 +268,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                             {item.label}
                           </span>
                           {item.disabled && (
-                            <span className="ml-auto text-xs text-gray-400 dark:text-gray-600">
+                            <span className="ml-auto text-xs text-muted-foreground/50">
                               Soon
                             </span>
                           )}
@@ -282,7 +282,7 @@ export default function AccountClient({ user }: AccountClientProps) {
 
             {/* Content Area */}
             <div className="flex-1">
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">
+              <div className="bg-card rounded-lg shadow-lg p-8">
                 {renderContent()}
               </div>
             </div>
@@ -291,31 +291,31 @@ export default function AccountClient({ user }: AccountClientProps) {
       </div>
 
       {/* Footer */}
-      <footer className="mt-12 border-t border-gray-200 dark:border-gray-800">
+      <footer className="mt-12 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <Link
               href="/contact"
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Contact Us
             </Link>
-            <span className="text-gray-400 dark:text-gray-600">•</span>
+            <span className="text-muted-foreground/50">•</span>
             <Link
               href="/legal"
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Legal
             </Link>
-            <span className="text-gray-400 dark:text-gray-600">•</span>
+            <span className="text-muted-foreground/50">•</span>
             <Link
               href="/privacy"
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Privacy Policy
             </Link>
           </div>
-          <div className="text-center mt-4 text-xs text-gray-500 dark:text-gray-500">
+          <div className="text-center mt-4 text-xs text-muted-foreground">
             © {new Date().getFullYear()} Lucidity. All rights reserved.
           </div>
         </div>
@@ -371,18 +371,18 @@ function SecuritySection() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+      <h2 className="text-2xl font-semibold text-foreground mb-6">
         Security
       </h2>
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+      <div className="bg-muted rounded-lg p-6">
+        <h3 className="text-lg font-medium text-foreground mb-4">
           Change Password
         </h3>
         <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
           <div>
             <label
               htmlFor="currentPassword"
-              className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Current Password
             </label>
@@ -392,14 +392,14 @@ function SecuritySection() {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           <div>
             <label
               htmlFor="newPassword"
-              className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               New Password
             </label>
@@ -410,14 +410,14 @@ function SecuritySection() {
               onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Confirm New Password
             </label>
@@ -428,14 +428,14 @@ function SecuritySection() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md transition-colors font-medium"
+            className="bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground px-4 py-2 rounded-md transition-colors font-medium"
           >
             {isSubmitting ? "Changing..." : "Change Password"}
           </button>
@@ -454,16 +454,16 @@ function BillingHistory({
 }) {
   if (loading) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-        <p className="text-gray-600 dark:text-gray-400">Loading payments…</p>
+      <div className="bg-muted rounded-lg p-6">
+        <p className="text-muted-foreground">Loading payments…</p>
       </div>
     );
   }
 
   if (!payments || payments.length === 0) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-        <p className="text-gray-600 dark:text-gray-400">
+      <div className="bg-muted rounded-lg p-6">
+        <p className="text-muted-foreground">
           No billing history yet.
         </p>
       </div>
@@ -471,50 +471,50 @@ function BillingHistory({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
+    <div className="bg-card rounded-lg shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-          <thead className="bg-gray-50 dark:bg-gray-800/60">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Order ID
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Plan
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Amount
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Environment
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+          <tbody className="bg-card divide-y divide-border">
             {payments.map((p) => {
               const date = p.createdAt ? new Date(p.createdAt) : null;
               const amount = Number(p.amount ?? 0);
               return (
                 <tr
                   key={p.orderId}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  className="hover:bg-muted"
                 >
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                     {date ? date.toLocaleString("en-IN") : "-"}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-foreground">
                     {p.orderId}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                     {p.planName || "-"}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                     ₹{amount.toLocaleString("en-IN")}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs">
@@ -525,13 +525,13 @@ function BillingHistory({
                           ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                           : String(p.status).toUpperCase().includes("FAILED")
                           ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {String(p.status).replaceAll("_", " ")}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                     {p.environment || "-"}
                   </td>
                 </tr>
