@@ -131,7 +131,7 @@ export function RazorpayPaymentModal({
         subscription_id: data.subscriptionId,
         name: "Lucidity",
         description: `${planName} Subscription`,
-        image: "/images/logo.png", // Add your logo path
+        image: "/images/lucidity-logo.svg", // Add your logo path
         prefill: {
           name: formData.customerName,
           email: formData.customerEmail,
