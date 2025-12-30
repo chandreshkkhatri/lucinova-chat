@@ -348,9 +348,9 @@ export default function LandingPage() {
               </Link>
             </div>
             <p className="text-sm text-muted-foreground">
-              Hosted at{" "}
+              You're using the{" "}
               <Link href="/beta" className="underline underline-offset-4">
-                beta.lucidity.chat
+                Lucidity beta
               </Link>
             </p>
           </div>
