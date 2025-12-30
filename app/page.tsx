@@ -1,4 +1,4 @@
-import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react"
+import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2, Paperclip, Send, MessageSquareText, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
@@ -72,35 +72,137 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Visual Mockup - Inspired by "Moment" and "AI SDK" layouts */}
+            {/* Visual Mockup - Shows actual app features */}
             <div className="mt-20 relative max-w-5xl mx-auto">
               <div className="rounded-2xl border border-border bg-card shadow-2xl overflow-hidden aspect-video flex">
-                {/* Sidebar Mock */}
-                <div className="w-64 border-r border-border bg-muted/30 p-4 hidden md:block text-left">
-                  <div className="h-4 w-24 bg-border/40 rounded mb-6" />
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded bg-border/30" />
-                        <div className="h-3 flex-grow bg-border/20 rounded" />
-                      </div>
-                    ))}
+                {/* Left Sidebar - Chat History */}
+                <div className="w-48 border-r border-border bg-muted/30 p-3 hidden md:block text-left">
+                  <div className="text-xs font-semibold text-muted-foreground mb-3">Chat History</div>
+                  <div className="space-y-2">
+                    {/* Active chat item */}
+                    <div className="p-2 rounded-lg bg-muted/50 border border-border/50">
+                      <div className="h-2.5 w-24 bg-foreground/20 rounded mb-1.5" />
+                      <div className="h-2 w-16 bg-muted-foreground/20 rounded" />
+                    </div>
+                    {/* Other chat items */}
+                    <div className="p-2 rounded-lg hover:bg-muted/30">
+                      <div className="h-2.5 w-20 bg-border/60 rounded mb-1.5" />
+                      <div className="h-2 w-14 bg-border/40 rounded" />
+                    </div>
+                    <div className="p-2 rounded-lg hover:bg-muted/30">
+                      <div className="h-2.5 w-28 bg-border/60 rounded mb-1.5" />
+                      <div className="h-2 w-12 bg-border/40 rounded" />
+                    </div>
                   </div>
                 </div>
-                {/* Main Content Mock */}
-                <div className="flex-grow p-8 flex flex-col">
-                  <div className="flex-grow flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="w-16 h-16 rounded-2xl bg-accent/20 flex items-center justify-center text-accent">
-                      <Sparkles className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-2xl font-semibold">Welcome to Lucidity</h3>
-                    <p className="text-muted-foreground text-sm max-w-xs">
-                      Ask anything — e.g., &apos;Explain Bayesian updating in simple terms&apos;
-                    </p>
-                    <div className="w-full max-w-md space-y-2 mt-4">
-                      <div className="h-12 w-full rounded-xl border border-border bg-background flex items-center px-4 text-muted-foreground text-sm">
-                        Type a message...
+
+                {/* Main Chat Area */}
+                <div className="grow flex flex-col min-w-0">
+                  {/* Header */}
+                  <div className="p-3 border-b border-border flex items-center gap-2">
+                    <div className="h-2.5 w-32 bg-foreground/15 rounded" />
+                    <div className="h-2 w-16 bg-muted-foreground/15 rounded" />
+                  </div>
+                  {/* Chat Messages */}
+                  <div className="grow p-4 space-y-3 overflow-hidden text-left">
+                    {/* User Message */}
+                    <div className="flex gap-2 justify-end">
+                      <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2 text-xs max-w-[200px]">
+                        Explain Bayesian updating simply
                       </div>
+                    </div>
+
+                    {/* AI Message with "Ask Lucinova" feature */}
+                    <div className="flex gap-2 relative">
+                      <div className="size-6 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                        <Sparkles className="size-3 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-muted/50 rounded-2xl rounded-tl-sm px-3 py-2 text-xs max-w-[280px] relative">
+                          <p className="mb-1.5">Bayesian updating is a method of revising beliefs based on new evidence.</p>
+                          <p>
+                            The key idea is that you start with a{" "}
+                            <span className="bg-purple-200/80 dark:bg-purple-500/50 px-0.5 relative">
+                              prior probability
+                              {/* Wire and Ask Lucinova button - originating from above the text */}
+                              <span className="absolute left-full -top-5 ml-1 hidden lg:flex items-center">
+                                <svg width="60" height="28" className="shrink-0">
+                                  <circle cx="7" cy="22" r="2" className="fill-purple-400" />
+                                  <path d="M 7 22 Q 30 6 58 14" stroke="currentColor" strokeWidth="1.5" fill="none" className="text-purple-400" />
+                                </svg>
+                                <button className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-medium shadow-sm whitespace-nowrap">
+                                  <MessageSquareText className="size-2.5" />
+                                  <span>Ask Lucinova</span>
+                                </button>
+                              </span>
+                            </span>
+                            {" "}and update it.
+                          </p>
+                        </div>
+                        {/* Reply and Replies buttons */}
+                        <div className="flex items-center gap-1 mt-1">
+                          <button className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground rounded">
+                            <MessageSquare className="size-2.5" />
+                            Reply
+                          </button>
+                          <button className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground rounded">
+                            <ChevronRight className="size-2.5" />
+                            2 messages
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Input Area */}
+                  <div className="p-3 border-t border-border">
+                    <div className="bg-card border border-border rounded-xl shadow-sm p-2">
+                      <div className="flex items-center gap-2">
+                        <button className="size-6 shrink-0 flex items-center justify-center text-muted-foreground rounded">
+                          <Paperclip className="size-3" />
+                        </button>
+                        <div className="flex-1 text-xs text-muted-foreground">
+                          Type a message...
+                        </div>
+                        <button className="size-6 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded">
+                          <Send className="size-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side Thread Panel */}
+                <div className="w-56 border-l border-border bg-muted/20 hidden lg:flex flex-col text-left">
+                  {/* Thread Header */}
+                  <div className="p-3 border-b border-border flex items-center gap-1.5">
+                    <MessageSquareText className="size-3.5 text-purple-600" />
+                    <span className="text-xs font-semibold">Ask Lucinova</span>
+                  </div>
+                  {/* Selected Text */}
+                  <div className="p-3 border-b border-border">
+                    <div className="text-[10px] text-muted-foreground mb-1.5">About selected text</div>
+                    <div className="bg-purple-200/60 dark:bg-purple-500/30 rounded px-2 py-1.5 text-[10px]">
+                      &quot;prior probability&quot;
+                    </div>
+                  </div>
+                  {/* Thread Messages */}
+                  <div className="grow p-3 space-y-2 overflow-hidden">
+                    <div className="text-[10px] text-muted-foreground">Thread Messages</div>
+                    {/* User message in thread */}
+                    <div className="flex justify-end">
+                      <div className="bg-primary text-primary-foreground rounded-lg px-2 py-1 text-[10px] max-w-[140px]">
+                        What does this mean?
+                      </div>
+                    </div>
+                    {/* AI message in thread */}
+                    <div className="bg-muted/50 rounded-lg px-2 py-1.5 text-[10px]">
+                      Prior probability represents your initial belief before seeing evidence...
+                    </div>
+                  </div>
+                  {/* Thread Input */}
+                  <div className="p-2 border-t border-border">
+                    <div className="px-2 py-1.5 bg-background border border-border/50 rounded text-[10px] text-muted-foreground">
+                      Ask a follow-up...
                     </div>
                   </div>
                 </div>
