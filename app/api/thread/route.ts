@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const coreMessages = (await convertToModelMessages(messages)).filter(
-    (message) => message.content.length > 0
+    (message) => message.content.length > 0,
   );
 
   // Persist the user's thread reply

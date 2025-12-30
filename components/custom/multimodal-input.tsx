@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { Mic, MicOff, Paperclip, Send, Square, X } from "lucide-react";
+import { FileText, Mic, MicOff, Plus, Send, Square, X } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
 
@@ -97,31 +97,85 @@ export function MultimodalInput({
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection with better error handling and async reading
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
+    const fileList = Array.from(files);
     const newAttachments: Attachment[] = [];
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        newAttachments.push({
-          name: file.name,
-          contentType: file.type,
-          url: base64,
+    try {
+      const readPromises = fileList.map(file => {
+        return new Promise<Attachment>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({
+              name: file.name,
+              contentType: file.type,
+              url: reader.result as string,
+            });
+          };
+          reader.onerror = () => {
+            console.error(`[FileRead] Error reading file ${file.name}:`, reader.error);
+            reject(reader.error);
+          };
+          reader.readAsDataURL(file);
         });
-        if (newAttachments.length === files.length) {
-          setAttachments([...attachments, ...newAttachments]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+      });
 
-    // Reset the input
-    e.target.value = "";
-  };
+      const results = await Promise.all(readPromises);
+      setAttachments(prev => [...prev, ...results]);
+    } catch (error) {
+      console.error("[FileRead] Failed to process one or more files:", error);
+      alert("Failed to attach one or more files. Please try again.");
+    } finally {
+      // Clear input value to allow selecting the same file again
+      e.target.value = "";
+    }
+  }, [setAttachments]);
+
+  // Handle paste events for images
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageItems = Array.from(items).filter(item => item.type.startsWith("image/"));
+      if (imageItems.length === 0) return;
+
+      const newFiles = imageItems
+        .map(item => item.getAsFile())
+        .filter((file): file is File => file !== null);
+
+      if (newFiles.length === 0) return;
+
+      try {
+        const readPromises = newFiles.map(file => {
+          return new Promise<Attachment>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                name: file.name || `pasted-image-${Date.now()}.png`,
+                contentType: file.type,
+                url: reader.result as string,
+              });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        });
+
+        const results = await Promise.all(readPromises);
+        setAttachments(prev => [...prev, ...results]);
+      } catch (error) {
+        console.error("[Paste] Failed to process pasted images:", error);
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [setAttachments]);
 
   const removeAttachment = (index: number) => {
     setAttachments(attachments.filter((_, i) => i !== index));
@@ -260,7 +314,7 @@ export function MultimodalInput({
                   className="size-10 object-cover rounded"
                 />
               ) : (
-                <Paperclip className="size-4 text-muted-foreground" />
+                <FileText className="size-4 text-muted-foreground" />
               )}
               <span className="text-sm text-foreground/80 max-w-[100px] truncate">
                 {attachment.name}
@@ -303,12 +357,12 @@ export function MultimodalInput({
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading || isRecording}
         >
-          <Paperclip className="size-5 text-muted-foreground" />
+          <Plus className="size-5 text-muted-foreground" />
         </Button>
         <input
           ref={fileInputRef}
           type="file"
-          className="hidden"
+          className="invisible absolute size-0 opacity-0 pointer-events-none"
           multiple
           accept="image/*,application/pdf,.txt,.doc,.docx"
           onChange={handleFileSelect}
