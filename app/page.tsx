@@ -1,9 +1,11 @@
-import type React from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+
+import type React from "react"
 
 export default function LandingPage() {
   return (
@@ -16,9 +18,6 @@ export default function LandingPage() {
               <Sparkles className="w-5 h-5" />
             </div>
             <span className="font-bold text-xl tracking-tight">Lucidity</span>
-            <Badge variant="secondary" className="ml-2 font-medium bg-accent/20 text-accent-foreground border-none">
-              Beta
-            </Badge>
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
@@ -34,12 +33,6 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/beta"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              Log in
-            </Link>
             <Button asChild className="rounded-full px-6">
               <Link href="/beta">Get Started</Link>
             </Button>
@@ -55,7 +48,7 @@ export default function LandingPage() {
               variant="outline"
               className="mb-6 py-1 px-4 rounded-full border-primary/20 text-primary/80 bg-primary/5"
             >
-              Announcing Lucidity 2.5 — Think in threads, learn in layers.
+              Announcing Lucidity 0.1 — Think in threads, learn in layers.
             </Badge>
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-balance mb-6">
               Learn deeper, faster with your <span className="text-primary/60 italic">AI study partner</span>
@@ -64,24 +57,19 @@ export default function LandingPage() {
               Ask questions, annotate passages, start focused threads, and keep organized study memories — all in a
               single, private workspace.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4">
               <Button
                 size="lg"
                 className="rounded-full px-8 h-14 text-lg shadow-xl shadow-primary/10 transition-all hover:scale-105"
                 asChild
               >
                 <Link href="/beta">
-                  Start learning — it’s free <ArrowRight className="ml-2 w-5 h-5" />
+                  Start learning — it&apos;s free <ArrowRight className="ml-2 size-5" />
                 </Link>
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full px-8 h-14 text-lg border-primary/20 hover:bg-primary/5 bg-transparent"
-                asChild
-              >
-                <Link href="#demo">Try sample demo</Link>
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                Become one of first 300 to join to earn the &apos;Early Bird&apos; badge
+              </p>
             </div>
 
             {/* Visual Mockup - Inspired by "Moment" and "AI SDK" layouts */}
@@ -107,7 +95,7 @@ export default function LandingPage() {
                     </div>
                     <h3 className="text-2xl font-semibold">Welcome to Lucidity</h3>
                     <p className="text-muted-foreground text-sm max-w-xs">
-                      Ask anything — e.g., 'Explain Bayesian updating in simple terms'
+                      Ask anything — e.g., &apos;Explain Bayesian updating in simple terms&apos;
                     </p>
                     <div className="w-full max-w-md space-y-2 mt-4">
                       <div className="h-12 w-full rounded-xl border border-border bg-background flex items-center px-4 text-muted-foreground text-sm">
