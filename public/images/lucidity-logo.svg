@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+  <defs>
+    <!-- Gradient for checkmark (darker at top, lighter at bottom) -->
+    <linearGradient id="checkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2B7BBF"/>
+      <stop offset="100%" stop-color="#5AADE0"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke="#4A9FD4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- outer ring -->
+    <circle cx="60" cy="60" r="32" stroke-width="5.5"/>
+
+    <!-- knobs (8 evenly spaced small circles) -->
+    <g fill="#4A9FD4" stroke="none">
+      <circle cx="60" cy="22" r="4"/>
+      <circle cx="87" cy="33" r="4"/>
+      <circle cx="98" cy="60" r="4"/>
+      <circle cx="87" cy="87" r="4"/>
+      <circle cx="60" cy="98" r="4"/>
+      <circle cx="33" cy="87" r="4"/>
+      <circle cx="22" cy="60" r="4"/>
+      <circle cx="33" cy="33" r="4"/>
+    </g>
+
+    <!-- checkmark with gradient -->
+    <path d="M42 62 L53 73 L78 48" stroke="url(#checkGradient)" stroke-width="7" fill="none"/>
+  </g>
+</svg>

@@ -86,7 +86,7 @@ function ResetPasswordForm() {
               <div className="size-16 rounded-2xl flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/images/lucidity-logo.png"
+                  src="/images/lucidity-logo.svg"
                   alt="Lucidity"
                   width={64}
                   height={64}
