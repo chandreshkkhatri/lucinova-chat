@@ -71,15 +71,6 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
           <CardHeader>
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
-            <div className="mt-4">
-              <span className="text-4xl font-bold">
-                {symbol}
-                {priceRupees.toLocaleString(
-                  currency === "INR" ? "en-IN" : undefined
-                )}
-              </span>
-              <span className="text-muted-foreground ml-2">per month</span>
-            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">

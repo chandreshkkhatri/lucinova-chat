@@ -104,7 +104,7 @@ export function Chat({
       type: "file",
       mediaType: a.contentType ?? "",
       filename: a.name ?? "attachment",
-      data: a.url,
+      url: a.url,
     } as unknown as FileUIPart));
 
     sendMessage(
@@ -414,9 +414,8 @@ export function Chat({
   return (
     <div
       ref={containerRef}
-      className={`flex h-full bg-paper ${className} ${
-        isThread ? "max-h-full overflow-hidden" : ""
-      }`}
+      className={`flex h-full bg-paper ${className} ${isThread ? "max-h-full overflow-hidden" : ""
+        }`}
     >
       {/* Main Chat Area */}
       <div
