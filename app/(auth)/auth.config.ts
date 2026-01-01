@@ -22,7 +22,7 @@ export const authConfig = {
         "/forgot-password",
         "/reset-password",
         "/chat",
-        "/pricing",
+        "/beta/pricing",
         "/legal",
         "/privacy",
         "/contact",

@@ -122,7 +122,7 @@ function PaymentSuccessContent() {
               <Link href="/beta">Start Using Pro Features</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/account">View Account</Link>
+              <Link href="/beta/account">View Account</Link>
             </Button>
           </div>
         </div>
