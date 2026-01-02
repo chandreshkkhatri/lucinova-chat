@@ -32,12 +32,7 @@ export async function convertMessagesWithAttachments(
 
   for (const msg of messages) {
     const attachments = (msg as any).experimental_attachments || [];
-    if (attachments.length > 0) {
-      console.log(
-        "[Chat API] Received experimental_attachments:",
-        JSON.stringify(attachments, null, 2),
-      );
-    }
+
     const msgContent = (msg as any).content || "";
 
     // Check if there are any audio attachments

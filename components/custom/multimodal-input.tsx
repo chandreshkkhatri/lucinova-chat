@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { FileText, Mic, MicOff, Plus, Send, Square, X } from "lucide-react";
+import { FileText, Mic, MicOff, Plus, Send, Square, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
 
@@ -20,7 +20,7 @@ interface MultimodalInputProps {
   messages: UIMessage[];
   sendMessage: (message: {
     text: string;
-    attachments?: Attachment[];
+    files?: any[];
     options?: { body?: any }
   }) => Promise<void>;
   handleSubmit: (e?: React.FormEvent) => void;
@@ -51,6 +51,7 @@ export function MultimodalInput({
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isRecordingCancelledRef = useRef<boolean>(false);
 
   // Check for MediaRecorder support on mount
   useEffect(() => {
@@ -183,6 +184,7 @@ export function MultimodalInput({
 
   // Start audio recording
   const startRecording = useCallback(async () => {
+    isRecordingCancelledRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -211,6 +213,13 @@ export function MultimodalInput({
         if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
         if (durationIntervalRef.current)
           clearInterval(durationIntervalRef.current);
+
+        // If recording was cancelled, don't send anything
+        if (isRecordingCancelledRef.current) {
+          setIsRecording(false);
+          setRecordingDuration(0);
+          return;
+        }
 
         // Create audio blob
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
@@ -284,6 +293,17 @@ export function MultimodalInput({
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state === "recording"
     ) {
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
+  // Cancel audio recording
+  const cancelRecording = useCallback(() => {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === "recording"
+    ) {
+      isRecordingCancelledRef.current = true;
       mediaRecorderRef.current.stop();
     }
   }, []);
@@ -401,16 +421,27 @@ export function MultimodalInput({
             </Button>
           )}
 
-          {/* Stop Recording Button */}
+          {/* Send Recording Button */}
           {showStopRecordingButton && (
-            <Button
-              type="button"
-              size="icon"
-              className="size-10 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg"
-              onClick={stopRecording}
-            >
-              <Square className="size-4 fill-current" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="icon"
+                className="size-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg animate-in zoom-in-50 duration-200"
+                onClick={stopRecording}
+              >
+                <Send className="size-5" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="size-10 rounded-xl border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20 animate-in zoom-in-50 duration-200"
+                onClick={cancelRecording}
+              >
+                <Trash2 className="size-5 text-red-500" />
+              </Button>
+            </div>
           )}
 
           {/* Send Button - shown when there's input */}
