@@ -34,14 +34,8 @@ export async function convertMessagesWithAttachments(
     const attachments = (msg as any).experimental_attachments || [];
     if (attachments.length > 0) {
       console.log(
-        "[Chat API] Processing attachments:",
-        JSON.stringify(
-          attachments.map((a: any) => ({
-            type: a.contentType,
-            hasUrl: !!a.url,
-            urlLength: a.url?.length,
-          })),
-        ),
+        "[Chat API] Received experimental_attachments:",
+        JSON.stringify(attachments, null, 2),
       );
     }
     const msgContent = (msg as any).content || "";

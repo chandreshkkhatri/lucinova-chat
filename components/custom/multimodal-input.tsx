@@ -227,10 +227,17 @@ export function MultimodalInput({
             url: base64Audio,
           };
 
-          // Append message with audio attachment
+          // Append message with audio attachment mapped to FileUIPart
           sendMessage({
             text: "[Voice message]",
-            attachments: [audioAttachment],
+            files: [
+              {
+                type: "file",
+                mediaType: mimeType,
+                filename: audioAttachment.name,
+                url: base64Audio,
+              } as any,
+            ],
           });
         };
         reader.readAsDataURL(audioBlob);
