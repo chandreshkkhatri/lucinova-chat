@@ -5,14 +5,14 @@ import { Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-background via-muted/40 to-background">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 size-96 bg-blue-200/20 dark:bg-blue-800/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 size-96 bg-purple-200/20 dark:bg-purple-800/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-0 left-1/4 size-96 rounded-full bg-primary/10 blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 size-96 rounded-full bg-accent/15 blur-3xl animate-pulse" />
       </div>
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border/60 bg-card/80 shadow-2xl backdrop-blur-xl">
         <div className="p-8">
           <div className="flex flex-col items-center justify-center gap-6 text-center">
             {/* Logo */}
@@ -31,13 +31,13 @@ export default function NotFound() {
 
             {/* 404 Message */}
             <div className="space-y-2">
-              <h1 className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+              <h1 className="bg-gradient-to-r from-primary to-secondary text-7xl font-bold text-transparent bg-clip-text">
                 404
               </h1>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-foreground">
                 Page Not Found
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+              <p className="max-w-xs text-sm text-muted-foreground">
                 Oops! The page you're looking for doesn't exist or has been moved.
               </p>
             </div>
@@ -46,7 +46,7 @@ export default function NotFound() {
             <div className="w-full space-y-3 mt-4">
               <Link
                 href="/"
-                className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 <Home className="size-5" />
                 Go to Home
@@ -54,7 +54,7 @@ export default function NotFound() {
               
               <button
                 onClick={() => window.history.back()}
-                className="flex items-center justify-center gap-2 w-full py-3 px-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium"
+                className="flex w-full items-center justify-center gap-2 px-4 py-3 font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ArrowLeft className="size-5" />
                 Go Back
