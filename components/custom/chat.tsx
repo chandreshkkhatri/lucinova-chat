@@ -31,6 +31,7 @@ import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { ThreadView } from "./thread-view";
 import { Attachment } from "./types";
+import { UsageLimitBanner } from "./usage-limit-banner";
 
 import type { FileUIPart } from "ai";
 
@@ -73,6 +74,15 @@ export function Chat({
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Usage limit state
+  const [usageLimitInfo, setUsageLimitInfo] = useState<{
+    exceeded: boolean;
+    isPro: boolean;
+    currentUsage: number;
+    limit: number;
+    periodEnd: Date | string;
+  } | null>(null);
+
   const MIN_SIDEBAR_WIDTH = 240;
   const MAX_SIDEBAR_WIDTH = 720;
   const MIN_MAIN_WIDTH = 240;
@@ -95,9 +105,32 @@ export function Chat({
     },
   });
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
+
+    // Check usage limit before sending (for authenticated users)
+    if (!isGuest) {
+      try {
+        const checkRes = await fetch("/api/usage");
+        if (checkRes.ok) {
+          const usageData = await checkRes.json();
+          if (usageData.current.percentUsed >= 100) {
+            setUsageLimitInfo({
+              exceeded: true,
+              isPro: usageData.isPro,
+              currentUsage: usageData.current.unitsUsed,
+              limit: usageData.current.limit,
+              periodEnd: usageData.current.periodEnd,
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        // If usage check fails, continue anyway
+        console.error("Usage check failed:", err);
+      }
+    }
 
     // Convert local Attachment objects to FileUIPart expected by the chat transport
     const fileParts: FileUIPart[] = attachments.map((a) => ({
@@ -685,7 +718,14 @@ export function Chat({
         {/* Input */}
         <div className="border-t border-border p-3 sm:p-4 shrink-0">
           <div className="max-w-4xl mx-auto">
-            {isGuest &&
+            {usageLimitInfo?.exceeded ? (
+              <UsageLimitBanner
+                isPro={usageLimitInfo.isPro}
+                currentUsage={usageLimitInfo.currentUsage}
+                limit={usageLimitInfo.limit}
+                periodEnd={usageLimitInfo.periodEnd}
+              />
+            ) : isGuest &&
               messages.filter((m) => m.role === "user").length >= 5 ? (
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
                 <Sparkles className="size-12 mx-auto mb-3 text-primary" />

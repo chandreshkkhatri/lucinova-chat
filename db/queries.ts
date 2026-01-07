@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureConnection } from "./connection";
-import { User, Chat, Message, Payment, Annotation } from "./models";
+import { User, Chat, Message, Payment, Annotation, Usage } from "./models";
 
 // Re-export types for external use
 export { Chat } from "./models";
@@ -473,4 +473,99 @@ export async function updatePassword(email: string, hashedPassword: string) {
     },
     { new: true },
   ).lean();
+}
+
+// Usage tracking functions
+export async function getOrCreateCurrentUsage(
+  userId: string,
+  currentPeriodEnd?: Date | null
+) {
+  await ensureConnection();
+
+  const now = new Date();
+
+  // Calculate period boundaries
+  let periodStart: Date;
+  let periodEnd: Date;
+
+  if (currentPeriodEnd && new Date(currentPeriodEnd) > now) {
+    // Pro user: Align with subscription period (30 days back from periodEnd)
+    periodEnd = new Date(currentPeriodEnd);
+    periodStart = new Date(periodEnd);
+    periodStart.setDate(periodStart.getDate() - 30);
+  } else {
+    // Free user: Use calendar month
+    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  // Find existing usage record for this period
+  let usage = await Usage.findOne({
+    userId,
+    periodStart: { $lte: now },
+    periodEnd: { $gt: now },
+  });
+
+  if (!usage) {
+    // Create new usage record for current period
+    usage = await Usage.create({
+      userId,
+      periodStart,
+      periodEnd,
+      unitsUsed: 0,
+      breakdown: [],
+    });
+  }
+
+  return usage.toObject();
+}
+
+export async function incrementUsage(
+  userId: string,
+  modelId: string,
+  inputTokens: number,
+  outputTokens: number,
+  units: number,
+  currentPeriodEnd?: Date | null
+) {
+  await ensureConnection();
+
+  // Ensure we have a usage record
+  const usage = await getOrCreateCurrentUsage(userId, currentPeriodEnd);
+
+  // Update with atomic operations
+  await Usage.findByIdAndUpdate(usage._id, {
+    $inc: { unitsUsed: units },
+    $set: { lastUpdated: new Date() },
+    $push: {
+      breakdown: {
+        modelId,
+        inputTokens,
+        outputTokens,
+        unitsUsed: units,
+        timestamp: new Date(),
+      },
+    },
+  });
+}
+
+export async function getUserUsageStats(
+  userId: string,
+  currentPeriodEnd?: Date | null
+) {
+  await ensureConnection();
+
+  const usage = await getOrCreateCurrentUsage(userId, currentPeriodEnd);
+
+  return {
+    unitsUsed: usage.unitsUsed,
+    periodStart: usage.periodStart,
+    periodEnd: usage.periodEnd,
+  };
+}
+
+export async function getUsageHistory(userId: string, limit = 12) {
+  await ensureConnection();
+
+  return Usage.find({ userId }).sort({ periodStart: -1 }).limit(limit).lean();
 }

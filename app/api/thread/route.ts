@@ -16,6 +16,7 @@ import {
   deleteThreadMessages,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
+import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
 
 export async function POST(request: Request) {
   const {
@@ -42,17 +43,38 @@ export async function POST(request: Request) {
     (message) => message.content.length > 0,
   );
 
+  // Get the actual user document to ensure we have the MongoDB ObjectId
+  const currentUser = await getUserByEmail(session.user.email!);
+  if (!currentUser) {
+    return new Response("User not found", { status: 401 });
+  }
+
+  const userId = (currentUser as any)._id.toString();
+
+  // Check usage limit
+  const usageCheck = await checkUsageLimit(
+    userId,
+    currentUser.isPro || false,
+    currentUser.currentPeriodEnd
+  );
+
+  if (!usageCheck.allowed) {
+    return Response.json(
+      {
+        error: "usage_limit_exceeded",
+        message: "You have reached your monthly usage limit",
+        isPro: currentUser.isPro || false,
+        currentUsage: usageCheck.currentUsage,
+        limit: usageCheck.limit,
+        periodEnd: usageCheck.periodEnd,
+      },
+      { status: 429 }
+    );
+  }
+
   // Persist the user's thread reply
   if (coreMessages.length > 0) {
     const userMsg = coreMessages[coreMessages.length - 1];
-
-    // Get the actual user document to ensure we have the MongoDB ObjectId
-    const user = await getUserByEmail(session.user.email!);
-    if (!user) {
-      return new Response("User not found", { status: 401 });
-    }
-
-    const userId = (user as any)._id.toString();
 
     const toPlainText = (content: any): string => {
       if (typeof content === "string") return content;
@@ -129,7 +151,18 @@ export async function POST(request: Request) {
         : " Only answer based on the user's follow-up question."
     }`,
     messages: fullContext,
-    onFinish: async ({ text }) => {
+    onFinish: async ({ text, usage }) => {
+      // Record usage with token counts from the response
+      if (usage) {
+        await recordUsage(
+          userId,
+          modelId || DEFAULT_MODEL_ID,
+          usage.inputTokens || 0,
+          usage.outputTokens || 0,
+          currentUser.currentPeriodEnd
+        );
+      }
+
       // Persist AI response
       if (text) {
         await createMessage({

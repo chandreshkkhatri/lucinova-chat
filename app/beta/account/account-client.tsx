@@ -1,9 +1,9 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt, Lock } from "lucide-react";
+import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 interface AccountClientProps {
@@ -80,6 +80,11 @@ export default function AccountClient({ user }: AccountClientProps) {
       id: "account",
       label: "Account Information",
       icon: User,
+    },
+    {
+      id: "usage",
+      label: "Usage",
+      icon: BarChart3,
     },
     {
       id: "security",
@@ -173,6 +178,9 @@ export default function AccountClient({ user }: AccountClientProps) {
             </div>
           </div>
         );
+
+      case "usage":
+        return <UsageSection isPro={user.isPro || false} />;
 
       case "security":
         return <SecuritySection />;
@@ -440,6 +448,171 @@ function SecuritySection() {
             {isSubmitting ? "Changing..." : "Change Password"}
           </button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function UsageSection({ isPro }: { isPro: boolean }) {
+  const [usage, setUsage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/usage")
+      .then((res) => res.json())
+      .then((data) => {
+        setUsage(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
+        <div className="bg-muted rounded-lg p-6">
+          <p className="text-muted-foreground">Loading usage data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!usage) {
+    return (
+      <div>
+        <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
+        <div className="bg-muted rounded-lg p-6">
+          <p className="text-muted-foreground">Unable to load usage data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { current, history } = usage;
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
+
+      {/* Current Period Card */}
+      <div className="bg-muted rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-foreground">
+              Current Period
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {new Date(current.periodStart).toLocaleDateString("en-IN")} -{" "}
+              {new Date(current.periodEnd).toLocaleDateString("en-IN")}
+            </p>
+          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              isPro
+                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+            }`}
+          >
+            {isPro ? "Pro" : "Free"} Plan
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-foreground font-medium">
+              {current.unitsUsed.toFixed(1)} units used
+            </span>
+            <span className="text-muted-foreground">
+              {current.limit} units limit
+            </span>
+          </div>
+          <div className="h-3 bg-card rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                current.percentUsed >= 100
+                  ? "bg-red-500"
+                  : current.percentUsed >= 80
+                  ? "bg-amber-500"
+                  : "bg-primary"
+              }`}
+              style={{ width: `${Math.min(100, current.percentUsed)}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-muted-foreground">Remaining</p>
+            <p className="text-xl font-semibold text-foreground">
+              {current.remaining.toFixed(1)} units
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-muted-foreground">Resets in</p>
+            <p className="text-xl font-semibold text-foreground">
+              {Math.max(
+                0,
+                Math.ceil(
+                  (new Date(current.periodEnd).getTime() - Date.now()) /
+                    (1000 * 60 * 60 * 24)
+                )
+              )}{" "}
+              days
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Upgrade CTA for free users */}
+      {!isPro && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 mb-6 text-center">
+          <Crown className="size-10 mx-auto mb-3 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Need more capacity?
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            Upgrade to Pro for 3,000 units per month - 3x more than the free
+            plan.
+          </p>
+          <button
+            onClick={() => router.push("/beta/pricing")}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-lg font-medium transition-colors"
+          >
+            Upgrade to Pro
+          </button>
+        </div>
+      )}
+
+      {/* Usage History */}
+      <div className="bg-muted rounded-lg p-6">
+        <h3 className="text-lg font-medium text-foreground mb-4">
+          Usage History
+        </h3>
+        {history.length === 0 ? (
+          <p className="text-muted-foreground">No previous usage data.</p>
+        ) : (
+          <div className="space-y-3">
+            {history.map((h: any, i: number) => (
+              <div
+                key={i}
+                className="flex justify-between items-center py-2 border-b border-border last:border-0"
+              >
+                <span className="text-sm text-muted-foreground">
+                  {new Date(h.periodStart).toLocaleDateString("en-IN", {
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {h.unitsUsed.toFixed(1)} units
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

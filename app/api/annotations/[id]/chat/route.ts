@@ -17,6 +17,7 @@ import {
   getAnnotationThreadMessages,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
+import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
 
 export async function POST(
   request: Request,
@@ -40,6 +41,35 @@ export async function POST(
   const messageId = (annotation as any).messageId.toString();
   const selectedText = (annotation as any).selectedText;
 
+  // Get user and check usage limit
+  const currentUser = await getUserByEmail(session.user.email!);
+  if (!currentUser) {
+    return new Response("User not found", { status: 401 });
+  }
+
+  const userId = (currentUser as any)._id.toString();
+
+  // Check usage limit
+  const usageCheck = await checkUsageLimit(
+    userId,
+    currentUser.isPro || false,
+    currentUser.currentPeriodEnd
+  );
+
+  if (!usageCheck.allowed) {
+    return Response.json(
+      {
+        error: "usage_limit_exceeded",
+        message: "You have reached your monthly usage limit",
+        isPro: currentUser.isPro || false,
+        currentUsage: usageCheck.currentUsage,
+        limit: usageCheck.limit,
+        periodEnd: usageCheck.periodEnd,
+      },
+      { status: 429 }
+    );
+  }
+
   const coreMessages = (await convertToModelMessages(messages)).filter(
     (message) => message.content.length > 0
   );
@@ -47,13 +77,6 @@ export async function POST(
   // Persist the user's message
   if (coreMessages.length > 0) {
     const userMsg = coreMessages[coreMessages.length - 1];
-
-    const user = await getUserByEmail(session.user.email!);
-    if (!user) {
-      return new Response("User not found", { status: 401 });
-    }
-
-    const userId = (user as any)._id.toString();
 
     const toPlainText = (content: any): string => {
       if (typeof content === "string") return content;
@@ -119,7 +142,18 @@ IMPORTANT INSTRUCTIONS:
 - Only elaborate if the user explicitly asks for more detail
 - Focus specifically on the selected text and the user's question`,
     messages: fullContext,
-    onFinish: async ({ text }) => {
+    onFinish: async ({ text, usage }) => {
+      // Record usage with token counts from the response
+      if (usage) {
+        await recordUsage(
+          userId,
+          modelId || DEFAULT_MODEL_ID,
+          usage.inputTokens || 0,
+          usage.outputTokens || 0,
+          currentUser.currentPeriodEnd
+        );
+      }
+
       // Persist AI response
       if (text) {
         await createMessage({
