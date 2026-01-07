@@ -52,7 +52,10 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
               <Check className="size-5 text-green-600" />
               <span>Basic AI assistance</span>
             </div>
-            {/* Removed: Community support */}
+            <div className="flex items-center gap-3">
+              <Check className="size-5 text-green-600" />
+              <span>1,000 units/month</span>
+            </div>
           </CardContent>
           <CardFooter>
             <Button className="w-full bg-transparent" variant="outline" asChild>
@@ -79,13 +82,16 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
             </div>
             <div className="flex items-center gap-3">
               <Check className="size-5 text-green-600" />
+              <span>3,000 units/month (3x more)</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check className="size-5 text-green-600" />
               <span>Access to premium models</span>
             </div>
             <div className="flex items-center gap-3">
               <Check className="size-5 text-green-600" />
               <span>Priority support</span>
             </div>
-            {/* Removed: Advanced features */}
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
             {isUserPro ? (
