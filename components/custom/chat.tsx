@@ -466,6 +466,16 @@ export function Chat({
                         </span>
                       </div>
                     </SelectItem>
+                    <SelectItem
+                      value="gemini-2.0-flash"
+                      className="hover:bg-muted"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {appConfig.getModelDisplayName("gemini-2.0-flash")}
+                        </span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
