@@ -361,7 +361,7 @@ export default function LandingPage() {
               <Link href="/legal/terms-and-conditions" className="hover:text-primary">
                 Terms
               </Link>
-              <Link href="/contact" className="hover:text-primary">
+              <Link href="/contact-us" className="hover:text-primary">
                 Contact
               </Link>
             </div>

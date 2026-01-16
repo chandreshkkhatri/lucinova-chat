@@ -19,6 +19,7 @@ import {
   getUserByEmail,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
+import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
 
 /**
  * Convert messages to core format while properly handling audio/file attachments.
@@ -158,6 +159,7 @@ export async function POST(request: Request) {
   );
 
   let userId: string | null = null;
+  let currentUser: any = null;
 
   // Get user info for authenticated users
   if (!isGuest && session?.user?.email) {
@@ -165,7 +167,31 @@ export async function POST(request: Request) {
     if (!user) {
       return new Response("User not found", { status: 401 });
     }
-    userId = (user as any)._id.toString();
+    const userIdStr = (user as any)._id.toString();
+    userId = userIdStr;
+    currentUser = user;
+
+    // Check usage limit for authenticated users
+    const usageCheck = await checkUsageLimit(
+      userIdStr,
+      user.isPro || false,
+      user.currentPeriodStart,
+      user.currentPeriodEnd
+    );
+
+    if (!usageCheck.allowed) {
+      return Response.json(
+        {
+          error: "usage_limit_exceeded",
+          message: "You have reached your monthly usage limit",
+          isPro: user.isPro || false,
+          currentUsage: usageCheck.currentUsage,
+          limit: usageCheck.limit,
+          periodEnd: usageCheck.periodEnd,
+        },
+        { status: 429 }
+      );
+    }
   }
 
   console.log(
@@ -288,9 +314,21 @@ export async function POST(request: Request) {
     model,
     system: `${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
     messages: coreMessages,
-    onFinish: async ({ text }) => {
+    onFinish: async ({ text, usage }) => {
       // Only persist for authenticated users
       if (isGuest || !userId) return;
+
+      // Record usage with token counts from the response
+      if (usage && currentUser) {
+        await recordUsage(
+          userId,
+          modelId || DEFAULT_MODEL_ID,
+          usage.inputTokens || 0,
+          usage.outputTokens || 0,
+          currentUser.currentPeriodStart,
+          currentUser.currentPeriodEnd
+        );
+      }
 
       // Persist AI response
       const currentChat = await getChatById({ id });

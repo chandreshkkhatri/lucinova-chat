@@ -13,6 +13,10 @@ const authFormSchema = z.object({
   password: z.string().min(6),
 });
 
+const registerFormSchema = authFormSchema.extend({
+  acceptTerms: z.literal("true"),
+});
+
 export interface LoginActionState {
   status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
 }
@@ -59,7 +63,8 @@ export interface RegisterActionState {
     | "success"
     | "failed"
     | "user_exists"
-    | "invalid_data";
+    | "invalid_data"
+    | "terms_not_accepted";
 }
 
 export const register = async (
@@ -67,9 +72,10 @@ export const register = async (
   formData: FormData
 ): Promise<RegisterActionState> => {
   try {
-    const validatedData = authFormSchema.parse({
+    const validatedData = registerFormSchema.parse({
       email: formData.get("email"),
       password: formData.get("password"),
+      acceptTerms: formData.get("acceptTerms"),
     });
 
     const existing = await getUserByEmail(validatedData.email);
@@ -79,7 +85,16 @@ export const register = async (
 
     // Hash the password before storing
     const hashedPassword = await hash(validatedData.password, 10);
-    await createUser(validatedData.email, hashedPassword);
+    await createUser(
+      validatedData.email,
+      hashedPassword,
+      undefined, // displayName
+      undefined, // avatarUrl
+      false, // isBot
+      null, // oauthProvider
+      undefined, // oauthProviderId
+      new Date() // termsAcceptedAt
+    );
 
     await signIn("credentials", {
       email: validatedData.email,
@@ -93,6 +108,11 @@ export const register = async (
       return { status: "failed" };
     }
     if (error instanceof z.ZodError) {
+      // Check if the error is specifically about terms not being accepted
+      const termsError = error.issues.find((e) => e.path.includes("acceptTerms"));
+      if (termsError) {
+        return { status: "terms_not_accepted" };
+      }
       return { status: "invalid_data" };
     }
 

@@ -1,10 +1,13 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt, Lock } from "lucide-react";
+import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+
+import { CountryCodeSelect } from "@/components/custom/country-code-select";
+import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
 
 interface AccountClientProps {
   user: {
@@ -25,17 +28,139 @@ export default function AccountClient({ user }: AccountClientProps) {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Phone editing state
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [editPhone, setEditPhone] = useState(user.phone || "");
+  const [editCountryCode, setEditCountryCode] = useState(user.countryCode || DEFAULT_COUNTRY_CODE);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [currentPhone, setCurrentPhone] = useState(user.phone || "");
+  const [currentCountryCode, setCurrentCountryCode] = useState(user.countryCode || DEFAULT_COUNTRY_CODE);
+
+  // Name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(user.name || "");
+  const [savingName, setSavingName] = useState(false);
+  const [currentName, setCurrentName] = useState(user.name || "");
+
   const formatPhoneNumber = (
     value?: string | null,
-    countryCode?: string | null
+    isoCountryCode?: string | null
   ) => {
     if (!value) return null;
     const digits = value.replace(/\D/g, "");
-    const code = countryCode || "+91";
-    if (digits.length === 10) {
-      return `${code} ${digits.slice(0, 5)} ${digits.slice(5)}`;
+    const country = getCountryByCode(isoCountryCode || DEFAULT_COUNTRY_CODE);
+    const dialCode = country?.dialCode || "+91";
+    return `${dialCode} ${digits}`;
+  };
+
+  const handleSavePhone = async () => {
+    const digits = editPhone.replace(/\D/g, "");
+    const selectedCountry = getCountryByCode(editCountryCode);
+
+    if (!validatePhone(digits, editCountryCode)) {
+      toast.error(`Enter a valid phone number for ${selectedCountry?.name || "your country"}`);
+      return;
     }
-    return `${code} ${value}`;
+
+    setSavingPhone(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: currentName,
+          phone: digits,
+          countryCode: editCountryCode
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update phone");
+      }
+      const data = await res.json();
+      setCurrentPhone(data.user.phone);
+      setEditPhone(data.user.phone);
+      setCurrentCountryCode(data.user.countryCode);
+      setEditCountryCode(data.user.countryCode);
+      setIsEditingPhone(false);
+      toast.success("Phone number updated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update phone");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleCancelEditPhone = () => {
+    setEditPhone(currentPhone);
+    setEditCountryCode(currentCountryCode);
+    setIsEditingPhone(false);
+  };
+
+  const handleDeletePhone = async () => {
+    if (!confirm("Are you sure you want to delete your phone number?")) {
+      return;
+    }
+
+    setSavingPhone(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: currentName,
+          deletePhone: true
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete phone");
+      }
+      setCurrentPhone("");
+      setEditPhone("");
+      setCurrentCountryCode(DEFAULT_COUNTRY_CODE);
+      setEditCountryCode(DEFAULT_COUNTRY_CODE);
+      toast.success("Phone number deleted");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete phone");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+
+    setSavingName(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmedName, phone: currentPhone, countryCode: currentCountryCode }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update name");
+      }
+      const data = await res.json();
+      setCurrentName(data.user.name);
+      setEditName(data.user.name);
+      setIsEditingName(false);
+      toast.success("Name updated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update name");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setEditName(currentName);
+    setIsEditingName(false);
   };
 
   async function fetchBilling() {
@@ -82,6 +207,11 @@ export default function AccountClient({ user }: AccountClientProps) {
       icon: User,
     },
     {
+      id: "usage",
+      label: "Usage",
+      icon: BarChart3,
+    },
+    {
       id: "security",
       label: "Security",
       icon: Lock,
@@ -122,28 +252,130 @@ export default function AccountClient({ user }: AccountClientProps) {
                     {user.email || "No email provided"}
                   </p>
                 </div>
-                {user.name && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Name
-                    </label>
-                    <p className="text-muted-foreground">
-                      {user.name}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Name
+                  </label>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Your full name"
+                        className="w-48 px-2 py-1 text-sm border border-border rounded bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={savingName}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSaveName}
+                        disabled={savingName}
+                        className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+                        title="Save"
+                      >
+                        {savingName ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelEditName}
+                        disabled={savingName}
+                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        title="Cancel"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">
+                        {currentName || "Not provided"}
+                      </p>
+                      <button
+                        onClick={() => setIsEditingName(true)}
+                        className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit name"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Phone Number
                   </label>
-                  <p className="text-muted-foreground">
-                    {formatPhoneNumber(user.phone, user.countryCode) ||
-                      "Not provided"}
-                  </p>
-                  {!user.phone && (
+                  {isEditingPhone ? (
+                    <div className="flex items-center gap-2">
+                      <CountryCodeSelect
+                        value={editCountryCode}
+                        onChange={setEditCountryCode}
+                        disabled={savingPhone}
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editPhone}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "");
+                          if (v.length <= 15) setEditPhone(v);
+                        }}
+                        placeholder={getCountryByCode(editCountryCode)?.placeholder || "Phone number"}
+                        className="w-32 px-2 py-1 text-sm border border-border rounded bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={savingPhone}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSavePhone}
+                        disabled={savingPhone}
+                        className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+                        title="Save"
+                      >
+                        {savingPhone ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelEditPhone}
+                        disabled={savingPhone}
+                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        title="Cancel"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">
+                        {formatPhoneNumber(currentPhone, currentCountryCode) ||
+                          "Not provided"}
+                      </p>
+                      <button
+                        onClick={() => setIsEditingPhone(true)}
+                        className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit phone number"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                      {currentPhone && (
+                        <button
+                          onClick={handleDeletePhone}
+                          disabled={savingPhone}
+                          className="p-1 text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-50"
+                          title="Delete phone number"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {!currentPhone && !isEditingPhone && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Update your profile from the app menu to add a contact
-                      number.
+                      Click the edit icon to add a contact number.
                     </p>
                   )}
                 </div>
@@ -174,6 +406,9 @@ export default function AccountClient({ user }: AccountClientProps) {
           </div>
         );
 
+      case "usage":
+        return <UsageSection isPro={user.isPro || false} />;
+
       case "security":
         return <SecuritySection />;
 
@@ -188,7 +423,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                 Manage your subscription and view available plans.
               </p>
               <button
-                onClick={() => router.push("/pricing")}
+                onClick={() => router.push("/beta/pricing")}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md transition-colors"
               >
                 View Pricing Plans
@@ -295,7 +530,7 @@ export default function AccountClient({ user }: AccountClientProps) {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <Link
-              href="/contact"
+              href="/contact-us"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Contact Us
@@ -440,6 +675,208 @@ function SecuritySection() {
             {isSubmitting ? "Changing..." : "Change Password"}
           </button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+interface UsageCurrentPeriod {
+  unitsUsed: number;
+  limit: number;
+  remaining: number;
+  percentUsed: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+interface UsageHistoryItem {
+  periodStart: string;
+  periodEnd: string;
+  unitsUsed: number;
+}
+
+interface UsageData {
+  current: UsageCurrentPeriod;
+  history: UsageHistoryItem[];
+  isPro: boolean;
+  plan: string;
+}
+
+function UsageSection({ isPro }: { isPro: boolean }) {
+  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/usage")
+      .then((res) => {
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error("Please log in to view usage data");
+          }
+          throw new Error("Failed to load usage data");
+        }
+        return res.json();
+      })
+      .then((data: UsageData) => {
+        setUsage(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Usage fetch error:", err);
+        setError(err.message || "Unable to load usage data");
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div>
+        <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
+        <div className="bg-muted rounded-lg p-6">
+          <p className="text-muted-foreground">Loading usage data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !usage) {
+    return (
+      <div>
+        <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
+        <div className="bg-muted rounded-lg p-6">
+          <p className="text-muted-foreground">
+            {error || "Unable to load usage data."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const { current, history } = usage;
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
+
+      {/* Current Period Card */}
+      <div className="bg-muted rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-foreground">
+              Current Period
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {new Date(current.periodStart).toLocaleDateString()} -{" "}
+              {new Date(current.periodEnd).toLocaleDateString()}
+            </p>
+          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              isPro
+                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+            }`}
+          >
+            {isPro ? "Pro" : "Free"} Plan
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-foreground font-medium">
+              {current.unitsUsed.toFixed(1)} units used
+            </span>
+            <span className="text-muted-foreground">
+              {current.limit} units limit
+            </span>
+          </div>
+          <div className="h-3 bg-card rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                current.percentUsed >= 100
+                  ? "bg-red-500"
+                  : current.percentUsed >= 80
+                  ? "bg-amber-500"
+                  : "bg-primary"
+              }`}
+              style={{ width: `${Math.min(100, current.percentUsed)}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-muted-foreground">Remaining</p>
+            <p className="text-xl font-semibold text-foreground">
+              {current.remaining.toFixed(1)} units
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-muted-foreground">Resets in</p>
+            <p className="text-xl font-semibold text-foreground">
+              {Math.max(
+                0,
+                Math.ceil(
+                  (new Date(current.periodEnd).getTime() - Date.now()) /
+                    (1000 * 60 * 60 * 24)
+                )
+              )}{" "}
+              days
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Upgrade CTA for free users */}
+      {!isPro && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 mb-6 text-center">
+          <Crown className="size-10 mx-auto mb-3 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Need more capacity?
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            Upgrade to Pro for 5,000 units per month - 5x more than the free
+            plan.
+          </p>
+          <button
+            onClick={() => router.push("/beta/pricing")}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-lg font-medium transition-colors"
+          >
+            Upgrade to Pro
+          </button>
+        </div>
+      )}
+
+      {/* Usage History */}
+      <div className="bg-muted rounded-lg p-6">
+        <h3 className="text-lg font-medium text-foreground mb-4">
+          Usage History
+        </h3>
+        {history.length === 0 ? (
+          <p className="text-muted-foreground">No previous usage data.</p>
+        ) : (
+          <div className="space-y-3">
+            {history.map((h: UsageHistoryItem) => (
+              <div
+                key={String(h.periodStart)}
+                className="flex justify-between items-center py-2 border-b border-border last:border-0"
+              >
+                <span className="text-sm text-muted-foreground">
+                  {new Date(h.periodStart).toLocaleDateString(undefined, {
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {h.unitsUsed.toFixed(1)} units
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

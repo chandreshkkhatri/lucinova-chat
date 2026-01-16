@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureConnection } from "./connection";
-import { User, Chat, Message, Payment, Annotation } from "./models";
+import { User, Chat, Message, Payment, Annotation, Usage } from "./models";
 
 // Re-export types for external use
 export { Chat } from "./models";
@@ -14,6 +14,7 @@ export async function createUser(
   isBot = false,
   oauthProvider?: "google" | null,
   oauthProviderId?: string,
+  termsAcceptedAt?: Date,
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
@@ -27,6 +28,7 @@ export async function createUser(
     isBot,
     oauthProvider,
     oauthProviderId,
+    termsAcceptedAt,
   });
 }
 
@@ -163,6 +165,7 @@ export async function activateProSubscriptionByEmail(
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
+  let currentPeriodStart: Date;
   let currentPeriodEnd: Date;
   let proSince: Date;
 
@@ -174,11 +177,14 @@ export async function activateProSubscriptionByEmail(
 
   if (hasActiveSub) {
     // Extend from existing end date (renewal)
-    currentPeriodEnd = new Date((existingUser as any).currentPeriodEnd!);
+    // New period starts where the old one ends
+    currentPeriodStart = new Date((existingUser as any).currentPeriodEnd!);
+    currentPeriodEnd = new Date(currentPeriodStart);
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
     proSince = (existingUser as any).proSince || now;
   } else {
     // New subscription - start from today
+    currentPeriodStart = new Date(now);
     currentPeriodEnd = new Date(now);
     currentPeriodEnd.setDate(currentPeriodEnd.getDate() + periodInDays);
     proSince = (existingUser as any).proSince || now;
@@ -188,6 +194,7 @@ export async function activateProSubscriptionByEmail(
     plan: "pro" as const,
     isPro: true,
     proSince,
+    currentPeriodStart,
     currentPeriodEnd,
     subscriptionProvider: provider,
     subscriptionStatus: "active" as const,
@@ -473,4 +480,152 @@ export async function updatePassword(email: string, hashedPassword: string) {
     },
     { new: true },
   ).lean();
+}
+
+// Usage tracking functions
+export async function getOrCreateCurrentUsage(
+  userId: string,
+  currentPeriodStart?: Date | null,
+  currentPeriodEnd?: Date | null
+) {
+  await ensureConnection();
+
+  const now = new Date();
+
+  // Calculate period boundaries
+  let periodStart: Date;
+  let periodEnd: Date;
+
+  if (
+    currentPeriodStart &&
+    currentPeriodEnd &&
+    new Date(currentPeriodEnd) > now &&
+    new Date(currentPeriodStart) <= now
+  ) {
+    // Pro user: Use actual subscription period boundaries
+    periodStart = new Date(currentPeriodStart);
+    periodEnd = new Date(currentPeriodEnd);
+  } else {
+    // Free user: Use calendar month
+    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  // Find or create usage record for this exact period atomically
+  const usage = await Usage.findOneAndUpdate(
+    {
+      userId,
+      periodStart,
+      periodEnd,
+    },
+    {
+      $setOnInsert: {
+        userId,
+        periodStart,
+        periodEnd,
+        unitsUsed: 0,
+        breakdown: [],
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+    }
+  );
+
+  return usage.toObject();
+}
+
+export async function incrementUsage(
+  userId: string,
+  modelId: string,
+  inputTokens: number,
+  outputTokens: number,
+  units: number,
+  currentPeriodStart?: Date | null,
+  currentPeriodEnd?: Date | null
+) {
+  await ensureConnection();
+
+  const now = new Date();
+
+  // Calculate period boundaries (keep in sync with getOrCreateCurrentUsage)
+  let periodStart: Date;
+  let periodEnd: Date;
+
+  if (
+    currentPeriodStart &&
+    currentPeriodEnd &&
+    new Date(currentPeriodEnd) > now &&
+    new Date(currentPeriodStart) <= now
+  ) {
+    // Pro user: Use actual subscription period boundaries
+    periodStart = new Date(currentPeriodStart);
+    periodEnd = new Date(currentPeriodEnd);
+  } else {
+    // Free user: Use calendar month
+    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  // Atomically find (or create) and update the current period's usage
+  const updatedUsage = await Usage.findOneAndUpdate(
+    {
+      userId,
+      periodStart,
+      periodEnd,
+    },
+    {
+      $inc: { unitsUsed: units },
+      $set: { lastUpdated: now },
+      $push: {
+        breakdown: {
+          modelId,
+          inputTokens,
+          outputTokens,
+          unitsUsed: units,
+          timestamp: now,
+        },
+      },
+      $setOnInsert: {
+        userId,
+        periodStart,
+        periodEnd,
+      },
+    },
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+
+  if (!updatedUsage) {
+    throw new Error("Failed to increment usage for user");
+  }
+}
+
+export async function getUserUsageStats(
+  userId: string,
+  currentPeriodStart?: Date | null,
+  currentPeriodEnd?: Date | null
+) {
+  await ensureConnection();
+
+  const usage = await getOrCreateCurrentUsage(
+    userId,
+    currentPeriodStart,
+    currentPeriodEnd
+  );
+
+  return {
+    unitsUsed: typeof usage?.unitsUsed === "number" ? usage.unitsUsed : 0,
+    periodStart: usage?.periodStart ?? null,
+    periodEnd: usage?.periodEnd ?? null,
+  };
+}
+
+export async function getUsageHistory(userId: string, limit = 12) {
+  await ensureConnection();
+
+  return Usage.find({ userId }).sort({ periodStart: -1 }).limit(limit).lean();
 }
