@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
+
+import { CountryCodeSelect } from "./country-code-select";
 
 export function ProfileModal({
   open,
@@ -28,8 +31,13 @@ export function ProfileModal({
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleCountryChange = useCallback((code: string) => {
+    setCountryCode(code);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -40,6 +48,13 @@ export function ProfileModal({
           if (data?.user) {
             setName(data.user.name || "");
             setPhone(data.user.phone || "");
+            // Map dial code to country code if available
+            if (data.user.countryCode) {
+              const country = getCountryByCode(data.user.countryCode);
+              if (country) {
+                setCountryCode(data.user.countryCode);
+              }
+            }
           }
         })
         .catch(() => {});
@@ -48,15 +63,19 @@ export function ProfileModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim()) {
-      toast.error("Please fill in all fields");
+    if (!name.trim()) {
+      toast.error("Please enter your name");
       return;
     }
 
+    // Only validate phone if provided
     const digits = phone.replace(/\D/g, "");
-    if (!/^[6-9]\d{9}$/.test(digits)) {
-      toast.error("Enter a valid 10-digit Indian mobile number");
-      return;
+    if (digits) {
+      const selectedCountry = getCountryByCode(countryCode || DEFAULT_COUNTRY_CODE);
+      if (!validatePhone(digits, countryCode || DEFAULT_COUNTRY_CODE)) {
+        toast.error(`Enter a valid phone number for ${selectedCountry?.name || "your country"}`);
+        return;
+      }
     }
 
     if (!acceptTerms) {
@@ -66,10 +85,20 @@ export function ProfileModal({
 
     setLoading(true);
     try {
+      const payload: Record<string, any> = {
+        name: name.trim(),
+        acceptTerms: true
+      };
+      // Only include phone if provided
+      if (digits) {
+        payload.phone = digits;
+        payload.countryCode = countryCode || DEFAULT_COUNTRY_CODE;
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: digits, acceptTerms: true }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -92,8 +121,8 @@ export function ProfileModal({
         <DialogHeader>
           <DialogTitle>Complete your profile</DialogTitle>
           <DialogDescription>
-            Please add your name and phone number. We use this to prefill
-            payment details and provide support.
+            Please add your name. Phone number is optional but helps us provide
+            support and prefill payment details.
           </DialogDescription>
         </DialogHeader>
 
@@ -109,24 +138,27 @@ export function ProfileModal({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Mobile Number</Label>
+            <Label htmlFor="phone">Mobile Number <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <div className="flex gap-2">
-              <Input className="w-20" value="+91" disabled />
+              <CountryCodeSelect
+                value={countryCode}
+                onChange={handleCountryChange}
+                autoDetect={!countryCode}
+              />
               <Input
                 id="phone"
                 inputMode="numeric"
                 value={phone}
                 onChange={(e) => {
                   const v = e.target.value.replace(/\D/g, "");
-                  if (v.length <= 10) setPhone(v);
+                  if (v.length <= 15) setPhone(v);
                 }}
-                placeholder="9876543210"
-                required
+                placeholder={getCountryByCode(countryCode || DEFAULT_COUNTRY_CODE)?.placeholder || "Phone number"}
                 className="flex-1"
               />
             </div>
             <p className="text-xs text-gray-500">
-              Enter 10-digit Indian mobile number
+              Enter your mobile number without country code
             </p>
           </div>
 

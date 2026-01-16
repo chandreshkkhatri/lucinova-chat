@@ -1,10 +1,13 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown } from "lucide-react";
+import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+
+import { CountryCodeSelect } from "@/components/custom/country-code-select";
+import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
 
 interface AccountClientProps {
   user: {
@@ -25,17 +28,139 @@ export default function AccountClient({ user }: AccountClientProps) {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Phone editing state
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [editPhone, setEditPhone] = useState(user.phone || "");
+  const [editCountryCode, setEditCountryCode] = useState(user.countryCode || DEFAULT_COUNTRY_CODE);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [currentPhone, setCurrentPhone] = useState(user.phone || "");
+  const [currentCountryCode, setCurrentCountryCode] = useState(user.countryCode || DEFAULT_COUNTRY_CODE);
+
+  // Name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(user.name || "");
+  const [savingName, setSavingName] = useState(false);
+  const [currentName, setCurrentName] = useState(user.name || "");
+
   const formatPhoneNumber = (
     value?: string | null,
-    countryCode?: string | null
+    isoCountryCode?: string | null
   ) => {
     if (!value) return null;
     const digits = value.replace(/\D/g, "");
-    const code = countryCode || "+91";
-    if (digits.length === 10) {
-      return `${code} ${digits.slice(0, 5)} ${digits.slice(5)}`;
+    const country = getCountryByCode(isoCountryCode || DEFAULT_COUNTRY_CODE);
+    const dialCode = country?.dialCode || "+91";
+    return `${dialCode} ${digits}`;
+  };
+
+  const handleSavePhone = async () => {
+    const digits = editPhone.replace(/\D/g, "");
+    const selectedCountry = getCountryByCode(editCountryCode);
+
+    if (!validatePhone(digits, editCountryCode)) {
+      toast.error(`Enter a valid phone number for ${selectedCountry?.name || "your country"}`);
+      return;
     }
-    return `${code} ${value}`;
+
+    setSavingPhone(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: currentName,
+          phone: digits,
+          countryCode: editCountryCode
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update phone");
+      }
+      const data = await res.json();
+      setCurrentPhone(data.user.phone);
+      setEditPhone(data.user.phone);
+      setCurrentCountryCode(data.user.countryCode);
+      setEditCountryCode(data.user.countryCode);
+      setIsEditingPhone(false);
+      toast.success("Phone number updated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update phone");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleCancelEditPhone = () => {
+    setEditPhone(currentPhone);
+    setEditCountryCode(currentCountryCode);
+    setIsEditingPhone(false);
+  };
+
+  const handleDeletePhone = async () => {
+    if (!confirm("Are you sure you want to delete your phone number?")) {
+      return;
+    }
+
+    setSavingPhone(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: currentName,
+          deletePhone: true
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete phone");
+      }
+      setCurrentPhone("");
+      setEditPhone("");
+      setCurrentCountryCode(DEFAULT_COUNTRY_CODE);
+      setEditCountryCode(DEFAULT_COUNTRY_CODE);
+      toast.success("Phone number deleted");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete phone");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+
+    setSavingName(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmedName, phone: currentPhone, countryCode: currentCountryCode }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update name");
+      }
+      const data = await res.json();
+      setCurrentName(data.user.name);
+      setEditName(data.user.name);
+      setIsEditingName(false);
+      toast.success("Name updated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update name");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setEditName(currentName);
+    setIsEditingName(false);
   };
 
   async function fetchBilling() {
@@ -127,28 +252,130 @@ export default function AccountClient({ user }: AccountClientProps) {
                     {user.email || "No email provided"}
                   </p>
                 </div>
-                {user.name && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Name
-                    </label>
-                    <p className="text-muted-foreground">
-                      {user.name}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Name
+                  </label>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Your full name"
+                        className="w-48 px-2 py-1 text-sm border border-border rounded bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={savingName}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSaveName}
+                        disabled={savingName}
+                        className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+                        title="Save"
+                      >
+                        {savingName ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelEditName}
+                        disabled={savingName}
+                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        title="Cancel"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">
+                        {currentName || "Not provided"}
+                      </p>
+                      <button
+                        onClick={() => setIsEditingName(true)}
+                        className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit name"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Phone Number
                   </label>
-                  <p className="text-muted-foreground">
-                    {formatPhoneNumber(user.phone, user.countryCode) ||
-                      "Not provided"}
-                  </p>
-                  {!user.phone && (
+                  {isEditingPhone ? (
+                    <div className="flex items-center gap-2">
+                      <CountryCodeSelect
+                        value={editCountryCode}
+                        onChange={setEditCountryCode}
+                        disabled={savingPhone}
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editPhone}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "");
+                          if (v.length <= 15) setEditPhone(v);
+                        }}
+                        placeholder={getCountryByCode(editCountryCode)?.placeholder || "Phone number"}
+                        className="w-32 px-2 py-1 text-sm border border-border rounded bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={savingPhone}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSavePhone}
+                        disabled={savingPhone}
+                        className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+                        title="Save"
+                      >
+                        {savingPhone ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelEditPhone}
+                        disabled={savingPhone}
+                        className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        title="Cancel"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground">
+                        {formatPhoneNumber(currentPhone, currentCountryCode) ||
+                          "Not provided"}
+                      </p>
+                      <button
+                        onClick={() => setIsEditingPhone(true)}
+                        className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit phone number"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                      {currentPhone && (
+                        <button
+                          onClick={handleDeletePhone}
+                          disabled={savingPhone}
+                          className="p-1 text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-50"
+                          title="Delete phone number"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {!currentPhone && !isEditingPhone && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Update your profile from the app menu to add a contact
-                      number.
+                      Click the edit icon to add a contact number.
                     </p>
                   )}
                 </div>
@@ -196,7 +423,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                 Manage your subscription and view available plans.
               </p>
               <button
-                onClick={() => router.push("/pricing")}
+                onClick={() => router.push("/beta/pricing")}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md transition-colors"
               >
                 View Pricing Plans
@@ -303,7 +530,7 @@ export default function AccountClient({ user }: AccountClientProps) {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <Link
-              href="/contact"
+              href="/contact-us"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Contact Us

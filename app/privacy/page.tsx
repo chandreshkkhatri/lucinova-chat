@@ -10,19 +10,19 @@ export default function PrivacyPage() {
   return (
     <main className="flex min-h-screen flex-col p-4 pt-20">
       <div className="max-w-4xl w-full mx-auto">
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+        <div className="bg-card rounded-lg shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-foreground mb-6 text-center">
             Privacy Policy
           </h1>
 
           <div className="prose prose-gray dark:prose-invert max-w-none">
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               Last updated: {new Date().toLocaleDateString()}
             </p>
 
-            <div className="space-y-6 text-gray-700 dark:text-gray-300">
+            <div className="space-y-6 text-muted-foreground">
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   1. Introduction
                 </h2>
                 <p>
@@ -35,10 +35,10 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   2. Information We Collect
                 </h2>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-medium text-foreground mb-2">
                   2.1 Personal Information
                 </h3>
                 <p>We may collect the following personal information:</p>
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
                   </li>
                 </ul>
 
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2 mt-4">
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
                   2.2 Usage Information
                 </h3>
                 <p>
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
                   </li>
                 </ul>
 
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2 mt-4">
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
                   2.3 Cookies and Tracking Technologies
                 </h3>
                 <p>We use cookies and similar tracking technologies to:</p>
@@ -88,7 +88,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   3. How We Use Your Information
                 </h2>
                 <p>
@@ -115,7 +115,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   4. Information Sharing and Disclosure
                 </h2>
                 <p>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
                   information in the following circumstances:
                 </p>
 
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2 mt-4">
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
                   4.1 Service Providers
                 </h3>
                 <p>
@@ -137,7 +137,7 @@ export default function PrivacyPage() {
                   <li>Customer support platforms</li>
                 </ul>
 
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2 mt-4">
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
                   4.2 Legal Requirements
                 </h3>
                 <p>
@@ -153,7 +153,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   5. Data Security
                 </h2>
                 <p>
@@ -170,7 +170,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   6. Data Retention
                 </h2>
                 <p>We retain your information for as long as necessary to:</p>
@@ -188,7 +188,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   7. Your Rights and Choices
                 </h2>
                 <p>
@@ -228,7 +228,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   8. Third-Party Services
                 </h2>
                 <p>
@@ -241,7 +241,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   9. Children's Privacy
                 </h2>
                 <p>
@@ -253,7 +253,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   10. International Data Transfers
                 </h2>
                 <p>
@@ -265,7 +265,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   11. Changes to This Privacy Policy
                 </h2>
                 <p>
@@ -278,7 +278,7 @@ export default function PrivacyPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   12. Contact Information
                 </h2>
                 <p>

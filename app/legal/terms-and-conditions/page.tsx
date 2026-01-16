@@ -10,22 +10,22 @@ export default function TermsAndConditionsPage() {
   return (
     <main className="flex min-h-screen flex-col p-4 pt-20">
       <div className="max-w-4xl w-full mx-auto">
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+        <div className="bg-card rounded-lg shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-foreground mb-6 text-center">
             Terms & Conditions
           </h1>
 
           <div className="prose prose-gray dark:prose-invert max-w-none">
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               Last updated on 27-09-2025 18:46:05
             </p>
 
-            <div className="space-y-6 text-gray-700 dark:text-gray-300">
+            <div className="space-y-6 text-muted-foreground">
               <section>
                 <p>
                   These Terms and Conditions, along with privacy policy or other
                   terms ("Terms") constitute a binding agreement by and between
-                  CHANDRESH KUMAR, ("Website Owner" or "we" or "us" or "our")
+                  Rebundled Company, ("Website Owner" or "we" or "us" or "our")
                   and you ("you" or "your") and relate to your use of our
                   website, goods (as applicable) or services (as applicable)
                   (collectively, "Services").
@@ -41,7 +41,7 @@ export default function TermsAndConditionsPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                <h2 className="text-xl font-semibold text-foreground mb-3">
                   Terms of Use
                 </h2>
                 <p className="mb-3">
