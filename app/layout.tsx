@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 import { Navbar } from "@/components/custom/navbar";
 import { ProfileGate } from "@/components/custom/profile-gate";
@@ -89,6 +90,7 @@ export default async function RootLayout({
           <Toaster position="top-center" />
           <Navbar />
           {children}
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

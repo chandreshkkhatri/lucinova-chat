@@ -574,7 +574,7 @@ function UsageSection({ isPro }: { isPro: boolean }) {
             Need more capacity?
           </h3>
           <p className="text-muted-foreground mb-4">
-            Upgrade to Pro for 3,000 units per month - 3x more than the free
+            Upgrade to Pro for 5,000 units per month - 5x more than the free
             plan.
           </p>
           <button

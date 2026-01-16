@@ -18,7 +18,7 @@ const UNIT_COST_USD = 0.0048;
 // Usage limits per plan (units per month)
 export const USAGE_LIMITS = {
   free: 1000,
-  pro: 3000,
+  pro: 5000,
 };
 
 /**

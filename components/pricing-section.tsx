@@ -82,7 +82,7 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
             </div>
             <div className="flex items-center gap-3">
               <Check className="size-5 text-green-600" />
-              <span>3,000 units/month (3x more)</span>
+              <span>5,000 units/month (5x more)</span>
             </div>
             <div className="flex items-center gap-3">
               <Check className="size-5 text-green-600" />
