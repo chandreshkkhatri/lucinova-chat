@@ -103,6 +103,43 @@ export function Chat({
       window.history.replaceState({}, "", url);
       onFinish?.();
     },
+    onError: (error) => {
+      // Handle 429 usage limit errors from the server
+      // The error message may contain JSON with usage limit details
+      console.error("Chat error:", error);
+      try {
+        // Try to parse error response if it contains usage limit info
+        const errorText = error.message || "";
+        if (errorText.includes("usage_limit_exceeded") || errorText.includes("429")) {
+          // Fetch current usage to display the banner
+          fetch("/api/usage")
+            .then((res) => res.json())
+            .then((usageData) => {
+              if (usageData.current) {
+                setUsageLimitInfo({
+                  exceeded: true,
+                  isPro: usageData.isPro,
+                  currentUsage: usageData.current.unitsUsed,
+                  limit: usageData.current.limit,
+                  periodEnd: usageData.current.periodEnd,
+                });
+              }
+            })
+            .catch(() => {
+              // If we can't fetch usage, still show a generic limit message
+              setUsageLimitInfo({
+                exceeded: true,
+                isPro: isUserPro,
+                currentUsage: 0,
+                limit: 0,
+                periodEnd: new Date(),
+              });
+            });
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    },
   });
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -115,7 +152,7 @@ export function Chat({
         const checkRes = await fetch("/api/usage");
         if (checkRes.ok) {
           const usageData = await checkRes.json();
-          if (usageData.current.percentUsed >= 100) {
+          if (usageData.current.percentUsed > 100) {
             setUsageLimitInfo({
               exceeded: true,
               isPro: usageData.isPro,

@@ -18,6 +18,7 @@ export interface IUser extends Document {
   plan?: "free" | "pro";
   isPro?: boolean;
   proSince?: Date;
+  currentPeriodStart?: Date | null;
   currentPeriodEnd?: Date | null;
   subscriptionProvider?: "razorpay" | "manual" | null;
   subscriptionStatus?: "active" | "inactive" | "canceled" | null;
@@ -47,6 +48,7 @@ const userSchema = new Schema<IUser>(
     plan: { type: String, enum: ["free", "pro"], default: "free" },
     isPro: { type: Boolean, default: false },
     proSince: { type: Date },
+    currentPeriodStart: { type: Date, default: null },
     currentPeriodEnd: { type: Date, default: null },
     subscriptionProvider: {
       type: String,

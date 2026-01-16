@@ -10,7 +10,7 @@ export interface UsageCheckResult {
   currentUsage: number;
   limit: number;
   remainingUnits: number;
-  periodEnd: Date;
+  periodEnd: Date | null;
 }
 
 /**
@@ -20,14 +20,20 @@ export interface UsageCheckResult {
 export async function checkUsageLimit(
   userId: string,
   isPro: boolean,
+  currentPeriodStart?: Date | null,
   currentPeriodEnd?: Date | null
 ): Promise<UsageCheckResult> {
-  const stats = await getUserUsageStats(userId, currentPeriodEnd);
+  const stats = await getUserUsageStats(
+    userId,
+    currentPeriodStart,
+    currentPeriodEnd
+  );
   const limit = getUserLimit(isPro);
   const remaining = Math.max(0, limit - stats.unitsUsed);
 
   return {
-    // Allow if under limit (this allows the "last message" to go through)
+    // Allow if under limit (this allows the "last message" to go through
+    // even if it would exceed the limit)
     allowed: stats.unitsUsed < limit,
     currentUsage: stats.unitsUsed,
     limit,
@@ -46,6 +52,7 @@ export async function recordUsage(
   modelId: string,
   inputTokens: number,
   outputTokens: number,
+  currentPeriodStart?: Date | null,
   currentPeriodEnd?: Date | null
 ): Promise<number> {
   const units = calculateUnitsFromTokens(modelId, inputTokens, outputTokens);
@@ -56,6 +63,7 @@ export async function recordUsage(
     inputTokens,
     outputTokens,
     units,
+    currentPeriodStart,
     currentPeriodEnd
   );
 

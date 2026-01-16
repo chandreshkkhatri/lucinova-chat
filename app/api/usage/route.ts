@@ -6,6 +6,12 @@ import {
 } from "@/db/queries";
 import { getUserLimit } from "@/lib/usage";
 
+interface UsageHistoryRecord {
+  periodStart: Date;
+  periodEnd: Date;
+  unitsUsed: number;
+}
+
 export async function GET() {
   const session = await auth();
 
@@ -18,10 +24,14 @@ export async function GET() {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  const userId = (user as any)._id.toString();
+  const userId = (user as { _id: { toString(): string } })._id.toString();
   const isPro = user.isPro || false;
 
-  const stats = await getUserUsageStats(userId, user.currentPeriodEnd);
+  const stats = await getUserUsageStats(
+    userId,
+    user.currentPeriodStart,
+    user.currentPeriodEnd
+  );
   const history = await getUsageHistory(userId, 6);
   const limit = getUserLimit(isPro);
 
@@ -34,11 +44,14 @@ export async function GET() {
       periodStart: stats.periodStart,
       periodEnd: stats.periodEnd,
     },
-    history: history.map((h: any) => ({
-      periodStart: h.periodStart,
-      periodEnd: h.periodEnd,
-      unitsUsed: h.unitsUsed,
-    })),
+    history: history.map((h) => {
+      const record = h as unknown as UsageHistoryRecord;
+      return {
+        periodStart: record.periodStart,
+        periodEnd: record.periodEnd,
+        unitsUsed: record.unitsUsed,
+      };
+    }),
     isPro,
     plan: user.plan || "free",
   });

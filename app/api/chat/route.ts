@@ -175,6 +175,7 @@ export async function POST(request: Request) {
     const usageCheck = await checkUsageLimit(
       userIdStr,
       user.isPro || false,
+      user.currentPeriodStart,
       user.currentPeriodEnd
     );
 
@@ -324,6 +325,7 @@ export async function POST(request: Request) {
           modelId || DEFAULT_MODEL_ID,
           usage.inputTokens || 0,
           usage.outputTokens || 0,
+          currentUser.currentPeriodStart,
           currentUser.currentPeriodEnd
         );
       }

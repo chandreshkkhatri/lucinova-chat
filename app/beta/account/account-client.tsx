@@ -680,19 +680,54 @@ function SecuritySection() {
   );
 }
 
+interface UsageCurrentPeriod {
+  unitsUsed: number;
+  limit: number;
+  remaining: number;
+  percentUsed: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+interface UsageHistoryItem {
+  periodStart: string;
+  periodEnd: string;
+  unitsUsed: number;
+}
+
+interface UsageData {
+  current: UsageCurrentPeriod;
+  history: UsageHistoryItem[];
+  isPro: boolean;
+  plan: string;
+}
+
 function UsageSection({ isPro }: { isPro: boolean }) {
-  const [usage, setUsage] = useState<any>(null);
+  const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetch("/api/usage")
-      .then((res) => res.json())
-      .then((data) => {
+      .then((res) => {
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error("Please log in to view usage data");
+          }
+          throw new Error("Failed to load usage data");
+        }
+        return res.json();
+      })
+      .then((data: UsageData) => {
         setUsage(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error("Usage fetch error:", err);
+        setError(err.message || "Unable to load usage data");
+        setLoading(false);
+      });
   }, []);
 
   if (loading) {
@@ -706,12 +741,14 @@ function UsageSection({ isPro }: { isPro: boolean }) {
     );
   }
 
-  if (!usage) {
+  if (error || !usage) {
     return (
       <div>
         <h2 className="text-2xl font-semibold text-foreground mb-6">Usage</h2>
         <div className="bg-muted rounded-lg p-6">
-          <p className="text-muted-foreground">Unable to load usage data.</p>
+          <p className="text-muted-foreground">
+            {error || "Unable to load usage data."}
+          </p>
         </div>
       </div>
     );
@@ -731,8 +768,8 @@ function UsageSection({ isPro }: { isPro: boolean }) {
               Current Period
             </h3>
             <p className="text-sm text-muted-foreground">
-              {new Date(current.periodStart).toLocaleDateString("en-IN")} -{" "}
-              {new Date(current.periodEnd).toLocaleDateString("en-IN")}
+              {new Date(current.periodStart).toLocaleDateString()} -{" "}
+              {new Date(current.periodEnd).toLocaleDateString()}
             </p>
           </div>
           <span
@@ -822,13 +859,13 @@ function UsageSection({ isPro }: { isPro: boolean }) {
           <p className="text-muted-foreground">No previous usage data.</p>
         ) : (
           <div className="space-y-3">
-            {history.map((h: any, i: number) => (
+            {history.map((h: UsageHistoryItem) => (
               <div
-                key={i}
+                key={String(h.periodStart)}
                 className="flex justify-between items-center py-2 border-b border-border last:border-0"
               >
                 <span className="text-sm text-muted-foreground">
-                  {new Date(h.periodStart).toLocaleDateString("en-IN", {
+                  {new Date(h.periodStart).toLocaleDateString(undefined, {
                     month: "short",
                     year: "numeric",
                   })}

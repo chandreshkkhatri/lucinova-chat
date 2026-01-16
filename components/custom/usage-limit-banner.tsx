@@ -16,7 +16,7 @@ export function UsageLimitBanner({
   limit,
   periodEnd,
 }: UsageLimitBannerProps) {
-  const resetDate = new Date(periodEnd).toLocaleDateString("en-IN", {
+  const resetDate = new Date(periodEnd).toLocaleDateString(undefined, {
     month: "long",
     day: "numeric",
   });
