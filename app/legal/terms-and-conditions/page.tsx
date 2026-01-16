@@ -126,7 +126,7 @@ export default function TermsAndConditionsPage() {
                   <li>
                     All disputes arising out of or in connection with these
                     Terms shall be subject to the exclusive jurisdiction of the
-                    courts in Bengaluru, Karnataka.
+                    courts in Bengaluru, Karnataka, India.
                   </li>
                   <li>
                     All concerns or communications relating to these Terms must

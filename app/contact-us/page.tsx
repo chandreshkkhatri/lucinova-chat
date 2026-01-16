@@ -74,7 +74,7 @@ export default function ContactUsPage() {
                 </h3>
                 <div className="text-sm text-muted-foreground/80 space-y-1">
                   <p><span className="font-medium">Entity:</span> Rebundled Company</p>
-                  <p><span className="font-medium">Address:</span> 202, 2nd Floor, Plot No 786, 5th Cross, 4th block, Koramangala, Near Swabhimaana Karanji Park, Bengaluru, Karnataka, PIN: 560034</p>
+                  <p><span className="font-medium">Address:</span> 202, 2nd Floor, Plot No 786, 5th Cross, 4th block, Koramangala, Near Swabhimaana Karanji Park, Bengaluru, Karnataka, India - 560034</p>
                 </div>
               </section>
             </div>
