@@ -46,6 +46,19 @@ export async function PUT(request: NextRequest) {
 
   await ensureConnection();
 
+  // Check if phone number is already used by another user
+  const existingUser = await User.findOne({
+    phone: phoneDigits,
+    email: { $ne: session.user.email },
+  }).lean();
+
+  if (existingUser) {
+    return NextResponse.json(
+      { error: "This phone number is already registered to another account." },
+      { status: 409 }
+    );
+  }
+
   // Build the update object
   const updateFields: Record<string, any> = { name, phone: phoneDigits, countryCode };
   if (acceptTerms) {

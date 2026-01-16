@@ -35,7 +35,7 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     displayName: { type: String, required: true },
     name: { type: String },
-    phone: { type: String },
+    phone: { type: String, unique: true, sparse: true },
     countryCode: { type: String },
     password: { type: String },
     avatarUrl: { type: String },
