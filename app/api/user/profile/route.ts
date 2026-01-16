@@ -26,6 +26,7 @@ export async function PUT(request: NextRequest) {
   const name = typeof body.name === "string" ? body.name.trim() : undefined;
   const phone = typeof body.phone === "string" ? body.phone.trim() : undefined;
   const countryCode = typeof body.countryCode === "string" ? body.countryCode.trim() : "+91";
+  const acceptTerms = body.acceptTerms === true;
 
   if (!name || !phone) {
     return NextResponse.json(
@@ -44,12 +45,19 @@ export async function PUT(request: NextRequest) {
   }
 
   await ensureConnection();
+
+  // Build the update object
+  const updateFields: Record<string, any> = { name, phone: phoneDigits, countryCode };
+  if (acceptTerms) {
+    updateFields.termsAcceptedAt = new Date();
+  }
+
   const updated = await User.findOneAndUpdate(
     { email: session.user.email },
-    { $set: { name, phone: phoneDigits, countryCode } },
+    { $set: updateFields },
     { new: true }
   )
-    .select("email displayName name phone countryCode")
+    .select("email displayName name phone countryCode termsAcceptedAt")
     .lean();
 
   return NextResponse.json({ user: updated });

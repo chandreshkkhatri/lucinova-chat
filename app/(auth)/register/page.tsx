@@ -30,6 +30,8 @@ export default function Page() {
       toast.error("Failed to create account");
     } else if (state.status === "invalid_data") {
       toast.error("Failed validating your submission!");
+    } else if (state.status === "terms_not_accepted") {
+      toast.error("You must accept the Terms & Conditions to register");
     } else if (state.status === "success") {
       toast.success("Account created successfully");
       router.refresh();
@@ -105,7 +107,7 @@ export default function Page() {
         </div>
 
         <div className="px-6 pb-7">
-          <AuthForm action={handleSubmit} defaultEmail={email}>
+          <AuthForm action={handleSubmit} defaultEmail={email} showTermsCheckbox>
             <SubmitButton>Sign Up</SubmitButton>
 
             <div className="relative my-4">

@@ -25,6 +25,8 @@ export interface IUser extends Document {
   // Password reset fields
   resetToken?: string;
   resetTokenExpiry?: Date;
+  // Terms acceptance
+  termsAcceptedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +60,7 @@ const userSchema = new Schema<IUser>(
     razorpayCustomerId: { type: String },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
+    termsAcceptedAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -14,6 +14,7 @@ export async function createUser(
   isBot = false,
   oauthProvider?: "google" | null,
   oauthProviderId?: string,
+  termsAcceptedAt?: Date,
 ) {
   await ensureConnection();
   // Use email prefix as displayName if not provided
@@ -27,6 +28,7 @@ export async function createUser(
     isBot,
     oauthProvider,
     oauthProviderId,
+    termsAcceptedAt,
   });
 }
 

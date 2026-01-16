@@ -1,10 +1,12 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ export function ProfileModal({
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -56,12 +59,17 @@ export function ProfileModal({
       return;
     }
 
+    if (!acceptTerms) {
+      toast.error("You must accept the Terms & Conditions to continue");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: digits }),
+        body: JSON.stringify({ name: name.trim(), phone: digits, acceptTerms: true }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -79,8 +87,8 @@ export function ProfileModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Complete your profile</DialogTitle>
           <DialogDescription>
@@ -122,25 +130,45 @@ export function ProfileModal({
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="w-full"
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="acceptTerms"
+              checked={acceptTerms}
+              onCheckedChange={(checked) => setAcceptTerms(checked === true)}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor="acceptTerms"
+              className="text-xs text-muted-foreground font-normal leading-relaxed cursor-pointer"
             >
-              Cancel
-            </Button>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" /> Saving...
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
+              I agree to the{" "}
+              <Link
+                href="/legal/terms-and-conditions"
+                target="_blank"
+                className="text-primary hover:underline"
+              >
+                Terms & Conditions
+              </Link>{" "}
+              and acknowledge the{" "}
+              <Link
+                href="/legal/privacy-policy"
+                target="_blank"
+                className="text-primary hover:underline"
+              >
+                Privacy Policy
+              </Link>
+            </Label>
           </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" /> Saving...
+              </>
+            ) : (
+              "Save & Continue"
+            )}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>
