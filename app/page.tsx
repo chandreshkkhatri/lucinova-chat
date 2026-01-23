@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { TeamSection } from "@/components/team-section"
 
 import type React from "react"
 
@@ -301,6 +302,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Team Section */}
+        <TeamSection />
 
         {/* Pricing / Beta */}
         <section
