@@ -3,7 +3,12 @@ const nextConfig = {
   experimental: {},
   serverExternalPackages: ["resend"],
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "github.com",
+      },
+    ],
     formats: ["image/webp", "image/avif"], // Modern image formats for better performance
     unoptimized: false, // Keep optimization enabled
     minimumCacheTTL: 60,
