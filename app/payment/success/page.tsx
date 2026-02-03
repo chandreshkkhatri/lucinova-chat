@@ -3,7 +3,7 @@
 import { CheckCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { trackPurchaseConversion } from "@/lib/gtag";
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -21,6 +22,7 @@ function PaymentSuccessContent() {
   const subscriptionId = searchParams.get("subscription_id");
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const conversionTracked = useRef(false);
 
   useEffect(() => {
     // Prefer Razorpay identifiers first
@@ -34,6 +36,16 @@ function PaymentSuccessContent() {
           const response = await fetch(`/api/payment/razorpay/status?${q}`);
           const data = await response.json();
           setOrderDetails(data);
+
+          // Track purchase conversion (only once)
+          if (!conversionTracked.current && data?.orderAmount) {
+            trackPurchaseConversion(
+              Number(data.orderAmount),
+              "INR",
+              data.orderId
+            );
+            conversionTracked.current = true;
+          }
           return;
         }
 
@@ -41,6 +53,16 @@ function PaymentSuccessContent() {
           const response = await fetch(`/api/payment/status?order_id=${orderId}`);
           const data = await response.json();
           setOrderDetails(data);
+
+          // Track purchase conversion (only once)
+          if (!conversionTracked.current && data?.orderAmount) {
+            trackPurchaseConversion(
+              Number(data.orderAmount),
+              "INR",
+              data.orderId
+            );
+            conversionTracked.current = true;
+          }
         }
       } catch (error) {
         console.error("Failed to fetch order details:", error);

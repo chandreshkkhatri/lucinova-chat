@@ -9,6 +9,7 @@ import { signIn } from "next-auth/react";
 import { AuthForm } from "@/components/custom/auth-form";
 import { SubmitButton } from "@/components/custom/submit-button";
 import { Button } from "@/components/ui/button";
+import { trackSignUpConversion } from "@/lib/gtag";
 
 import { register, RegisterActionState } from "../actions";
 
@@ -34,6 +35,7 @@ export default function Page() {
       toast.error("You must accept the Terms & Conditions to register");
     } else if (state.status === "success") {
       toast.success("Account created successfully");
+      trackSignUpConversion();
       router.refresh();
     }
   }, [state, router]);

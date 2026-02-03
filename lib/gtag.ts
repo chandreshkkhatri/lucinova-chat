@@ -1,0 +1,89 @@
+// Google Ads Conversion Tracking Utility
+
+declare global {
+  interface Window {
+    gtag: (
+      command: "event" | "config" | "js",
+      targetId: string,
+      config?: Record<string, unknown>
+    ) => void;
+    dataLayer: unknown[];
+  }
+}
+
+const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+
+/**
+ * Track a Google Ads conversion event
+ */
+export function trackConversion(
+  conversionLabel: string,
+  value?: number,
+  currency?: string
+) {
+  if (typeof window === "undefined" || !window.gtag || !GOOGLE_ADS_ID) {
+    return;
+  }
+
+  window.gtag("event", "conversion", {
+    send_to: `${GOOGLE_ADS_ID}/${conversionLabel}`,
+    ...(value !== undefined && { value }),
+    ...(currency && { currency }),
+  });
+}
+
+/**
+ * Track sign-up conversion
+ * Call this when a user successfully registers
+ */
+export function trackSignUpConversion() {
+  const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL;
+  if (conversionLabel) {
+    trackConversion(conversionLabel);
+  }
+
+  // Also send as a GA4 event for analytics
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", "sign_up", {
+      method: "email",
+    });
+  }
+}
+
+/**
+ * Track purchase/subscription conversion
+ * Call this when a user completes a purchase
+ */
+export function trackPurchaseConversion(
+  value: number,
+  currency: string = "INR",
+  transactionId?: string
+) {
+  const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL;
+  if (conversionLabel) {
+    trackConversion(conversionLabel, value, currency);
+  }
+
+  // Also send as a GA4 event for analytics
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", "purchase", {
+      value,
+      currency,
+      transaction_id: transactionId,
+    });
+  }
+}
+
+/**
+ * Track a custom event
+ */
+export function trackEvent(
+  eventName: string,
+  params?: Record<string, unknown>
+) {
+  if (typeof window === "undefined" || !window.gtag) {
+    return;
+  }
+
+  window.gtag("event", eventName, params);
+}

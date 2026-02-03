@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 
+import { GoogleTag } from "@/components/custom/google-tag";
 import { Navbar } from "@/components/custom/navbar";
 import { ProfileGate } from "@/components/custom/profile-gate";
 import { StructuredData } from "@/components/custom/structured-data";
@@ -77,6 +78,7 @@ export default async function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
         <link rel="manifest" href="/manifest.json" />
+        <GoogleTag />
       </head>
       <body className="subpixel-antialiased" suppressHydrationWarning>
         <ThemeProvider
