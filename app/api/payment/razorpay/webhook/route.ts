@@ -12,6 +12,7 @@ import {
 import { appConfig } from "@/lib/config";
 import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
+import { calculateSalesTax } from "@/lib/tax";
 
 export async function POST(request: NextRequest) {
   try {
@@ -196,7 +197,41 @@ async function handleSubscriptionCharged(event: any) {
     return;
   }
 
-  // Record the payment
+  // Calculate sales tax for US customers
+  let taxAmount = 0;
+  let taxRate = 0;
+  let taxJurisdiction = "None";
+  let taxProvider = "none";
+
+  try {
+    // Extract country from subscription notes or default to US if email domain suggests it
+    const country = "US"; // Razorpay doesn't always provide country; default to US for now
+    const state = subscription.notes?.customer_state; // If available, use this
+
+    if (country === "US" && state) {
+      const taxResult = await calculateSalesTax(
+        Math.round(amount * 100), // Convert to cents
+        currency,
+        country,
+        state,
+        effectiveEmail
+      );
+
+      taxAmount = taxResult.taxAmount;
+      taxRate = taxResult.taxRate;
+      taxJurisdiction = taxResult.taxJurisdiction;
+      taxProvider = taxResult.provider;
+
+      console.log(
+        `[Subscription Charged] Tax calculated: ${taxProvider} - $${(taxAmount / 100).toFixed(2)} for ${state}`
+      );
+    }
+  } catch (err) {
+    console.error("[Subscription Charged] Error calculating tax:", err);
+    // Continue without tax rather than fail payment
+  }
+
+  // Record the payment with tax information
   await recordPaymentOnce({
     orderId: paymentId,
     status: "SUCCESS",
@@ -209,6 +244,9 @@ async function handleSubscriptionCharged(event: any) {
     provider: "razorpay",
     subscriptionId,
     paymentId,
+    taxAmount: taxAmount > 0 ? taxAmount : undefined,
+    taxRate: taxRate > 0 ? taxRate : undefined,
+    taxJurisdiction: taxJurisdiction !== "None" ? taxJurisdiction : undefined,
     raw: event,
   });
 
