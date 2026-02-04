@@ -8,6 +8,7 @@ import {
   getUserByEmail,
 } from "@/db/queries";
 import { ensureRazorpayClient } from "@/lib/razorpay";
+import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 
 /**
  * Manual Subscription Activation Endpoint
@@ -42,6 +43,7 @@ interface ActivationRequest {
   adminSecret?: string;
   periodInDays?: number;
   skipVerification?: boolean;
+  skipEmail?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ActivationRequest = await request.json();
-    const { email, paymentId, subscriptionId, adminSecret, periodInDays = 30, skipVerification = false } = body;
+    const { email, paymentId, subscriptionId, adminSecret, periodInDays = 30, skipVerification = false, skipEmail = false } = body;
 
     // Validation
     if (!email) {
@@ -254,6 +256,34 @@ export async function POST(request: NextRequest) {
       currentPeriodEnd: updatedUser.currentPeriodEnd,
       subscriptionStatus: updatedUser.subscriptionStatus,
     });
+
+    // Send confirmation email unless skipped
+    if (!skipEmail) {
+      const amount = activationDetails.amount || (activationDetails.paymentVerified ? "N/A" : 0);
+      const currency = activationDetails.currency || "INR";
+
+      const emailResult = await sendSubscriptionConfirmationEmail(
+        email,
+        updatedUser.name || email.split('@')[0],
+        {
+          planName: "Pro Monthly Subscription",
+          amount: typeof amount === "number" ? amount * 100 : 2000, // Convert to paise or use default
+          currency,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: updatedUser.currentPeriodEnd || new Date(Date.now() + periodInDays * 24 * 60 * 60 * 1000),
+          subscriptionId: subscriptionId,
+          paymentId: paymentId,
+        }
+      );
+
+      if (emailResult.success) {
+        console.log(`[Admin Activate] Confirmation email sent to ${email}`);
+        activationDetails.emailSent = true;
+      } else {
+        console.error(`[Admin Activate] Failed to send confirmation email:`, emailResult.error);
+        activationDetails.emailError = emailResult.error;
+      }
+    }
 
     return NextResponse.json({
       success: true,

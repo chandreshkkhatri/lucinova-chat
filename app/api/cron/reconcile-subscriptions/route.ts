@@ -6,6 +6,7 @@ import {
   getPaymentByOrderId,
 } from "@/db/queries";
 import { ensureRazorpayClient } from "@/lib/razorpay";
+import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 
 /**
  * Reconciliation Cron Job
@@ -206,6 +207,27 @@ export async function GET(request: NextRequest) {
 
         // Activate Pro subscription for 30 days
         await activateProSubscriptionByEmail(customerEmail, 30, "razorpay");
+
+        // Send confirmation email for recovered subscription
+        const emailResult = await sendSubscriptionConfirmationEmail(
+          customerEmail,
+          customerName || customerEmail.split('@')[0],
+          {
+            planName: "Pro Monthly Subscription",
+            amount,
+            currency,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            subscriptionId,
+            paymentId,
+          }
+        );
+
+        if (emailResult.success) {
+          console.log(`[Reconciliation] Confirmation email sent to ${customerEmail}`);
+        } else {
+          console.error(`[Reconciliation] Failed to send email to ${customerEmail}:`, emailResult.error);
+        }
 
         stats.paymentsProcessed++;
         stats.activatedUsers.push(customerEmail);

@@ -35,12 +35,14 @@ export default async function AccountPage() {
         baseUser.name = dbUser.name || baseUser.name;
         baseUser.phone = dbUser.phone || null;
         baseUser.countryCode = dbUser.countryCode || null;
+        baseUser.badges = dbUser.badges || [];
 
         console.log("[Account Page] Enriched user data:", {
           email: baseUser.email,
           plan: baseUser.plan,
           isPro: baseUser.isPro,
           currentPeriodEnd: baseUser.currentPeriodEnd,
+          badges: baseUser.badges?.length || 0,
         });
       }
     } catch (err) {

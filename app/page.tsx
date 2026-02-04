@@ -85,7 +85,7 @@ export default function LandingPage() {
                 </Link>
               </Button>
               <p className="text-sm text-muted-foreground">
-                Become one of the first 300 to join to earn the &apos;Early Bird&apos; badge
+                Become one of the first 500 to join to earn the &apos;Early Bird&apos; badge
               </p>
             </div>
 
@@ -325,7 +325,7 @@ export default function LandingPage() {
         {/* Pricing / Beta */}
         <section
           id="pricing"
-          className="py-24 bg-primary text-primary-foreground rounded-[3rem] mx-4 mb-24 overflow-hidden relative"
+          className="py-24 bg-primary text-primary-foreground rounded-[3rem] mx-4 mb-24 overflow-hidden relative scroll-mt-20"
         >
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <Sparkles className="w-64 h-64" />
@@ -336,27 +336,65 @@ export default function LandingPage() {
               Lucidity is currently in open beta. Join thousands of students and self-learners building their study
               memory today.
             </p>
-            <div className="bg-background/10 backdrop-blur-sm border border-white/10 rounded-3xl p-8 max-w-sm mx-auto mb-10">
-              <h3 className="text-2xl font-bold mb-2">Free Beta</h3>
-              <p className="text-primary-foreground/60 mb-6">Full access to core features</p>
-              <ul className="text-left space-y-3 mb-8">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> Unlimited threads
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> Multimodal file support
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> Highlights & Annotations
-                </li>
-              </ul>
-              <Button
-                size="lg"
-                className="w-full rounded-full bg-background text-primary hover:bg-background/90"
-                asChild
-              >
-                <Link href="/beta">Join the Beta</Link>
-              </Button>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-10">
+              {/* Free Beta Card */}
+              <div className="bg-background/10 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+                <h3 className="text-2xl font-bold mb-2">Free Beta</h3>
+                <p className="text-primary-foreground/60 mb-6">Full access to core features</p>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Unlimited threads
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Multimodal file support
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Highlights & Annotations
+                  </li>
+                </ul>
+                <Button
+                  size="lg"
+                  className="w-full rounded-full bg-background text-primary hover:bg-background/90"
+                  asChild
+                >
+                  <Link href="/beta">Join the Beta</Link>
+                </Button>
+              </div>
+
+              {/* Pro Card - Coming Soon */}
+              <div className="bg-background/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                    Coming Soon
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Pro</h3>
+                <p className="text-primary-foreground/60 mb-6">For power users and professionals</p>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Everything in Basic
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> 5,000 units/month (5x more)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Access to premium models
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Priority support
+                  </li>
+                </ul>
+                <Button
+                  size="lg"
+                  disabled
+                  className="w-full rounded-full bg-background/50 text-primary-foreground/60 opacity-60 cursor-not-allowed"
+                >
+                  Coming Soon
+                </Button>
+                <p className="text-xs text-center text-primary-foreground/40 mt-4">
+                  Register to be notified when we launch
+                </p>
+              </div>
             </div>
             <p className="text-sm text-primary-foreground/40">
               Feedback welcome — help us build the future of learning.

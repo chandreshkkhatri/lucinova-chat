@@ -2,11 +2,16 @@ import crypto from "crypto";
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { ensureConnection } from "@/db/connection";
+import { User } from "@/db/models";
 import {
   activateProSubscriptionByEmail,
   recordPaymentOnce,
   getPaymentByOrderId,
+  incrementBadgeBenefitUsage,
+  hasActiveBadgeBenefit,
 } from "@/db/queries";
+import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
 
 export async function POST(request: NextRequest) {
@@ -203,6 +208,59 @@ async function handleSubscriptionCharged(event: any) {
 
   // Activate pro subscription for 30 days (monthly)
   await activateProSubscriptionByEmail(effectiveEmail, 30, "razorpay");
+
+  // Store subscriptionId on user record for future management (cancellation, etc.)
+  await ensureConnection();
+  await User.findOneAndUpdate(
+    { email: effectiveEmail.toLowerCase() },
+    {
+      subscriptionId,
+      razorpayCustomerId: subscription.customer_id,
+    }
+  );
+
+  // Send confirmation email
+  const emailResult = await sendSubscriptionConfirmationEmail(
+    effectiveEmail,
+    effectiveName || effectiveEmail.split('@')[0],
+    {
+      planName: "Pro Monthly Subscription",
+      amount,
+      currency,
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      subscriptionId,
+      paymentId
+    }
+  );
+
+  if (emailResult.success) {
+    console.log(`[Subscription Charged] Confirmation email sent to ${effectiveEmail}`);
+  } else {
+    console.error(`[Subscription Charged] Failed to send confirmation email:`, emailResult.error);
+  }
+
+  // Track badge benefit usage if user has active Early Bird badge
+  try {
+    const user = await User.findOne({ email: effectiveEmail.toLowerCase() });
+    if (user && user.badges && user.badges.length > 0) {
+      const earlyBirdBadge = user.badges.find((b: any) => b.badgeId === "early-bird");
+      if (
+        earlyBirdBadge &&
+        earlyBirdBadge.metadata &&
+        earlyBirdBadge.metadata.benefitUsedMonths !== undefined &&
+        earlyBirdBadge.metadata.benefitUsedMonths < 3
+      ) {
+        const monthBeforeIncrement = earlyBirdBadge.metadata.benefitUsedMonths;
+        await incrementBadgeBenefitUsage(effectiveEmail, "early-bird");
+        console.log(
+          `[Subscription Charged] Early Bird benefit tracking: Month ${monthBeforeIncrement + 1} of 3 used for ${effectiveEmail}`
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[Subscription Charged] Error tracking badge benefit:", err);
+  }
 
   console.log(
     "[Subscription Charged] Successfully processed subscription charge for:",
