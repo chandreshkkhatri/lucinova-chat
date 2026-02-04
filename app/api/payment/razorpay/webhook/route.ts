@@ -2,11 +2,14 @@ import crypto from "crypto";
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { ensureConnection } from "@/db/connection";
+import { User } from "@/db/models";
 import {
   activateProSubscriptionByEmail,
   recordPaymentOnce,
   getPaymentByOrderId,
 } from "@/db/queries";
+import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
 
 export async function POST(request: NextRequest) {
@@ -204,6 +207,36 @@ async function handleSubscriptionCharged(event: any) {
   // Activate pro subscription for 30 days (monthly)
   await activateProSubscriptionByEmail(effectiveEmail, 30, "razorpay");
 
+  // Store subscriptionId on user record for future management (cancellation, etc.)
+  await ensureConnection();
+  await User.findOneAndUpdate(
+    { email: effectiveEmail.toLowerCase() },
+    {
+      subscriptionId,
+      razorpayCustomerId: subscription.customer_id,
+    }
+  );
+
+  // Send confirmation email
+  const emailResult = await sendSubscriptionConfirmationEmail(
+    effectiveEmail,
+    effectiveName || effectiveEmail.split('@')[0],
+    {
+      planName: "Pro Monthly Subscription",
+      amount,
+      currency,
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      subscriptionId,
+      paymentId
+    }
+  );
+
+  if (emailResult.success) {
+    console.log(`[Subscription Charged] Confirmation email sent to ${effectiveEmail}`);
+  } else {
+    console.error(`[Subscription Charged] Failed to send confirmation email:`, emailResult.error);
+  }
   console.log(
     "[Subscription Charged] Successfully processed subscription charge for:",
     effectiveEmail

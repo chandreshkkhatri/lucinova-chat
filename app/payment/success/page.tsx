@@ -135,8 +135,8 @@ function PaymentSuccessContent() {
 
         <div className="space-y-2 pt-4">
           <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-            You now have access to all Pro features. A confirmation email has
-            been sent to your registered email address.
+            You now have access to all Pro features. A confirmation email will
+            be sent to your registered email address shortly.
           </p>
 
           <div className="flex gap-2">
