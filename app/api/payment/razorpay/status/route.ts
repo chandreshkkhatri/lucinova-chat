@@ -49,6 +49,11 @@ export async function GET(request: NextRequest) {
       try {
         const subscription = await fetchRazorpaySubscription(subscriptionId);
 
+        // Get amount and currency from subscription
+        // Razorpay subscriptions may have amount and currency on the object
+        const amountInMajor = (subscription.quantity || 1) * (subscription.item?.amount || 0) / 100;
+        const currency = subscription.item?.currency || subscription.currency || "INR";
+
         const response = {
           success: true,
           subscriptionId: subscription.id,
@@ -58,7 +63,9 @@ export async function GET(request: NextRequest) {
           planId: subscription.plan_id,
           customerId: subscription.customer_id,
           notes: subscription.notes,
-          orderAmount: 0,
+          orderAmount: amountInMajor,
+          amount: (subscription.quantity || 1) * (subscription.item?.amount || 0),
+          currency: currency,
         };
 
         return NextResponse.json(response);

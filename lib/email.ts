@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import { formatCurrencyForEmail } from "./currency";
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY
@@ -242,7 +243,7 @@ function getSubscriptionConfirmationEmailTemplate(
                       <strong>Plan:</strong> ${subscriptionDetails.planName}
                     </p>
                     <p style="margin: 0 0 8px 0;">
-                      <strong>Amount:</strong> ${subscriptionDetails.currency} ${(subscriptionDetails.amount / 100).toFixed(2)}
+                      <strong>Amount:</strong> ${formatCurrencyForEmail(subscriptionDetails.amount, subscriptionDetails.currency)}
                     </p>
                     <p style="margin: 0 0 8px 0;">
                       <strong>Next Billing Date:</strong> ${endDate}

@@ -9,6 +9,7 @@ import {
   recordPaymentOnce,
   getPaymentByOrderId,
 } from "@/db/queries";
+import { appConfig } from "@/lib/config";
 import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
 
@@ -101,11 +102,18 @@ async function handleSubscriptionCharged(event: any) {
   const subscriptionId = subscription.id;
   const paymentId = payment.id;
   const amount = payment.amount / 100; // Convert paise to rupees
-  const currency = payment.currency || "INR";
+  const currency = payment.currency || appConfig.pricing.currency;
   const customerEmail = subscription.notes?.customer_email;
   const customerName = subscription.notes?.customer_name;
   const environment =
     process.env.RAZORPAY_ENVIRONMENT === "production" ? "production" : "test";
+
+  if (!payment.currency) {
+    console.warn(
+      `[Webhook] Payment ${paymentId} missing currency, ` +
+      `defaulting to ${appConfig.pricing.currency}`
+    );
+  }
 
   console.log("[Subscription Charged] Raw event payload:", JSON.stringify(event.payload, null, 2));
   console.log("[Subscription Charged] Processing payment:", {
@@ -352,7 +360,7 @@ async function handlePaymentFailed(event: any) {
     orderId: paymentId,
     status: "FAILED",
     amount,
-    currency: payment.currency || "INR",
+    currency: payment.currency || appConfig.pricing.currency,
     customerEmail,
     environment:
       process.env.RAZORPAY_ENVIRONMENT === "production" ? "production" : "test",
