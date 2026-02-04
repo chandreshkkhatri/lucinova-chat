@@ -3,10 +3,17 @@
 import { Award } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { BADGE_DEFINITIONS, type Badge } from "@/lib/badges";
+import { BADGE_DEFINITIONS } from "@/lib/badges";
 
 interface BadgeCardProps {
-  badge: Badge;
+  badge: {
+    badgeId: string;
+    earnedAt: Date | string;
+    metadata?: {
+      userRank?: number;
+      benefitUsedMonths?: number;
+    };
+  };
 }
 
 export function BadgeCard({ badge }: BadgeCardProps) {

@@ -172,7 +172,7 @@ export async function getUserByEmail(email: string) {
 // Badge helpers
 export async function getUserBadges(userId: string) {
   await ensureConnection();
-  const user = await User.findById(userId).select("badges").lean();
+  const user = await User.findById(userId).select("badges").lean() as any;
   return user?.badges || [];
 }
 
@@ -181,8 +181,8 @@ export async function hasBadge(
   badgeId: string
 ): Promise<boolean> {
   await ensureConnection();
-  const user = await User.findById(userId).select("badges").lean();
-  return user?.badges?.some((b) => b.badgeId === badgeId) || false;
+  const user = await User.findById(userId).select("badges").lean() as any;
+  return user?.badges?.some((b: any) => b.badgeId === badgeId) || false;
 }
 
 export async function hasActiveBadgeBenefit(
@@ -191,8 +191,8 @@ export async function hasActiveBadgeBenefit(
   durationMonths: number = 3
 ): Promise<boolean> {
   await ensureConnection();
-  const user = await User.findById(userId).select("badges").lean();
-  const badge = user?.badges?.find((b) => b.badgeId === badgeId);
+  const user = await User.findById(userId).select("badges").lean() as any;
+  const badge = user?.badges?.find((b: any) => b.badgeId === badgeId);
   if (!badge) return false;
   const benefitUsedMonths = badge.metadata?.benefitUsedMonths || 0;
   return benefitUsedMonths < durationMonths;

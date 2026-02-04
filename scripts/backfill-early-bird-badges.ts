@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* @ts-nocheck */
 import { MongoClient } from "mongodb";
 import { sendBadgeEarnedEmail } from "../lib/email";
 import { BADGE_DEFINITIONS } from "../lib/badges";
