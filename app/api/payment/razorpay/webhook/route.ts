@@ -8,6 +8,8 @@ import {
   activateProSubscriptionByEmail,
   recordPaymentOnce,
   getPaymentByOrderId,
+  incrementBadgeBenefitUsage,
+  hasActiveBadgeBenefit,
 } from "@/db/queries";
 import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
@@ -237,6 +239,29 @@ async function handleSubscriptionCharged(event: any) {
   } else {
     console.error(`[Subscription Charged] Failed to send confirmation email:`, emailResult.error);
   }
+
+  // Track badge benefit usage if user has active Early Bird badge
+  try {
+    const user = await User.findOne({ email: effectiveEmail.toLowerCase() });
+    if (user && user.badges && user.badges.length > 0) {
+      const earlyBirdBadge = user.badges.find((b: any) => b.badgeId === "early-bird");
+      if (
+        earlyBirdBadge &&
+        earlyBirdBadge.metadata &&
+        earlyBirdBadge.metadata.benefitUsedMonths !== undefined &&
+        earlyBirdBadge.metadata.benefitUsedMonths < 3
+      ) {
+        const monthBeforeIncrement = earlyBirdBadge.metadata.benefitUsedMonths;
+        await incrementBadgeBenefitUsage(effectiveEmail, "early-bird");
+        console.log(
+          `[Subscription Charged] Early Bird benefit tracking: Month ${monthBeforeIncrement + 1} of 3 used for ${effectiveEmail}`
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[Subscription Charged] Error tracking badge benefit:", err);
+  }
+
   console.log(
     "[Subscription Charged] Successfully processed subscription charge for:",
     effectiveEmail

@@ -7,13 +7,15 @@ import { getUserByEmail } from "@/db/queries";
 export default async function PricingPage() {
   const session = await auth();
   let isUserPro = false;
+  let userBadges: any[] = [];
 
-  // Fetch user's Pro status from database
+  // Fetch user's Pro status and badges from database
   if (session?.user?.email) {
     try {
       const dbUser: any = await getUserByEmail(session.user.email);
       if (dbUser && !Array.isArray(dbUser)) {
         isUserPro = !!dbUser.isPro;
+        userBadges = dbUser.badges || [];
       }
     } catch (err) {
       console.error("[Pricing Page] Error fetching user from DB:", err);
@@ -22,7 +24,7 @@ export default async function PricingPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 pt-20">
-      <PricingSection isUserPro={isUserPro} />
+      <PricingSection isUserPro={isUserPro} userBadges={userBadges} />
       <footer className="w-full max-w-4xl mx-auto mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center text-sm text-gray-600 dark:text-gray-400">
           <Link

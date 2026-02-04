@@ -38,6 +38,43 @@ export async function sendPasswordResetEmail(
   }
 }
 
+export async function sendBadgeEarnedEmail(
+  to: string,
+  displayName: string,
+  badgeDetails: {
+    badgeName: string;
+    badgeIcon: string;
+    description: string;
+    benefit?: string;
+    userRank?: number;
+  }
+) {
+  // Check if Resend is configured
+  if (!resend) {
+    console.warn("RESEND_API_KEY not configured. Skipping badge earned email send.");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || "Lucidity <onboarding@resend.dev>",
+      to: [to],
+      subject: `🎉 You've Earned the ${badgeDetails.badgeName} Badge!`,
+      html: getBadgeEarnedEmailTemplate(displayName, badgeDetails),
+    });
+
+    if (error) {
+      console.error("Failed to send badge earned email:", error);
+      return { success: false, error };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending badge earned email:", error);
+    return { success: false, error };
+  }
+}
+
 export async function sendSubscriptionConfirmationEmail(
   to: string,
   displayName: string,
@@ -143,6 +180,126 @@ function getPasswordResetEmailTemplate(
               <p style="margin: 16px 0; color: #92400e; font-size: 14px; line-height: 1.6;">
                 <strong>⚠️ Security Notice:</strong><br>
                 This link will expire in 1 hour. If you didn't request a password reset, please ignore this email or contact support if you have concerns.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px; text-align: center; color: #718096; font-size: 14px; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0 0 8px 0;">
+                Think in threads, learn in layers
+              </p>
+              <p style="margin: 0;">
+                © ${new Date().getFullYear()} Lucidity. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getBadgeEarnedEmailTemplate(
+  displayName: string,
+  badgeDetails: {
+    badgeName: string;
+    badgeIcon: string;
+    description: string;
+    benefit?: string;
+    userRank?: number;
+  }
+): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lucidity.chat";
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You've Earned a Badge!</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <!-- Header with Badge Icon -->
+          <tr>
+            <td style="padding: 40px 40px 20px 40px; text-align: center;">
+              <div style="font-size: 64px; margin-bottom: 16px;">
+                ${badgeDetails.badgeIcon}
+              </div>
+              <h1 style="margin: 0; color: #1a1a1a; font-size: 28px; font-weight: 700;">
+                You've Earned the ${badgeDetails.badgeName} Badge!
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Subheader -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px; color: #718096; font-size: 16px; text-align: center; line-height: 1.6;">
+              <p style="margin: 0;">
+                Congratulations on becoming part of an exclusive group!
+              </p>
+            </td>
+          </tr>
+
+          <!-- Badge Description -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px; color: #4a5568; font-size: 16px; line-height: 1.6;">
+              <p style="margin: 0 0 16px 0;">
+                Hi ${displayName},
+              </p>
+              <p style="margin: 0 0 24px 0;">
+                ${badgeDetails.description}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Badge Details Box -->
+          <tr>
+            <td style="padding: 20px 40px 30px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding: 20px; color: #4a5568; font-size: 15px;">
+                    <p style="margin: 0 0 12px 0;">
+                      <strong>Badge Details</strong>
+                    </p>
+                    <p style="margin: 0 0 8px 0;">
+                      <strong>Badge:</strong> ${badgeDetails.badgeName}
+                    </p>
+                    ${badgeDetails.userRank ? `<p style="margin: 0 0 8px 0;"><strong>Your Rank:</strong> User #${badgeDetails.userRank} of 500</p>` : ""}
+                    ${badgeDetails.benefit ? `<p style="margin: 0 0 8px 0;"><strong>Benefit:</strong> ${badgeDetails.benefit}</p>` : ""}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px;" align="center">
+              <a href="${appUrl}/beta/account?section=badges"
+                 style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                View Your Badges
+              </a>
+            </td>
+          </tr>
+
+          <!-- Additional Info -->
+          <tr>
+            <td style="padding: 0 40px 30px 40px; color: #718096; font-size: 14px; line-height: 1.6;">
+              <p style="margin: 0 0 12px 0;">
+                <strong>What's next?</strong>
+              </p>
+              <p style="margin: 0;">
+                Keep using Lucidity to unlock more badges and exclusive benefits. Check your account settings to see all your earned badges!
               </p>
             </td>
           </tr>

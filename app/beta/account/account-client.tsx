@@ -1,12 +1,13 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check } from "lucide-react";
+import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check, Award } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import { CountryCodeSelect } from "@/components/custom/country-code-select";
+import { BadgeCard } from "@/components/custom/badge-card";
 import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
 
 interface AccountClientProps {
@@ -18,6 +19,14 @@ interface AccountClientProps {
     plan?: "free" | "pro";
     isPro?: boolean;
     currentPeriodEnd?: string | Date | null;
+    badges?: Array<{
+      badgeId: string;
+      earnedAt: Date | string;
+      metadata?: {
+        userRank?: number;
+        benefitUsedMonths?: number;
+      };
+    }>;
   };
 }
 
@@ -210,6 +219,11 @@ export default function AccountClient({ user }: AccountClientProps) {
       id: "usage",
       label: "Usage",
       icon: BarChart3,
+    },
+    {
+      id: "badges",
+      label: "Badges & Achievements",
+      icon: Award,
     },
     {
       id: "security",
@@ -408,6 +422,32 @@ export default function AccountClient({ user }: AccountClientProps) {
 
       case "usage":
         return <UsageSection isPro={user.isPro || false} />;
+
+      case "badges":
+        return (
+          <div>
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
+              Badges & Achievements
+            </h2>
+            {!user.badges || user.badges.length === 0 ? (
+              <div className="bg-muted rounded-lg p-6 text-center">
+                <Award className="size-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  No Badges Yet
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Keep using Lucidity to earn badges and unlock special benefits!
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {user.badges.map((badge) => (
+                  <BadgeCard key={badge.badgeId} badge={badge} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
 
       case "security":
         return <SecuritySection />;
