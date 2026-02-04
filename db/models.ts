@@ -24,6 +24,15 @@ export interface IUser extends Document {
   subscriptionStatus?: "active" | "inactive" | "canceled" | null;
   subscriptionId?: string; // Razorpay subscription_id
   razorpayCustomerId?: string; // Razorpay customer_id for recurring payments
+  // Billing address (for tax calculation)
+  billingAddress?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string; // Critical for US sales tax
+    postalCode?: string;
+    country?: string; // ISO 3166-1 alpha-2 (US, IN, etc.)
+  };
   // Password reset fields
   resetToken?: string;
   resetTokenExpiry?: Date;
@@ -62,6 +71,14 @@ const userSchema = new Schema<IUser>(
     },
     subscriptionId: { type: String },
     razorpayCustomerId: { type: String },
+    billingAddress: {
+      line1: { type: String },
+      line2: { type: String },
+      city: { type: String },
+      state: { type: String },
+      postalCode: { type: String },
+      country: { type: String },
+    },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
     termsAcceptedAt: { type: Date },
@@ -171,6 +188,19 @@ export interface IPayment extends Document {
   provider?: "razorpay"; // payment gateway used
   subscriptionId?: string; // Razorpay subscription_id
   paymentId?: string; // Razorpay payment_id
+  // Tax fields
+  taxAmount?: number; // Tax collected (in cents/paise)
+  taxRate?: number; // Tax rate applied (e.g., 0.0875 for 8.75%)
+  taxJurisdiction?: string; // e.g., "CA" or "NY"
+  // Billing address snapshot at time of payment
+  billingAddress?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  };
   raw?: any;
   createdAt: Date;
   updatedAt: Date;
@@ -188,6 +218,17 @@ const paymentSchema = new Schema<IPayment>(
     provider: { type: String, enum: ["razorpay"] },
     subscriptionId: { type: String },
     paymentId: { type: String },
+    taxAmount: { type: Number },
+    taxRate: { type: Number },
+    taxJurisdiction: { type: String },
+    billingAddress: {
+      line1: { type: String },
+      line2: { type: String },
+      city: { type: String },
+      state: { type: String },
+      postalCode: { type: String },
+      country: { type: String },
+    },
     raw: { type: Schema.Types.Mixed },
   },
   { timestamps: true }

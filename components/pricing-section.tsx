@@ -85,6 +85,9 @@ export function PricingSection({
                 {price.toLocaleString()}
               </span>
               <span className="text-muted-foreground">/month</span>
+              <p className="text-xs text-muted-foreground mt-1">
+                Plus applicable taxes
+              </p>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
