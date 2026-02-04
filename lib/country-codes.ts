@@ -21,7 +21,7 @@ export const COUNTRY_CODES: CountryCode[] = [
 ];
 
 // Default country code
-export const DEFAULT_COUNTRY_CODE = "IN";
+export const DEFAULT_COUNTRY_CODE = "US";
 
 /**
  * Get country by ISO code

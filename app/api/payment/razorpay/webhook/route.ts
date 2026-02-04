@@ -279,8 +279,14 @@ async function handleSubscriptionCancelled(event: any) {
     customer: customerEmail,
   });
 
-  // User's subscription will automatically expire when currentPeriodEnd passes
-  // No immediate action needed
+  // Mark subscription as canceled (user keeps access until currentPeriodEnd)
+  if (customerEmail) {
+    await ensureConnection();
+    await User.findOneAndUpdate(
+      { email: customerEmail.toLowerCase() },
+      { subscriptionStatus: "canceled" }
+    );
+  }
 }
 
 async function handleSubscriptionCompleted(event: any) {

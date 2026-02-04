@@ -48,7 +48,7 @@ export function UsageLimitBanner({
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Upgrade to Pro for 3x more usage and premium features.
+            Upgrade to Pro for 5x more usage and premium features.
           </p>
           <Link
             href="/beta/pricing"

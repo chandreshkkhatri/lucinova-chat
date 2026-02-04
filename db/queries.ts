@@ -5,6 +5,44 @@ import { User, Chat, Message, Payment, Annotation, Usage } from "./models";
 // Re-export types for external use
 export { Chat } from "./models";
 
+/**
+ * Check if user's subscription has expired and update their status if so.
+ * Returns true if the user was updated.
+ */
+async function checkAndExpireSubscription(userDoc: any): Promise<boolean> {
+  const now = new Date();
+  const currentPeriodEnd = userDoc.currentPeriodEnd;
+
+  if (!currentPeriodEnd || currentPeriodEnd.getTime() >= now.getTime()) {
+    return false;
+  }
+
+  let shouldUpdate = false;
+
+  if (userDoc.isPro) {
+    userDoc.isPro = false;
+    shouldUpdate = true;
+  }
+  if (userDoc.plan === "pro") {
+    userDoc.plan = "free";
+    shouldUpdate = true;
+  }
+  if (userDoc.subscriptionStatus === "active") {
+    userDoc.subscriptionStatus = "inactive";
+    shouldUpdate = true;
+  }
+  if (userDoc.currentPeriodEnd !== null) {
+    userDoc.currentPeriodEnd = null;
+    shouldUpdate = true;
+  }
+
+  if (shouldUpdate) {
+    await userDoc.save();
+  }
+
+  return shouldUpdate;
+}
+
 // User functions
 export async function createUser(
   email: string,
@@ -39,32 +77,7 @@ export async function getUserById(id: string) {
     return null;
   }
 
-  // Same subscription expiry logic as getUserByEmail
-  const now = new Date();
-  const currentPeriodEnd = userDoc.currentPeriodEnd;
-  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
-    let shouldUpdate = false;
-    if (userDoc.isPro) {
-      userDoc.isPro = false;
-      shouldUpdate = true;
-    }
-    if (userDoc.plan === "pro") {
-      userDoc.plan = "free";
-      shouldUpdate = true;
-    }
-    if (userDoc.subscriptionStatus === "active") {
-      userDoc.subscriptionStatus = "inactive";
-      shouldUpdate = true;
-    }
-    if (userDoc.currentPeriodEnd !== null) {
-      userDoc.currentPeriodEnd = null;
-      shouldUpdate = true;
-    }
-    if (shouldUpdate) {
-      await userDoc.save();
-    }
-  }
-
+  await checkAndExpireSubscription(userDoc);
   return userDoc.toObject();
 }
 
@@ -78,32 +91,7 @@ export async function getUserByOAuth(provider: "google", providerId: string) {
     return null;
   }
 
-  // Same subscription expiry logic
-  const now = new Date();
-  const currentPeriodEnd = userDoc.currentPeriodEnd;
-  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
-    let shouldUpdate = false;
-    if (userDoc.isPro) {
-      userDoc.isPro = false;
-      shouldUpdate = true;
-    }
-    if (userDoc.plan === "pro") {
-      userDoc.plan = "free";
-      shouldUpdate = true;
-    }
-    if (userDoc.subscriptionStatus === "active") {
-      userDoc.subscriptionStatus = "inactive";
-      shouldUpdate = true;
-    }
-    if (userDoc.currentPeriodEnd !== null) {
-      userDoc.currentPeriodEnd = null;
-      shouldUpdate = true;
-    }
-    if (shouldUpdate) {
-      await userDoc.save();
-    }
-  }
-
+  await checkAndExpireSubscription(userDoc);
   return userDoc.toObject();
 }
 export async function getUserByEmail(email: string) {
@@ -114,36 +102,7 @@ export async function getUserByEmail(email: string) {
     return null;
   }
 
-  const now = new Date();
-  const currentPeriodEnd = userDoc.currentPeriodEnd;
-  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
-    let shouldUpdate = false;
-
-    if (userDoc.isPro) {
-      userDoc.isPro = false;
-      shouldUpdate = true;
-    }
-
-    if (userDoc.plan === "pro") {
-      userDoc.plan = "free";
-      shouldUpdate = true;
-    }
-
-    if (userDoc.subscriptionStatus === "active") {
-      userDoc.subscriptionStatus = "inactive";
-      shouldUpdate = true;
-    }
-
-    if (userDoc.currentPeriodEnd !== null) {
-      userDoc.currentPeriodEnd = null;
-      shouldUpdate = true;
-    }
-
-    if (shouldUpdate) {
-      await userDoc.save();
-    }
-  }
-
+  await checkAndExpireSubscription(userDoc);
   return userDoc.toObject();
 }
 

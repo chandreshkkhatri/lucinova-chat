@@ -20,9 +20,11 @@ export default async function PricingPage() {
     }
   }
 
+  const isAuthenticated = !!session?.user?.email;
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 pt-20">
-      <PricingSection isUserPro={isUserPro} />
+      <PricingSection isUserPro={isUserPro} isAuthenticated={isAuthenticated} />
       <footer className="w-full max-w-4xl mx-auto mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center text-sm text-gray-600 dark:text-gray-400">
           <Link

@@ -35,12 +35,15 @@ export default async function AccountPage() {
         baseUser.name = dbUser.name || baseUser.name;
         baseUser.phone = dbUser.phone || null;
         baseUser.countryCode = dbUser.countryCode || null;
+        baseUser.subscriptionStatus = dbUser.subscriptionStatus || null;
+        baseUser.subscriptionId = dbUser.subscriptionId || null;
 
         console.log("[Account Page] Enriched user data:", {
           email: baseUser.email,
           plan: baseUser.plan,
           isPro: baseUser.isPro,
           currentPeriodEnd: baseUser.currentPeriodEnd,
+          subscriptionStatus: baseUser.subscriptionStatus,
         });
       }
     } catch (err) {

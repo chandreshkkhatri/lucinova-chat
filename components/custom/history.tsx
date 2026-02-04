@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
 import { useEffect, useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import useSWR from "swr";
 

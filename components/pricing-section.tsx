@@ -15,13 +15,18 @@ import { appConfig } from "@/lib/config";
 
 interface PricingSectionProps {
   isUserPro?: boolean;
+  isAuthenticated?: boolean;
 }
 
-export function PricingSection({ isUserPro = false }: PricingSectionProps) {
-  const priceRupees = appConfig.pricing.proMonthlyRupees;
-  const pricePaise = Math.round(priceRupees * 100);
+export function PricingSection({
+  isUserPro = false,
+  isAuthenticated = false,
+}: PricingSectionProps) {
+  const price = appConfig.pricing.proMonthlyPrice;
+  const priceInCents = Math.round(price * 100); // Razorpay expects amount in smallest currency unit
   const currency = appConfig.pricing.currency;
   const symbol = appConfig.getCurrencySymbol(currency);
+
   return (
     <section className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-12">
@@ -67,13 +72,20 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
         {/* Pro Plan */}
         <Card className="relative border-primary">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm font-semibold">
-              Coming Soon
+            <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+              Popular
             </span>
           </div>
           <CardHeader>
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
+            <div className="mt-4">
+              <span className="text-4xl font-bold">
+                {symbol}
+                {price.toLocaleString()}
+              </span>
+              <span className="text-muted-foreground">/month</span>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -95,21 +107,28 @@ export function PricingSection({ isUserPro = false }: PricingSectionProps) {
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
             {isUserPro ? (
-              <Button disabled className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed">
-                ✓ Current Plan
-              </Button>
-            ) : (
               <Button
                 disabled
                 className="w-full bg-muted text-muted-foreground border border-dashed border-border cursor-not-allowed"
               >
-                Coming Soon
+                ✓ Current Plan
+              </Button>
+            ) : isAuthenticated ? (
+              <PaymentButton
+                amount={priceInCents}
+                planName="Lucidity Pro Monthly"
+                className="w-full"
+                buttonText="Subscribe Now"
+              />
+            ) : (
+              <Button className="w-full" asChild>
+                <Link href="/login">Log in to upgrade</Link>
               </Button>
             )}
             {!isUserPro && (
               <p className="text-xs text-center text-muted-foreground">
-                The Pro subscription is still rolling out. Register to be notified
-                when we launch.
+                Secure monthly billing via Razorpay. See our refund policy for
+                cancellation terms.
               </p>
             )}
           </CardFooter>

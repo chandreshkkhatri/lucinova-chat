@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { auth } from "@/app/(auth)/auth";
+import { ensureConnection } from "@/db/connection";
+import { User } from "@/db/models";
 import { appConfig } from "@/lib/config";
 import { ensureRazorpayClient } from "@/lib/razorpay";
 
@@ -11,12 +14,23 @@ function jsonError(message: string, status = 400, details?: string | object) {
 }
 
 export async function POST(request: NextRequest) {
+  // Verify user is authenticated
+  const session = await auth();
+  if (!session?.user?.email) {
+    return jsonError("Unauthorized - please log in to subscribe", 401);
+  }
+
   try {
     const rz = ensureRazorpayClient();
     if ("error" in rz) return jsonError(rz.error, 500);
 
     const { customerName, customerEmail, customerPhone } =
       await request.json();
+
+    // Ensure the email matches the logged-in user (prevent subscribing for others)
+    if (customerEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+      return jsonError("Email must match your account email", 400);
+    }
 
     // Validate required fields
     if (!customerName || !customerEmail) {
@@ -48,16 +62,16 @@ export async function POST(request: NextRequest) {
       const currency = (
         process.env.CURRENCY ||
         appConfig.pricing.currency ||
-        "INR"
+        "USD"
       ).toUpperCase();
-      const amountPaise = appConfig.pricing.proMonthlyRupees * 100;
+      const amountInCents = appConfig.pricing.proMonthlyPrice * 100;
 
       const plan = await rz.client.plans.create({
         period: "monthly",
         interval: 1,
         item: {
           name: "Pro Monthly Subscription",
-          amount: amountPaise,
+          amount: amountInCents,
           currency,
           description: "Monthly Pro Plan subscription",
         },
@@ -79,13 +93,12 @@ export async function POST(request: NextRequest) {
 
       customerId = customer.id;
 
-      // Verify customer was created successfully
-      try {
-        await rz.client.customers.fetch(customerId);
-      } catch (verifyError: any) {
-        console.error("Customer verification failed:", verifyError);
-        throw new Error("Customer was created but cannot be verified");
-      }
+      // Store the Razorpay customer ID on the user record
+      await ensureConnection();
+      await User.findOneAndUpdate(
+        { email: session.user.email.toLowerCase() },
+        { razorpayCustomerId: customerId }
+      );
     } catch (error: any) {
       console.error("Customer creation failed:", error.error?.description || error.message);
       return jsonError(
@@ -109,16 +122,13 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Return only what the client needs
       return NextResponse.json({
         success: true,
         subscriptionId: subscription.id,
         razorpayKeyId: process.env.RAZORPAY_KEY_ID,
-        customerId,
-        amount: appConfig.pricing.proMonthlyRupees * 100,
+        amount: appConfig.pricing.proMonthlyPrice * 100,
         currency: appConfig.pricing.currency,
-        planId,
-        environment: rz.environment,
-        shortUrl: (subscription as any).short_url,
       });
     } catch (error: any) {
       console.error("Subscription creation failed:", error.error?.description || error.message);
