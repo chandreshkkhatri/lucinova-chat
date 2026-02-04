@@ -129,6 +129,14 @@ export default function TermsAndConditionsPage() {
                     courts in Bengaluru, Karnataka, India.
                   </li>
                   <li>
+                    <strong>For USA Customers:</strong> If you are a consumer
+                    residing in the United States, you may also have certain
+                    rights under the laws of your state of residence. Nothing in
+                    these Terms limits those rights. Rebundled Company may also
+                    bring proceedings in the courts of your country of residence
+                    for enforcement purposes.
+                  </li>
+                  <li>
                     All concerns or communications relating to these Terms must
                     be communicated to us using the contact information provided
                     on this website.
