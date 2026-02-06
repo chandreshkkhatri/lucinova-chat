@@ -1,4 +1,4 @@
-import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2, Paperclip, Send, MessageSquareText, ChevronRight } from "lucide-react"
+import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2, MessageSquareText, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"

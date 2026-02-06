@@ -31,13 +31,6 @@ export function getCountryByCode(code: string): CountryCode | undefined {
 }
 
 /**
- * Get country by dial code
- */
-export function getCountryByDialCode(dialCode: string): CountryCode | undefined {
-  return COUNTRY_CODES.find((c) => c.dialCode === dialCode);
-}
-
-/**
  * Validate phone number for a specific country
  */
 export function validatePhone(phone: string, countryCode: string): boolean {

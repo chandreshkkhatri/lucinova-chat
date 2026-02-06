@@ -90,44 +90,6 @@ export async function getUserById(id: string) {
   return userDoc.toObject();
 }
 
-export async function getUserByOAuth(provider: "google", providerId: string) {
-  await ensureConnection();
-  const userDoc = await User.findOne({
-    oauthProvider: provider,
-    oauthProviderId: providerId,
-  });
-  if (!userDoc) {
-    return null;
-  }
-
-  // Same subscription expiry logic
-  const now = new Date();
-  const currentPeriodEnd = userDoc.currentPeriodEnd;
-  if (currentPeriodEnd && currentPeriodEnd.getTime() < now.getTime()) {
-    let shouldUpdate = false;
-    if (userDoc.isPro) {
-      userDoc.isPro = false;
-      shouldUpdate = true;
-    }
-    if (userDoc.plan === "pro") {
-      userDoc.plan = "free";
-      shouldUpdate = true;
-    }
-    if (userDoc.subscriptionStatus === "active") {
-      userDoc.subscriptionStatus = "inactive";
-      shouldUpdate = true;
-    }
-    if (userDoc.currentPeriodEnd !== null) {
-      userDoc.currentPeriodEnd = null;
-      shouldUpdate = true;
-    }
-    if (shouldUpdate) {
-      await userDoc.save();
-    }
-  }
-
-  return userDoc.toObject();
-}
 export async function getUserByEmail(email: string) {
   await ensureConnection();
   const normalizedEmail = String(email).trim().toLowerCase();
