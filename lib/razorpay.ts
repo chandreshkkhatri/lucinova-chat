@@ -35,81 +35,6 @@ export function ensureRazorpayClient(): RazorpayClientResult {
 }
 
 /**
- * Creates a Razorpay subscription plan
- * Plans define the billing cycle and amount
- */
-export async function createRazorpayPlan(params: {
-  planName: string;
-  amount: number; // in paise
-  currency?: string;
-  interval?: number;
-  period?: "daily" | "weekly" | "monthly" | "yearly";
-}) {
-  const rz = ensureRazorpayClient();
-  if ("error" in rz) throw new Error(rz.error);
-
-  const {
-    planName,
-    amount,
-    currency = "INR",
-    interval = 1,
-    period = "monthly",
-  } = params;
-
-  try {
-    const plan = await rz.client.plans.create({
-      period,
-      interval,
-      item: {
-        name: planName,
-        amount,
-        currency,
-        description: `${planName} subscription`,
-      },
-    });
-
-    return plan;
-  } catch (error: any) {
-    throw new Error(
-      `Failed to create Razorpay plan: ${error.error?.description || error.message}`
-    );
-  }
-}
-
-/**
- * Creates a Razorpay subscription for a customer
- * Subscriptions are linked to plans
- */
-export async function createRazorpaySubscription(params: {
-  planId: string;
-  customerId?: string;
-  totalCount?: number;
-  quantity?: number;
-  customerNotify?: 0 | 1;
-  notes?: Record<string, string>;
-}) {
-  const rz = ensureRazorpayClient();
-  if ("error" in rz) throw new Error(rz.error);
-
-  try {
-    const subscription = await rz.client.subscriptions.create({
-      plan_id: params.planId,
-      customer_id: params.customerId,
-      total_count: params.totalCount,
-      quantity: params.quantity || 1,
-      customer_notify: params.customerNotify ?? 1,
-      notes: params.notes,
-    });
-
-    return subscription;
-  } catch (error: any) {
-    throw new Error(
-      `Failed to create Razorpay subscription: ${error.error?.description || error.message}`
-    );
-  }
-}
-
-/**
  * Fetches an existing Razorpay subscription by ID
  */
 export async function fetchRazorpaySubscription(subscriptionId: string) {
@@ -141,28 +66,6 @@ export async function fetchRazorpayPayment(paymentId: string) {
   } catch (error: any) {
     throw new Error(
       `Failed to fetch Razorpay payment: ${error.error?.description || error.message}`
-    );
-  }
-}
-
-/**
- * Cancels an active Razorpay subscription
- */
-export async function cancelRazorpaySubscription(
-  subscriptionId: string,
-  cancelAtCycleEnd = false
-) {
-  const rz = ensureRazorpayClient();
-  if ("error" in rz) throw new Error(rz.error);
-
-  try {
-    const subscription = await rz.client.subscriptions.cancel(subscriptionId, {
-      cancel_at_cycle_end: cancelAtCycleEnd ? 1 : 0,
-    });
-    return subscription;
-  } catch (error: any) {
-    throw new Error(
-      `Failed to cancel Razorpay subscription: ${error.error?.description || error.message}`
     );
   }
 }

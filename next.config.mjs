@@ -11,6 +11,7 @@ const nextConfig = {
     ],
     formats: ["image/webp", "image/avif"], // Modern image formats for better performance
     unoptimized: false, // Keep optimization enabled
+    qualities: [75, 90],
     minimumCacheTTL: 60,
   },
   eslint: {

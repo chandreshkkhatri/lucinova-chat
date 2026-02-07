@@ -3,7 +3,7 @@ import { NextAuthConfig } from "next-auth";
 export const authConfig = {
   pages: {
     signIn: "/login",
-    newUser: "/beta",
+    newUser: "/",
     error: "/login", // Redirect errors back to login page
   },
   providers: [
@@ -22,7 +22,8 @@ export const authConfig = {
         "/forgot-password",
         "/reset-password",
         "/chat",
-        "/beta/pricing",
+        "/pricing",
+        "/about",
         "/legal",
         "/privacy",
         "/contact",
@@ -30,15 +31,15 @@ export const authConfig = {
         "/images",
       ];
       const isPublicRoute =
-        publicRoutes.some((route) => pathname.startsWith(route)) ||
-        pathname === "/";
+        pathname === "/" ||
+        publicRoutes.some((route) => pathname.startsWith(route));
 
       // Redirect logged-in users away from auth pages
       if (
         isLoggedIn &&
         (pathname.startsWith("/login") || pathname.startsWith("/register"))
       ) {
-        return Response.redirect(new URL("/beta", nextUrl));
+        return Response.redirect(new URL("/", nextUrl));
       }
 
       // Allow access to public routes

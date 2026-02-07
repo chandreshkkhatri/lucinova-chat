@@ -1,4 +1,4 @@
-import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2, Paperclip, Send, MessageSquareText, ChevronRight } from "lucide-react"
+import { MessageSquare, Hash, Highlighter, FileUp, Bookmark, ArrowRight, Sparkles, CheckCircle2, MessageSquareText } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
@@ -10,53 +10,7 @@ import type React from "react"
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-xl tracking-tight">Lucidity</span>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <Link href="#features" className="hover:text-primary transition-colors">
-              Features
-            </Link>
-            <Link href="#how-it-works" className="hover:text-primary transition-colors">
-              How it works
-            </Link>
-            <Link href="#pricing" className="hover:text-primary transition-colors">
-              Pricing
-            </Link>
-            <a
-              href="https://discord.gg/ySGBwu9xvk"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors flex items-center gap-1.5"
-            >
-              <svg
-                className="size-4"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-              </svg>
-              Community
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <Button asChild className="rounded-full px-6">
-              <Link href="/beta">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="flex flex-col min-h-screen pt-16">
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="relative pt-20 pb-24 md:pt-32 md:pb-40 overflow-hidden">
@@ -80,12 +34,12 @@ export default function LandingPage() {
                 className="rounded-full px-8 h-14 text-lg shadow-xl shadow-primary/10 transition-all hover:scale-105"
                 asChild
               >
-                <Link href="/beta">
+                <Link href="/">
                   Start learning — it&apos;s free <ArrowRight className="ml-2 size-5" />
                 </Link>
               </Button>
               <p className="text-sm text-muted-foreground">
-                Become one of the first 300 to join to earn the &apos;Early Bird&apos; badge
+                Become one of the first 500 to join to earn the &apos;Early Bird&apos; badge
               </p>
             </div>
 
@@ -322,10 +276,10 @@ export default function LandingPage() {
         {/* Team Section */}
         <TeamSection />
 
-        {/* Pricing / Beta */}
+        {/* Pricing */}
         <section
           id="pricing"
-          className="py-24 bg-primary text-primary-foreground rounded-[3rem] mx-4 mb-24 overflow-hidden relative"
+          className="py-24 bg-primary text-primary-foreground rounded-[3rem] mx-4 mb-24 overflow-hidden relative scroll-mt-20"
         >
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <Sparkles className="w-64 h-64" />
@@ -333,30 +287,68 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 text-center relative z-10">
             <h2 className="text-3xl md:text-5xl font-bold mb-6 italic">Learning should be accessible.</h2>
             <p className="text-primary-foreground/80 max-w-xl mx-auto mb-10 text-lg">
-              Lucidity is currently in open beta. Join thousands of students and self-learners building their study
+              Join thousands of students and self-learners building their study
               memory today.
             </p>
-            <div className="bg-background/10 backdrop-blur-sm border border-white/10 rounded-3xl p-8 max-w-sm mx-auto mb-10">
-              <h3 className="text-2xl font-bold mb-2">Free Beta</h3>
-              <p className="text-primary-foreground/60 mb-6">Full access to core features</p>
-              <ul className="text-left space-y-3 mb-8">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> Unlimited threads
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> Multimodal file support
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> Highlights & Annotations
-                </li>
-              </ul>
-              <Button
-                size="lg"
-                className="w-full rounded-full bg-background text-primary hover:bg-background/90"
-                asChild
-              >
-                <Link href="/beta">Join the Beta</Link>
-              </Button>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-10">
+              {/* Free Card */}
+              <div className="bg-background/10 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
+                <h3 className="text-2xl font-bold mb-2">Free</h3>
+                <p className="text-primary-foreground/60 mb-6">Full access to core features</p>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Unlimited threads
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Multimodal file support
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Highlights & Annotations
+                  </li>
+                </ul>
+                <Button
+                  size="lg"
+                  className="w-full rounded-full bg-background text-primary hover:bg-background/90"
+                  asChild
+                >
+                  <Link href="/">Get Started</Link>
+                </Button>
+              </div>
+
+              {/* Pro Card - Coming Soon */}
+              <div className="bg-background/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                    Coming Soon
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Pro</h3>
+                <p className="text-primary-foreground/60 mb-6">For power users and professionals</p>
+                <ul className="text-left space-y-3 mb-8">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Everything in Basic
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> 5,000 units/month (5x more)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Access to premium models
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-accent" /> Priority support
+                  </li>
+                </ul>
+                <Button
+                  size="lg"
+                  disabled
+                  className="w-full rounded-full bg-background/50 text-primary-foreground/60 opacity-60 cursor-not-allowed"
+                >
+                  Coming Soon
+                </Button>
+                <p className="text-xs text-center text-primary-foreground/40 mt-4">
+                  Register to be notified when we launch
+                </p>
+              </div>
             </div>
             <p className="text-sm text-primary-foreground/40">
               Feedback welcome — help us build the future of learning.
@@ -402,9 +394,8 @@ export default function LandingPage() {
               </a>
             </div>
             <p className="text-sm text-muted-foreground">
-              You&apos;re using the{" "}
-              <Link href="/beta" className="underline underline-offset-4">
-                Lucidity beta
+              <Link href="/" className="underline underline-offset-4">
+                Lucidity
               </Link>
             </p>
           </div>

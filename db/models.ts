@@ -33,6 +33,15 @@ export interface IUser extends Document {
     postalCode?: string;
     country?: string; // ISO 3166-1 alpha-2 (US, IN, etc.)
   };
+  // Badges & Achievements
+  badges?: Array<{
+    badgeId: string; // e.g., "early-bird"
+    earnedAt: Date; // When badge was awarded
+    metadata?: {
+      userRank?: number; // User position (e.g., #247 of 500)
+      benefitUsedMonths?: number; // Track discount usage (0-3)
+    };
+  }>;
   // Password reset fields
   resetToken?: string;
   resetTokenExpiry?: Date;
@@ -79,6 +88,16 @@ const userSchema = new Schema<IUser>(
       postalCode: { type: String },
       country: { type: String },
     },
+    badges: [
+      {
+        badgeId: { type: String, required: true },
+        earnedAt: { type: Date, required: true },
+        metadata: {
+          userRank: { type: Number },
+          benefitUsedMonths: { type: Number, default: 0 },
+        },
+      },
+    ],
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
     termsAcceptedAt: { type: Date },
@@ -87,6 +106,7 @@ const userSchema = new Schema<IUser>(
 );
 userSchema.index({ displayName: 1 });
 userSchema.index({ oauthProvider: 1, oauthProviderId: 1 });
+userSchema.index({ "badges.badgeId": 1 });
 export const User =
   mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 

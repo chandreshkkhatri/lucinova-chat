@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Award, Check } from "lucide-react";
 import Link from "next/link";
 
 import { PaymentButton } from "@/components/payment-button";
@@ -16,16 +16,35 @@ import { appConfig } from "@/lib/config";
 interface PricingSectionProps {
   isUserPro?: boolean;
   isAuthenticated?: boolean;
+  userBadges?: Array<{
+    badgeId: string;
+    metadata?: {
+      benefitUsedMonths?: number;
+    };
+  }>;
 }
 
 export function PricingSection({
   isUserPro = false,
   isAuthenticated = false,
+  userBadges = [],
 }: PricingSectionProps) {
   const price = appConfig.pricing.proMonthlyPrice;
   const priceInCents = Math.round(price * 100); // Razorpay expects amount in smallest currency unit
   const currency = appConfig.pricing.currency;
   const symbol = appConfig.getCurrencySymbol(currency);
+
+  // Check for Early Bird badge with active discount
+  const earlyBirdBadge = userBadges?.find((b) => b.badgeId === "early-bird");
+  const hasActiveEarlyBirdDiscount =
+    earlyBirdBadge &&
+    earlyBirdBadge.metadata?.benefitUsedMonths !== undefined &&
+    earlyBirdBadge.metadata.benefitUsedMonths < 3;
+
+  const discountedPrice = hasActiveEarlyBirdDiscount
+    ? Math.round(price * 0.25)
+    : price;
+  const discountedPriceInCents = Math.round(discountedPrice * 100);
 
   return (
     <section className="w-full max-w-4xl mx-auto">
@@ -71,24 +90,59 @@ export function PricingSection({
 
         {/* Pro Plan */}
         <Card className="relative border-primary">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
-              Popular
-            </span>
-          </div>
+          {hasActiveEarlyBirdDiscount ? (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-400 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                <Award className="size-4" />
+                Early Bird Discount
+              </span>
+            </div>
+          ) : (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                Popular
+              </span>
+            </div>
+          )}
           <CardHeader>
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
-            <div className="mt-4">
-              <span className="text-4xl font-bold">
-                {symbol}
-                {price.toLocaleString()}
-              </span>
-              <span className="text-muted-foreground">/month</span>
-              <p className="text-xs text-muted-foreground mt-1">
-                Plus applicable taxes
-              </p>
-            </div>
+            {hasActiveEarlyBirdDiscount ? (
+              <div className="mt-4 space-y-2">
+                <div className="inline-block">
+                  <p className="text-xs font-medium text-muted-foreground line-through">
+                    {symbol}
+                    {price.toLocaleString()}/month
+                  </p>
+                </div>
+                <div>
+                  <span className="text-4xl font-bold text-amber-600 dark:text-amber-400">
+                    {symbol}
+                    {discountedPrice}
+                  </span>
+                  <span className="text-muted-foreground ml-2">/month</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  75% off for first 3 months (
+                  {3 - (earlyBirdBadge.metadata?.benefitUsedMonths || 0)} month
+                  {3 - (earlyBirdBadge.metadata?.benefitUsedMonths || 0) === 1
+                    ? ""
+                    : "s"}{" "}
+                  remaining)
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <span className="text-4xl font-bold">
+                  {symbol}
+                  {price.toLocaleString()}
+                </span>
+                <span className="text-muted-foreground">/month</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Plus applicable taxes
+                </p>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -112,10 +166,16 @@ export function PricingSection({
             {isUserPro ? (
               <Button
                 disabled
-                className="w-full bg-muted text-muted-foreground border border-dashed border-border cursor-not-allowed"
+                className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed"
               >
                 ✓ Current Plan
               </Button>
+            ) : hasActiveEarlyBirdDiscount ? (
+              <PaymentButton
+                amount={discountedPriceInCents}
+                planName="Pro Monthly Subscription"
+                buttonText="Subscribe with Early Bird Discount"
+              />
             ) : isAuthenticated ? (
               <PaymentButton
                 amount={priceInCents}
@@ -128,7 +188,7 @@ export function PricingSection({
                 <Link href="/login">Log in to upgrade</Link>
               </Button>
             )}
-            {!isUserPro && (
+            {!isUserPro && !hasActiveEarlyBirdDiscount && (
               <p className="text-xs text-center text-muted-foreground">
                 Secure monthly billing via Razorpay. See our refund policy for
                 cancellation terms.

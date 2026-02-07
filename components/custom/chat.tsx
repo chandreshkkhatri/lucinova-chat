@@ -99,7 +99,7 @@ export function Chat({
     }),
     messages: initialMessages,
     onFinish: () => {
-      const url = `/beta/chat/${chatIdForSubmit}`;
+      const url = `/chat/${chatIdForSubmit}`;
       window.history.replaceState({}, "", url);
       onFinish?.();
     },
@@ -253,7 +253,7 @@ export function Chat({
   const handleCloseThread = () => {
     setActiveThread(null);
     if (!isThread) {
-      router.push(`/beta/chat/${id}`);
+      router.push(`/chat/${id}`);
     }
   };
 

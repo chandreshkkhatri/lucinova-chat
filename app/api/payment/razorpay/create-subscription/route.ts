@@ -5,6 +5,7 @@ import { ensureConnection } from "@/db/connection";
 import { User } from "@/db/models";
 import { appConfig } from "@/lib/config";
 import { ensureRazorpayClient } from "@/lib/razorpay";
+import { getUserByEmail, hasActiveBadgeBenefit } from "@/db/queries";
 
 function jsonError(message: string, status = 400, details?: string | object) {
   return NextResponse.json(
@@ -110,7 +111,32 @@ export async function POST(request: NextRequest) {
 
     // Create subscription
     try {
-      const subscription = await rz.client.subscriptions.create({
+      // Check if user has active Early Bird benefit
+      let offerId: string | undefined;
+      try {
+        const user = await getUserByEmail(customerEmail);
+        if (user) {
+          const hasEarlyBirdBenefit = await hasActiveBadgeBenefit(
+            user._id.toString(),
+            "early-bird",
+            3
+          );
+          if (hasEarlyBirdBenefit) {
+            offerId = process.env.RAZORPAY_EARLY_BIRD_OFFER_ID;
+            console.log(
+              `[Subscription] Applying Early Bird discount for ${customerEmail}`
+            );
+          }
+        }
+      } catch (badgeCheckError) {
+        console.warn(
+          "[Subscription] Could not check badge benefits:",
+          badgeCheckError
+        );
+        // Continue without discount rather than fail
+      }
+
+      const subscriptionParams: any = {
         plan_id: planId,
         customer_id: customerId,
         quantity: 1,
@@ -120,7 +146,16 @@ export async function POST(request: NextRequest) {
           customer_email: customerEmail,
           customer_name: customerName,
         },
-      });
+      };
+
+      // Add offer if user has Early Bird badge benefit
+      if (offerId) {
+        subscriptionParams.offer_id = offerId;
+      }
+
+      const subscription = await rz.client.subscriptions.create(
+        subscriptionParams
+      );
 
       // Return only what the client needs
       return NextResponse.json({

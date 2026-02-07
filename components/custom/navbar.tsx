@@ -34,7 +34,14 @@ export const Navbar = async () => {
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-4">
             <Link
-              href="/beta/pricing"
+              href="/about"
+              className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+              prefetch={false}
+            >
+              About
+            </Link>
+            <Link
+              href="/pricing"
               className="text-muted-foreground hover:text-foreground font-medium transition-colors"
               prefetch={false}
             >
@@ -65,7 +72,7 @@ export const Navbar = async () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem className="p-1">
                   <Link
-                    href="/beta/account"
+                    href="/account"
                     className="w-full text-left px-3 py-2 text-muted-foreground hover:bg-muted rounded-md transition-colors block"
                   >
                     Account Settings

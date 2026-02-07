@@ -145,10 +145,10 @@ function PaymentSuccessContent() {
 
           <div className="flex gap-2">
             <Button asChild className="w-full">
-              <Link href="/beta">Start Using Pro Features</Link>
+              <Link href="/">Start Using Pro Features</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/beta/account">View Account</Link>
+              <Link href="/account">View Account</Link>
             </Button>
           </div>
         </div>

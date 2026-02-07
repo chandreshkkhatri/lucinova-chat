@@ -58,6 +58,27 @@ export async function createUser(
   // Use email prefix as displayName if not provided
   const normalizedEmail = String(email).trim().toLowerCase();
   const finalDisplayName = displayName || normalizedEmail.split("@")[0];
+
+  // Check if user qualifies for Early Bird badge (first 500 non-bot users)
+  const badges = [];
+  if (!isBot) {
+    const nonBotUserCount = await User.countDocuments({ isBot: false });
+    if (nonBotUserCount < 500) {
+      const userRank = nonBotUserCount + 1;
+      badges.push({
+        badgeId: "early-bird",
+        earnedAt: new Date(),
+        metadata: {
+          userRank,
+          benefitUsedMonths: 0,
+        },
+      });
+      console.log(
+        `[Badges] Awarded Early Bird badge to ${normalizedEmail} (rank #${userRank}/500)`
+      );
+    }
+  }
+
   return User.create({
     email: normalizedEmail,
     password,
@@ -67,6 +88,7 @@ export async function createUser(
     oauthProvider,
     oauthProviderId,
     termsAcceptedAt,
+    badges,
   });
 }
 
@@ -81,19 +103,6 @@ export async function getUserById(id: string) {
   return userDoc.toObject();
 }
 
-export async function getUserByOAuth(provider: "google", providerId: string) {
-  await ensureConnection();
-  const userDoc = await User.findOne({
-    oauthProvider: provider,
-    oauthProviderId: providerId,
-  });
-  if (!userDoc) {
-    return null;
-  }
-
-  await checkAndExpireSubscription(userDoc);
-  return userDoc.toObject();
-}
 export async function getUserByEmail(email: string) {
   await ensureConnection();
   const normalizedEmail = String(email).trim().toLowerCase();
@@ -104,6 +113,47 @@ export async function getUserByEmail(email: string) {
 
   await checkAndExpireSubscription(userDoc);
   return userDoc.toObject();
+}
+
+// Badge helpers
+export async function getUserBadges(userId: string) {
+  await ensureConnection();
+  const user = await User.findById(userId).select("badges").lean() as any;
+  return user?.badges || [];
+}
+
+export async function hasBadge(
+  userId: string,
+  badgeId: string
+): Promise<boolean> {
+  await ensureConnection();
+  const user = await User.findById(userId).select("badges").lean() as any;
+  return user?.badges?.some((b: any) => b.badgeId === badgeId) || false;
+}
+
+export async function hasActiveBadgeBenefit(
+  userId: string,
+  badgeId: string,
+  durationMonths: number = 3
+): Promise<boolean> {
+  await ensureConnection();
+  const user = await User.findById(userId).select("badges").lean() as any;
+  const badge = user?.badges?.find((b: any) => b.badgeId === badgeId);
+  if (!badge) return false;
+  const benefitUsedMonths = badge.metadata?.benefitUsedMonths || 0;
+  return benefitUsedMonths < durationMonths;
+}
+
+export async function incrementBadgeBenefitUsage(
+  email: string,
+  badgeId: string
+): Promise<void> {
+  await ensureConnection();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  await User.updateOne(
+    { email: normalizedEmail, "badges.badgeId": badgeId },
+    { $inc: { "badges.$.metadata.benefitUsedMonths": 1 } }
+  );
 }
 
 // Subscription helpers

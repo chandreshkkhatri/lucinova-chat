@@ -48,7 +48,7 @@ export default function Page() {
   const handleGoogleSignIn = async () => {
     try {
       const result = await signIn("google", {
-        callbackUrl: "/beta",
+        callbackUrl: "/",
         redirect: true,
       });
       
