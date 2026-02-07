@@ -28,6 +28,7 @@ export function TeamSection() {
                                         src="/images/Chandresh_Kumar.jpg"
                                         alt="Chandresh Kumar"
                                         fill
+                                        sizes="(max-width: 768px) 100vw, 40vw"
                                         className="object-cover"
                                         priority
                                     />
