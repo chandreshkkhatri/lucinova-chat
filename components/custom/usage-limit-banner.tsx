@@ -51,7 +51,7 @@ export function UsageLimitBanner({
             Upgrade to Pro for 3x more usage and premium features.
           </p>
           <Link
-            href="/beta/pricing"
+            href="/pricing"
             className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors"
           >
             <Crown className="size-5" />

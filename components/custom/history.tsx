@@ -160,7 +160,7 @@ export const History = ({
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               asChild
             >
-              <Link href="/beta">
+              <Link href="/">
                 <PencilEditIcon size={14} />
                 <span className="ml-2">New Chat</span>
               </Link>
@@ -227,7 +227,7 @@ export const History = ({
                         asChild
                       >
                         <Link
-                          href={`/beta/chat/${(chat as any)._id.toString()}`}
+                          href={`/chat/${(chat as any)._id.toString()}`}
                           className="block truncate"
                           title={chat.title || "Untitled Chat"}
                         >

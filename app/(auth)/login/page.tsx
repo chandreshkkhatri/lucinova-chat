@@ -79,7 +79,7 @@ function LoginForm() {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", {
-        callbackUrl: "/beta",
+        callbackUrl: "/",
         redirect: true,
       });
     } catch (error) {

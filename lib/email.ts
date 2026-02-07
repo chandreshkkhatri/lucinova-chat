@@ -285,7 +285,7 @@ function getBadgeEarnedEmailTemplate(
           <!-- CTA Button -->
           <tr>
             <td style="padding: 0 40px 30px 40px;" align="center">
-              <a href="${appUrl}/beta/account?section=badges"
+              <a href="${appUrl}/account?section=badges"
                  style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 View Your Badges
               </a>
@@ -414,7 +414,7 @@ function getSubscriptionConfirmationEmailTemplate(
           <!-- CTA Button -->
           <tr>
             <td style="padding: 0 40px 30px 40px;" align="center">
-              <a href="${appUrl}/beta"
+              <a href="${appUrl}/"
                  style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
                 Start Using Pro Features
               </a>
@@ -440,7 +440,7 @@ function getSubscriptionConfirmationEmailTemplate(
           <tr>
             <td style="padding: 0 40px 30px 40px; border-top: 1px solid #e2e8f0;">
               <p style="margin: 16px 0; color: #718096; font-size: 14px;">
-                Need help? You can manage your subscription in your <a href="${appUrl}/beta/account" style="color: #2563eb; text-decoration: none;">account settings</a> or contact our support team.
+                Need help? You can manage your subscription in your <a href="${appUrl}/account" style="color: #2563eb; text-decoration: none;">account settings</a> or contact our support team.
               </p>
             </td>
           </tr>
