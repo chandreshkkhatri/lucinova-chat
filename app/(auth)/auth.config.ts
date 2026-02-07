@@ -31,6 +31,7 @@ export const authConfig = {
         "/images",
       ];
       const isPublicRoute =
+        pathname === "/" ||
         publicRoutes.some((route) => pathname.startsWith(route));
 
       // Redirect logged-in users away from auth pages
