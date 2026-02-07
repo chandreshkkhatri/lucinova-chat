@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { MessageSquare, Sparkles, FileCode, GitBranch } from "lucide-react";
+import { MessageSquare, Sparkles, FileCode, GitBranch, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction } from "react";
 
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { appConfig } from "@/lib/config";
 import type { NodeType } from "@/lib/message-to-nodes";
 
 import { MultimodalInput } from "./multimodal-input";
@@ -38,6 +39,10 @@ interface DefaultSidebarViewProps {
   } | null;
   selectedNodeType: NodeType;
   setSelectedNodeType: (type: NodeType) => void;
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  isUserPro: boolean;
+  isMounted: boolean;
 }
 
 const nodeTypeOptions: { value: NodeType; label: string; icon: React.ReactNode }[] = [
@@ -60,14 +65,18 @@ export function DefaultSidebarView({
   usageLimitInfo,
   selectedNodeType,
   setSelectedNodeType,
+  selectedModel,
+  setSelectedModel,
+  isUserPro,
+  isMounted,
 }: DefaultSidebarViewProps) {
   const router = useRouter();
 
   return (
     <div className="flex flex-col h-full bg-secondary">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-card flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
+      {/* Header with model selector */}
+      <div className="px-4 py-3 border-b border-border bg-card shrink-0">
+        <div className="flex items-center gap-2 mb-3">
           <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Sparkles className="size-4 text-primary" />
           </div>
@@ -76,6 +85,41 @@ export function DefaultSidebarView({
             <p className="text-xs text-muted-foreground">Ask anything</p>
           </div>
         </div>
+        {isMounted ? (
+          <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <SelectTrigger className="w-full h-9 bg-muted/50 border-border text-sm">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-3.5 text-primary" />
+                <SelectValue placeholder="Select a model" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem
+                value="gemini-3.0-flash"
+                className={isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"}
+                disabled={!isUserPro}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-flash")}</span>
+                  <Crown className="size-3 text-yellow-500" />
+                  {!isUserPro && <span className="text-xs text-muted-foreground ml-1">Pro</span>}
+                </div>
+              </SelectItem>
+              <SelectItem value="gemini-2.5-flash" className="hover:bg-muted">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="gemini-2.0-flash" className="hover:bg-muted">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.0-flash")}</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="w-full h-9 bg-muted rounded animate-pulse" />
+        )}
       </div>
 
       {/* Welcome / empty state */}
@@ -103,10 +147,7 @@ export function DefaultSidebarView({
           <div className="flex items-center gap-2">
             <Select value={selectedNodeType} onValueChange={(v) => setSelectedNodeType(v as NodeType)}>
               <SelectTrigger className="w-full h-8 bg-muted/50 border-border text-sm">
-                <div className="flex items-center gap-2">
-                  {nodeTypeOptions.find(o => o.value === selectedNodeType)?.icon}
-                  <SelectValue />
-                </div>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
                 {nodeTypeOptions.map((option) => (

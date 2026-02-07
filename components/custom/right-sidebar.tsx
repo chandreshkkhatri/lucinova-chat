@@ -39,9 +39,13 @@ interface RightSidebarProps {
   onAnnotationCreated: (annotationId: string, selectedText: string) => void;
   onAnnotationDeleted: () => void;
 
+  // Model selector
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  isMounted: boolean;
+
   // Other
   chatId: string;
-  selectedModel: string;
   isUserPro: boolean;
   isGuest: boolean;
   usageLimitInfo: {
@@ -73,8 +77,10 @@ export function RightSidebar({
   onCreateAnnotation,
   onAnnotationCreated,
   onAnnotationDeleted,
-  chatId,
   selectedModel,
+  setSelectedModel,
+  isMounted,
+  chatId,
   isUserPro,
   isGuest,
   usageLimitInfo,
@@ -135,6 +141,10 @@ export function RightSidebar({
       usageLimitInfo={usageLimitInfo}
       selectedNodeType={selectedNodeType}
       setSelectedNodeType={setSelectedNodeType}
+      selectedModel={selectedModel}
+      setSelectedModel={setSelectedModel}
+      isUserPro={isUserPro}
+      isMounted={isMounted}
     />
   );
 }

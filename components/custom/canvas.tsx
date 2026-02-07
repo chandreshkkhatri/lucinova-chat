@@ -1,20 +1,12 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { Sparkles, Reply, Crown } from "lucide-react";
+import { Sparkles, Reply } from "lucide-react";
 import Image from "next/image";
-import { useState, useMemo, Dispatch, SetStateAction } from "react";
+import { useMemo, Dispatch, SetStateAction } from "react";
 
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { appConfig } from "@/lib/config";
 import { messagesToNodes } from "@/lib/message-to-nodes";
 
 import { CanvasNodeComponent } from "./canvas-node";
@@ -26,11 +18,7 @@ import type { Attachment } from "./types";
 interface CanvasProps {
   messages: UIMessage[];
   status: "idle" | "streaming" | "submitted" | "error";
-  selectedModel: string;
-  setSelectedModel: (model: string) => void;
-  isMounted: boolean;
   isThread: boolean;
-  isUserPro: boolean;
   chatId: string;
   annotationsByMessage: Record<string, SavedAnnotation[]>;
   onStartThread: (messageId: string, selectedText?: string) => void;
@@ -38,7 +26,7 @@ interface CanvasProps {
   onOpenAnnotation: (annotationId: string, selectedText: string) => void;
   setInput: (value: string) => void;
   selectedText?: string;
-  // Mobile input props (rendered only on mobile via lg:hidden)
+  // Input props (for threads: always visible; for main chat: mobile only)
   input: string;
   handleSubmit: (e?: React.FormEvent) => void;
   stop: () => void;
@@ -58,11 +46,7 @@ interface CanvasProps {
 export function Canvas({
   messages,
   status,
-  selectedModel,
-  setSelectedModel,
-  isMounted,
   isThread,
-  isUserPro,
   chatId,
   annotationsByMessage,
   onStartThread,
@@ -96,55 +80,6 @@ export function Canvas({
 
   return (
     <div className={`flex flex-col h-full ${isThread ? "max-h-full overflow-hidden" : ""}`}>
-      {/* Model Selector Header */}
-      {!isThread && isMounted && (
-        <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-          <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
-            <div className="">
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-card border-border text-sm sm:text-base">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="size-4 text-primary" />
-                    <SelectValue placeholder="Select a model" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  <SelectItem
-                    value="gemini-3.0-flash"
-                    className={isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"}
-                    disabled={!isUserPro}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-flash")}</span>
-                      <Crown className="size-3 text-yellow-500" />
-                      {!isUserPro && <span className="text-xs text-muted-foreground ml-1">Pro</span>}
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gemini-2.5-flash" className="hover:bg-muted">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gemini-2.0-flash" className="hover:bg-muted">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.0-flash")}</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Placeholder for server render to prevent layout shift */}
-      {!isThread && !isMounted && (
-        <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-          <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
-            <div className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-muted rounded animate-pulse" />
-          </div>
-        </div>
-      )}
-
       {/* Canvas Content - Nodes */}
       <div
         className={`flex-1 overflow-y-auto min-h-0 ${isThread ? "max-h-full" : ""}`}
