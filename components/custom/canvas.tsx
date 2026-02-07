@@ -26,7 +26,7 @@ interface CanvasProps {
   onOpenAnnotation: (annotationId: string, selectedText: string) => void;
   setInput: (value: string) => void;
   selectedText?: string;
-  // Input props (for threads: always visible; for main chat: mobile only)
+  // Input props (only used for thread mode)
   input: string;
   handleSubmit: (e?: React.FormEvent) => void;
   stop: () => void;
@@ -184,35 +184,37 @@ export function Canvas({
         <div ref={messagesEndRef} className="shrink-0 min-w-[24px] min-h-[24px]" />
       </div>
 
-      {/* Input - for threads: always visible; for main chat: mobile only (desktop uses right sidebar) */}
-      <div className={`border-t border-border p-3 sm:p-4 shrink-0 ${!isThread ? "lg:hidden" : ""}`}>
-        <div className="max-w-4xl mx-auto">
-          {usageLimitInfo?.exceeded ? (
-            <UsageLimitBanner
-              isPro={usageLimitInfo.isPro}
-              currentUsage={usageLimitInfo.currentUsage}
-              limit={usageLimitInfo.limit}
-              periodEnd={usageLimitInfo.periodEnd}
-            />
-          ) : isGuest && messages.filter((m) => m.role === "user").length >= 5 ? (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
-              <p className="text-sm text-muted-foreground">Guest limit reached. Sign up to continue.</p>
-            </div>
-          ) : (
-            <MultimodalInput
-              input={input}
-              setInput={setInput}
-              isLoading={status === "streaming" || status === "submitted"}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              sendMessage={sendMessage}
-              handleSubmit={handleSubmit}
-            />
-          )}
+      {/* Input - only for threads (main chat uses bottom panel on mobile / right sidebar on desktop) */}
+      {isThread && (
+        <div className="border-t border-border p-3 sm:p-4 shrink-0">
+          <div className="max-w-4xl mx-auto">
+            {usageLimitInfo?.exceeded ? (
+              <UsageLimitBanner
+                isPro={usageLimitInfo.isPro}
+                currentUsage={usageLimitInfo.currentUsage}
+                limit={usageLimitInfo.limit}
+                periodEnd={usageLimitInfo.periodEnd}
+              />
+            ) : isGuest && messages.filter((m) => m.role === "user").length >= 5 ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">Guest limit reached. Sign up to continue.</p>
+              </div>
+            ) : (
+              <MultimodalInput
+                input={input}
+                setInput={setInput}
+                isLoading={status === "streaming" || status === "submitted"}
+                stop={stop}
+                attachments={attachments}
+                setAttachments={setAttachments}
+                messages={messages}
+                sendMessage={sendMessage}
+                handleSubmit={handleSubmit}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

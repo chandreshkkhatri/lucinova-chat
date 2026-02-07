@@ -14,15 +14,17 @@ interface SidebarContextValue {
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [activePanel, setActivePanel] = useState<SidebarPanelId | null>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("sidebar-active-panel");
-      if (stored === "history" || stored === "search" || stored === "settings") {
-        return stored;
-      }
+  const [activePanel, setActivePanel] = useState<SidebarPanelId | null>("history");
+
+  // Sync from localStorage after hydration to avoid SSR mismatch
+  useEffect(() => {
+    const stored = localStorage.getItem("sidebar-active-panel");
+    if (stored === "history" || stored === "search" || stored === "settings") {
+      setActivePanel(stored);
+    } else if (stored === "closed") {
+      setActivePanel(null);
     }
-    return "history";
-  });
+  }, []);
 
   const isPanelOpen = activePanel !== null;
 
@@ -38,7 +40,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     if (activePanel !== null) {
       localStorage.setItem("sidebar-active-panel", activePanel);
     } else {
-      localStorage.removeItem("sidebar-active-panel");
+      localStorage.setItem("sidebar-active-panel", "closed");
     }
   }, [activePanel]);
 

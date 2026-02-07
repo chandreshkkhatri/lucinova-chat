@@ -2,6 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport, UIMessage } from "ai";
+import { ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
@@ -17,6 +18,14 @@ import type { FileUIPart } from "ai";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+const MIN_SIDEBAR_WIDTH = 240;
+const MAX_SIDEBAR_WIDTH = 720;
+const MIN_MAIN_WIDTH = 240;
+const MIN_BOTTOM_PANEL = 120;
+const MAX_BOTTOM_PANEL_RATIO = 0.7;
+const DEFAULT_BOTTOM_PANEL = 300;
+const COLLAPSED_BOTTOM_PANEL = 120;
 
 export function Chat({
   id,
@@ -50,10 +59,18 @@ export function Chat({
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+
+  // Desktop sidebar resize state
   const [sidebarWidth, setSidebarWidth] = useState(384);
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+
+  // Mobile bottom panel state
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(DEFAULT_BOTTOM_PANEL);
+  const [isBottomResizing, setIsBottomResizing] = useState(false);
+  const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(false);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
 
   // Usage limit state
   const [usageLimitInfo, setUsageLimitInfo] = useState<{
@@ -63,10 +80,6 @@ export function Chat({
     limit: number;
     periodEnd: Date | string;
   } | null>(null);
-
-  const MIN_SIDEBAR_WIDTH = 240;
-  const MAX_SIDEBAR_WIDTH = 720;
-  const MIN_MAIN_WIDTH = 240;
 
   useEffect(() => {
     setIsMounted(true);
@@ -295,7 +308,7 @@ export function Chat({
     [mutateAnnotations]
   );
 
-  // Resize effect — sidebar is always visible on desktop
+  // Desktop sidebar resize effect
   useEffect(() => {
     if (isThread) return;
 
@@ -346,6 +359,60 @@ export function Chat({
       document.body.style.userSelect = "";
     };
   }, [isResizing]);
+
+  // Mobile bottom panel resize effect
+  useEffect(() => {
+    if (!isBottomResizing) return;
+
+    const handleMove = (clientY: number) => {
+      const container = mobileContainerRef.current;
+      if (!container) return;
+      const bounds = container.getBoundingClientRect();
+      const maxHeight = bounds.height * MAX_BOTTOM_PANEL_RATIO;
+      const nextHeight = bounds.bottom - clientY;
+      const clampedHeight = Math.min(
+        Math.max(nextHeight, MIN_BOTTOM_PANEL),
+        maxHeight
+      );
+      setBottomPanelHeight(clampedHeight);
+      setIsBottomPanelCollapsed(clampedHeight <= MIN_BOTTOM_PANEL);
+    };
+
+    const handleMouseMove = (event: MouseEvent) => handleMove(event.clientY);
+    const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches.length > 0) {
+        handleMove(event.touches[0].clientY);
+      }
+    };
+
+    const handleEnd = () => setIsBottomResizing(false);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleEnd);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEnd);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isBottomResizing]);
+
+  const toggleBottomPanel = () => {
+    if (isBottomPanelCollapsed) {
+      setBottomPanelHeight(DEFAULT_BOTTOM_PANEL);
+      setIsBottomPanelCollapsed(false);
+    } else {
+      setBottomPanelHeight(COLLAPSED_BOTTOM_PANEL);
+      setIsBottomPanelCollapsed(true);
+    }
+  };
 
   // Shared Canvas props
   const canvasProps = {
@@ -417,41 +484,84 @@ export function Chat({
     usageLimitInfo,
   };
 
-  // Main chat layout: Canvas + always-visible RightSidebar
+  // Main chat layout
   return (
     <div
       ref={containerRef}
       className={`flex h-full bg-paper ${className}`}
     >
-      {/* Canvas - display area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Canvas {...canvasProps} isThread={false} />
+      {/* Mobile: Vertical split (Canvas top + bottom panel) */}
+      <div ref={mobileContainerRef} className="flex flex-col flex-1 min-w-0 lg:hidden h-full">
+        {/* Canvas fills remaining space */}
+        <div className="flex-1 min-h-0">
+          <Canvas {...canvasProps} isThread={false} />
+        </div>
+
+        {/* Drag handle */}
+        <div
+          className="shrink-0 flex items-center justify-center border-t border-border bg-muted/50 cursor-row-resize touch-none"
+          style={{ height: 24 }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsBottomResizing(true);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setIsBottomResizing(true);
+          }}
+          onClick={toggleBottomPanel}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize chat panel"
+        >
+          <ChevronUp
+            className={`size-4 text-muted-foreground transition-transform duration-200 ${
+              isBottomPanelCollapsed ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {/* Bottom panel — RightSidebar */}
+        <div
+          className="shrink-0 overflow-hidden border-t border-border"
+          style={{ height: bottomPanelHeight }}
+        >
+          <RightSidebar {...rightSidebarProps} />
+        </div>
       </div>
 
-      {/* Desktop: Resize handle */}
-      <div
-        className="hidden lg:flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
-        onMouseDown={(event) => {
-          event.preventDefault();
-          setIsResizing(true);
-        }}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize sidebar"
-      >
-        <div className="w-px bg-border" />
-        <div className="flex-1 hover:bg-muted/60 transition-colors" />
+      {/* Desktop: Horizontal layout (Canvas + resize + right sidebar) */}
+      <div className="hidden lg:flex flex-1 min-w-0 h-full">
+        {/* Canvas */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <Canvas {...canvasProps} isThread={false} />
+        </div>
+
+        {/* Resize handle */}
+        <div
+          className="flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            setIsResizing(true);
+          }}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+        >
+          <div className="w-px bg-border" />
+          <div className="flex-1 hover:bg-muted/60 transition-colors" />
+        </div>
+
+        {/* Right Sidebar */}
+        <div
+          className="h-full min-w-0 overflow-hidden border-l border-border"
+          style={{ width: sidebarWidth }}
+        >
+          <RightSidebar {...rightSidebarProps} />
+        </div>
       </div>
 
-      {/* Desktop: Right Sidebar (always visible) */}
-      <div
-        className="hidden lg:block h-full min-w-0 overflow-hidden border-l border-border"
-        style={{ width: sidebarWidth }}
-      >
-        <RightSidebar {...rightSidebarProps} />
-      </div>
-
-      {/* Mobile: Full screen overlay for thread/annotation only */}
+      {/* Mobile: Full screen overlay for thread/annotation */}
       {showMobileOverlay && (
         <div className="fixed inset-0 z-50 lg:hidden bg-card">
           <RightSidebar {...rightSidebarProps} />
