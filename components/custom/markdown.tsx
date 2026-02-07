@@ -3,10 +3,15 @@ import React, { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { MermaidRenderer } from "./mermaid-renderer";
+
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const components = {
     code: ({ node, inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || "");
+      if (!inline && match && match[1] === "mermaid") {
+        return <MermaidRenderer content={String(children)} />;
+      }
       return !inline && match ? (
         <pre
           {...props}

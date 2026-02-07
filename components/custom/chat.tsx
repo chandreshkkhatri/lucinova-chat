@@ -2,41 +2,30 @@
 
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport, UIMessage } from "ai";
-import { ChevronRight, Reply, Sparkles, Crown } from "lucide-react";
-import Image from "next/image";
+import { ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
 
-import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
-import { useThreadCount } from "@/components/custom/use-thread-count";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { appConfig } from "@/lib/config";
+import type { NodeType } from "@/lib/message-to-nodes";
 
-import { AnnotationThreadView } from "./annotation-thread-view";
-import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
-import { MultimodalInput } from "./multimodal-input";
-import { ThreadView } from "./thread-view";
+import { Canvas } from "./canvas";
+import type { SavedAnnotation } from "./enhanced-message";
+import { RightSidebar } from "./right-sidebar";
 import { Attachment } from "./types";
-import { UsageLimitBanner } from "./usage-limit-banner";
 
 import type { FileUIPart } from "ai";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+const MIN_SIDEBAR_WIDTH = 240;
+const MAX_SIDEBAR_WIDTH = 720;
+const MIN_MAIN_WIDTH = 240;
+const MIN_BOTTOM_PANEL = 120;
+const MAX_BOTTOM_PANEL_RATIO = 0.7;
+const DEFAULT_BOTTOM_PANEL = 300;
+const COLLAPSED_BOTTOM_PANEL = 120;
 
 export function Chat({
   id,
@@ -66,13 +55,22 @@ export function Chat({
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
 
-  // Model selection state - must be declared before useChat
+  // Model selection state
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+
+  // Desktop sidebar resize state
   const [sidebarWidth, setSidebarWidth] = useState(384);
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Mobile bottom panel state
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(DEFAULT_BOTTOM_PANEL);
+  const [isBottomResizing, setIsBottomResizing] = useState(false);
+  const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(false);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
 
   // Usage limit state
   const [usageLimitInfo, setUsageLimitInfo] = useState<{
@@ -83,17 +81,12 @@ export function Chat({
     periodEnd: Date | string;
   } | null>(null);
 
-  const MIN_SIDEBAR_WIDTH = 240;
-  const MAX_SIDEBAR_WIDTH = 720;
-  const MIN_MAIN_WIDTH = 240;
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     id: chatIdForSubmit,
-    // Use text-stream transport because the API returns plain text streaming responses
     transport: new TextStreamChatTransport({
       api: isThread ? "/api/thread" : "/api/chat",
     }),
@@ -104,14 +97,10 @@ export function Chat({
       onFinish?.();
     },
     onError: (error) => {
-      // Handle 429 usage limit errors from the server
-      // The error message may contain JSON with usage limit details
       console.error("Chat error:", error);
       try {
-        // Try to parse error response if it contains usage limit info
         const errorText = error.message || "";
         if (errorText.includes("usage_limit_exceeded") || errorText.includes("429")) {
-          // Fetch current usage to display the banner
           fetch("/api/usage")
             .then((res) => res.json())
             .then((usageData) => {
@@ -126,7 +115,6 @@ export function Chat({
               }
             })
             .catch(() => {
-              // If we can't fetch usage, still show a generic limit message
               setUsageLimitInfo({
                 exceeded: true,
                 isPro: isUserPro,
@@ -146,7 +134,6 @@ export function Chat({
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
 
-    // Check usage limit before sending (for authenticated users)
     if (!isGuest) {
       try {
         const checkRes = await fetch("/api/usage");
@@ -164,12 +151,10 @@ export function Chat({
           }
         }
       } catch (err) {
-        // If usage check fails, continue anyway
         console.error("Usage check failed:", err);
       }
     }
 
-    // Convert local Attachment objects to FileUIPart expected by the chat transport
     const fileParts: FileUIPart[] = attachments.map((a) => ({
       type: "file",
       mediaType: a.contentType ?? "",
@@ -200,9 +185,6 @@ export function Chat({
       setMessages(initialMessages);
     }
   }, [initialMessages, messages.length, setMessages]);
-
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
@@ -257,7 +239,6 @@ export function Chat({
     }
   };
 
-  // Handle "Ask Lucinova" click - create pending annotation
   const handleAskLucinova = useCallback(
     (messageId: string, selectedText: string) => {
       setPendingAnnotation({ messageId, selectedText });
@@ -267,7 +248,6 @@ export function Chat({
     []
   );
 
-  // Handle opening an existing annotation
   const handleOpenAnnotation = useCallback(
     (annotationId: string, selectedText: string) => {
       setActiveAnnotation({ id: annotationId, selectedText });
@@ -277,18 +257,15 @@ export function Chat({
     []
   );
 
-  // Close annotation view
   const handleCloseAnnotation = () => {
     setActiveAnnotation(null);
     setPendingAnnotation(null);
   };
 
-  // Handle annotation deletion
   const handleAnnotationDeleted = () => {
     mutateAnnotations();
   };
 
-  // Create annotation when first message is sent in pending annotation
   const handleCreateAnnotation = async (firstMessage: string) => {
     if (!pendingAnnotation) return null;
 
@@ -300,6 +277,7 @@ export function Chat({
           messageId: pendingAnnotation.messageId,
           chatId: id,
           selectedText: pendingAnnotation.selectedText,
+          firstMessage,
         }),
       });
 
@@ -307,10 +285,8 @@ export function Chat({
 
       const { annotation } = await res.json();
 
-      // Update annotations list
       mutateAnnotations();
 
-      // Switch from pending to active annotation
       setActiveAnnotation({
         id: annotation.id,
         selectedText: annotation.selectedText,
@@ -324,114 +300,18 @@ export function Chat({
     }
   };
 
-  const MessageComponent = ({
-    message,
-    showReply = true,
-  }: {
-    message: UIMessage;
-    showReply?: boolean;
-  }) => {
-    const { threadCount } = useThreadCount(message.id, id);
-    const messageAnnotations = annotationsByMessage[message.id] || [];
+  const handleAnnotationCreated = useCallback(
+    (annotationId: string, selectedText: string) => {
+      setActiveAnnotation({ id: annotationId, selectedText });
+      setPendingAnnotation(null);
+      mutateAnnotations();
+    },
+    [mutateAnnotations]
+  );
 
-    return (
-      <div className="group relative">
-        <div
-          className={`flex gap-2 p-2 sm:p-3 ${message.role === "user" ? "justify-end" : ""
-            }`}
-        >
-          {message.role === "assistant" && (
-            <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-transparent p-0.5">
-                <Image
-                  src="/images/lucidity-logo.svg"
-                  alt="Lucidity"
-                  width={28}
-                  height={28}
-                  quality={90}
-                  className="size-full object-contain"
-                />
-              </AvatarFallback>
-            </Avatar>
-          )}
-
-          <div
-            className={`flex-1 ${isThread ? "max-w-[90%] sm:max-w-[85%]" : "max-w-[90%] sm:max-w-[85%] md:max-w-2xl"
-              } ${message.role === "user" ? "text-right" : ""}`}
-          >
-            <div
-              className={`inline-block ${message.role === "user"
-                ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2"
-                : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"
-                }`}
-            >
-              <div className="flex items-start gap-2">
-                <div className="flex-1 break-words">
-                  <EnhancedMessage
-                    message={message}
-                    chatId={id}
-                    annotations={messageAnnotations}
-                    onAskLucinova={(selectedText) =>
-                      handleAskLucinova(message.id, selectedText)
-                    }
-                    onOpenAnnotation={handleOpenAnnotation}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Actions - now visible on both mobile and desktop */}
-            {showReply && !isThread && message.role === "assistant" && (
-              <div className="flex items-center gap-1 mt-2 opacity-100 transition-opacity duration-200">
-                {threadCount > 0 && (
-                  <button
-                    onClick={() => handleStartThread(message.id)}
-                    className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-all duration-200"
-                  >
-                    <ChevronRight className="size-3" />
-                    <span>
-                      {threadCount} message{threadCount === 1 ? "" : "s"}
-                    </span>
-                  </button>
-                )}
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => handleStartThread(message.id)}
-                        className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-muted-foreground hover:text-primary hover:bg-muted rounded-full transition-all duration-200"
-                      >
-                        <Reply className="size-3" />
-                        <span>Reply</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Tip: Select text in a message to see &quot;Ask Lucinova&quot;.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
-          </div>
-
-          {message.role === "user" && (
-            <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                U
-              </AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Determine if sidebar should be shown
-  const showSidebar = activeThread || activeAnnotation || pendingAnnotation;
-
+  // Desktop sidebar resize effect
   useEffect(() => {
-    if (!showSidebar) return;
+    if (isThread) return;
 
     const handleResize = () => {
       const container = containerRef.current;
@@ -446,7 +326,7 @@ export function Chat({
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [showSidebar]);
+  }, [isThread]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -481,572 +361,213 @@ export function Chat({
     };
   }, [isResizing]);
 
-  return (
-    <div
-      ref={containerRef}
-      className={`flex h-full bg-paper ${className} ${isThread ? "max-h-full overflow-hidden" : ""
-        }`}
-    >
-      {/* Main Chat Area */}
-      <div
-        className={`flex-1 flex flex-col min-w-0 ${showSidebar ? "lg:border-r border-border" : ""
-          } ${isThread ? "h-full max-h-full overflow-hidden" : ""}`}
-      >
-        {/* Model Selector Header */}
-        {!isThread && isMounted && (
-          <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-            <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
-              <div className="">
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-card border-border text-sm sm:text-base">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="size-4 text-primary" />
-                      <SelectValue placeholder="Select a model" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem
-                      value="gemini-3.0-flash"
-                      className={
-                        isUserPro
-                          ? "hover:bg-muted"
-                          : "opacity-50 cursor-not-allowed"
-                      }
-                      disabled={!isUserPro}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-3.0-flash")}
-                        </span>
-                        <Crown className="size-3 text-yellow-500" />
-                        {!isUserPro && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            Pro
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                    <SelectItem
-                      value="gemini-2.5-flash"
-                      className="hover:bg-muted"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-2.5-flash")}
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem
-                      value="gemini-2.0-flash"
-                      className="hover:bg-muted"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {appConfig.getModelDisplayName("gemini-2.0-flash")}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Placeholder for server render to prevent layout shift */}
-        {!isThread && !isMounted && (
-          <div className="border-b border-border px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-            <div className="flex items-center justify-center sm:justify-start h-10 lg:h-auto">
-              <div className="w-[160px] sm:w-[200px] h-9 sm:h-10 bg-muted rounded animate-pulse" />
-            </div>
-          </div>
-        )}
+  // Mobile bottom panel resize effect
+  useEffect(() => {
+    if (!isBottomResizing) return;
 
-        {/* Messages */}
-        <div
-          className={`flex-1 overflow-y-auto min-h-0 ${isThread ? "max-h-full" : ""
-            }`}
-          ref={messagesContainerRef}
-        >
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full p-8">
-              <div className="text-center max-w-md">
-                {isThread && selectedText ? (
-                  // Thread with selected text - show query suggestions
-                  <>
-                    <div className="size-12 mx-auto mb-4 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
-                      <Sparkles className="size-6 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      Ask about your selection
-                    </h3>
-                    <p className="text-muted-foreground mb-6 text-sm">
-                      What would you like to know about the selected text?
-                    </p>
+    const handleMove = (clientY: number) => {
+      const container = mobileContainerRef.current;
+      if (!container) return;
+      const bounds = container.getBoundingClientRect();
+      const maxHeight = bounds.height * MAX_BOTTOM_PANEL_RATIO;
+      const nextHeight = bounds.bottom - clientY;
+      const clampedHeight = Math.min(
+        Math.max(nextHeight, MIN_BOTTOM_PANEL),
+        maxHeight
+      );
+      setBottomPanelHeight(clampedHeight);
+      setIsBottomPanelCollapsed(clampedHeight <= MIN_BOTTOM_PANEL);
+    };
 
-                    {/* Query suggestions for selected text */}
-                    <div className="flex flex-col gap-2 mb-4">
-                      <button
-                        onClick={() =>
-                          setInput("Can you explain this in simpler terms?")
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          Can you explain this in simpler terms?
-                        </p>
-                      </button>
+    const handleMouseMove = (event: MouseEvent) => handleMove(event.clientY);
+    const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches.length > 0) {
+        handleMove(event.touches[0].clientY);
+      }
+    };
 
-                      <button
-                        onClick={() =>
-                          setInput("What are the key points here?")
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          What are the key points here?
-                        </p>
-                      </button>
+    const handleEnd = () => setIsBottomResizing(false);
 
-                      <button
-                        onClick={() =>
-                          setInput("Can you provide more context about this?")
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          Can you provide more context about this?
-                        </p>
-                      </button>
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleEnd);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
 
-                      <button
-                        onClick={() =>
-                          setInput("How does this relate to the main topic?")
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          How does this relate to the main topic?
-                        </p>
-                      </button>
-                    </div>
-                  </>
-                ) : isThread ? (
-                  // Regular thread - minimal content
-                  <>
-                    <div className="size-12 mx-auto mb-4 rounded-xl bg-muted border border-border flex items-center justify-center">
-                      <Reply className="size-6 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      Thread Discussion
-                    </h3>
-                    <p className="text-muted-foreground mb-6 text-sm">
-                      Continue the conversation about the parent message.
-                    </p>
-                  </>
-                ) : (
-                  // Main chat - original welcome
-                  <>
-                    <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
-                      <Image
-                        src="/images/lucidity-logo.svg"
-                        alt="Lucidity"
-                        width={64}
-                        height={64}
-                        className="size-full object-contain"
-                      />
-                    </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">
-                      Welcome to Lucidity
-                    </h2>
-                    <p className="text-muted-foreground mb-6">
-                      Think in threads, learn in layers.
-                    </p>
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEnd);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isBottomResizing]);
 
-                    {/* Quick suggestions for main chat */}
-                    <div className="flex flex-col gap-2 mb-4">
-                      <button
-                        onClick={() =>
-                          setInput("Explain a complex concept to me")
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          Explain a complex concept simply
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          setInput(
-                            "Help me create a study plan for a new subject"
-                          )
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          Create a personalized study plan
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          setInput(
-                            "Summarize this text and extract key learning points"
-                          )
-                        }
-                        className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        <p className="text-sm text-foreground/80">
-                          Summarize and extract key points
-                        </p>
-                      </button>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      Type your message below to start our conversation
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="py-4">
-              {messages.map((message) => (
-                <MessageComponent
-                  key={message.id}
-                  message={message}
-                  showReply={!isThread}
-                />
-              ))}
-            </div>
-          )}
-
-          {(status === "streaming" || status === "submitted") && (
-            <div className="p-3">
-              <div className="flex items-center gap-2">
-                <Avatar className="size-8 shrink-0">
-                  <AvatarFallback className="bg-card border border-border p-1">
-                    <Image
-                      src="/images/lucidity-logo.svg"
-                      alt="Lucidity"
-                      width={24}
-                      height={24}
-                      className="size-full object-contain"
-                    />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2">
-                  <div className="typing-indicator flex gap-1">
-                    <span className="size-2 bg-muted-foreground rounded-full"></span>
-                    <span className="size-2 bg-muted-foreground rounded-full"></span>
-                    <span className="size-2 bg-muted-foreground rounded-full"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div
-            ref={messagesEndRef}
-            className="shrink-0 min-w-[24px] min-h-[24px]"
-          />
-        </div>
-
-        {/* Input */}
-        <div className="border-t border-border p-3 sm:p-4 shrink-0">
-          <div className="max-w-4xl mx-auto">
-            {usageLimitInfo?.exceeded ? (
-              <UsageLimitBanner
-                isPro={usageLimitInfo.isPro}
-                currentUsage={usageLimitInfo.currentUsage}
-                limit={usageLimitInfo.limit}
-                periodEnd={usageLimitInfo.periodEnd}
-              />
-            ) : isGuest &&
-              messages.filter((m) => m.role === "user").length >= 5 ? (
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
-                <Sparkles className="size-12 mx-auto mb-3 text-primary" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Ready for more?
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  You&apos;ve reached the guest message limit. Sign up to continue
-                  chatting and unlock unlimited messages!
-                </p>
-                <button
-                  onClick={() => router.push("/register")}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
-                >
-                  <Sparkles className="size-5" />
-                  Sign Up Free
-                </button>
-              </div>
-            ) : (
-              <MultimodalInput
-                input={input}
-                setInput={setInput}
-                isLoading={status === "streaming" || status === "submitted"}
-                stop={stop}
-                attachments={attachments}
-                setAttachments={setAttachments}
-                messages={messages}
-                sendMessage={sendMessage}
-                handleSubmit={handleSubmit}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Sidebar - Reply Thread, Annotation Thread, or Pending Annotation */}
-      {!isThread && showSidebar && (
-        <>
-          {/* Mobile: Full screen modal */}
-          <div className="fixed inset-0 z-50 lg:hidden bg-card">
-            {activeThread ? (
-              <ThreadView
-                parentMessage={activeThread.parentMessage}
-                selectedText={activeThread.selectedText}
-                mainChatId={id}
-                onClose={handleCloseThread}
-                className="size-full"
-                modelId={selectedModel}
-              />
-            ) : activeAnnotation ? (
-              <AnnotationThreadView
-                annotationId={activeAnnotation.id}
-                selectedText={activeAnnotation.selectedText}
-                chatId={id}
-                onClose={handleCloseAnnotation}
-                onDelete={handleAnnotationDeleted}
-                className="size-full"
-                modelId={selectedModel}
-              />
-            ) : pendingAnnotation ? (
-              <PendingAnnotationView
-                selectedText={pendingAnnotation.selectedText}
-                messageId={pendingAnnotation.messageId}
-                chatId={id}
-                onClose={handleCloseAnnotation}
-                onCreateAnnotation={handleCreateAnnotation}
-                onAnnotationCreated={(annotationId, selectedText) => {
-                  setActiveAnnotation({ id: annotationId, selectedText });
-                  setPendingAnnotation(null);
-                  mutateAnnotations();
-                }}
-                className="size-full"
-              />
-            ) : null}
-          </div>
-
-          {/* Desktop: Sidebar */}
-          <div
-            className="hidden lg:flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              setIsResizing(true);
-            }}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize thread panel"
-          >
-            <div className="w-px bg-border" />
-            <div className="flex-1 hover:bg-muted/60 transition-colors" />
-          </div>
-          <div
-            className="hidden lg:block h-full min-w-0 overflow-hidden border-l border-border"
-            style={{ width: sidebarWidth }}
-          >
-            {activeThread ? (
-              <ThreadView
-                parentMessage={activeThread.parentMessage}
-                selectedText={activeThread.selectedText}
-                mainChatId={id}
-                onClose={handleCloseThread}
-                className="size-full"
-                modelId={selectedModel}
-              />
-            ) : activeAnnotation ? (
-              <AnnotationThreadView
-                annotationId={activeAnnotation.id}
-                selectedText={activeAnnotation.selectedText}
-                chatId={id}
-                onClose={handleCloseAnnotation}
-                onDelete={handleAnnotationDeleted}
-                className="size-full"
-                modelId={selectedModel}
-              />
-            ) : pendingAnnotation ? (
-              <PendingAnnotationView
-                selectedText={pendingAnnotation.selectedText}
-                messageId={pendingAnnotation.messageId}
-                chatId={id}
-                onClose={handleCloseAnnotation}
-                onCreateAnnotation={handleCreateAnnotation}
-                onAnnotationCreated={(annotationId, selectedText) => {
-                  setActiveAnnotation({ id: annotationId, selectedText });
-                  setPendingAnnotation(null);
-                  mutateAnnotations();
-                }}
-                className="size-full"
-              />
-            ) : null}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// Component for pending annotation (before first message)
-function PendingAnnotationView({
-  selectedText,
-  messageId,
-  chatId,
-  onClose,
-  onCreateAnnotation,
-  onAnnotationCreated,
-  className = "",
-}: {
-  selectedText: string;
-  messageId: string;
-  chatId: string;
-  onClose: () => void;
-  onCreateAnnotation: (firstMessage: string) => Promise<string | null>;
-  onAnnotationCreated: (annotationId: string, selectedText: string) => void;
-  className?: string;
-}) {
-  const [input, setInput] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isCreating) return;
-
-    setIsCreating(true);
-    try {
-      // First create the annotation
-      const res = await fetch("/api/annotations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messageId,
-          chatId,
-          selectedText,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to create annotation");
-
-      const { annotation } = await res.json();
-
-      // Switch to the annotation thread view which will handle the chat
-      onAnnotationCreated(annotation.id, selectedText);
-    } catch (error) {
-      console.error("Failed to create annotation:", error);
-      setIsCreating(false);
+  const toggleBottomPanel = () => {
+    if (isBottomPanelCollapsed) {
+      setBottomPanelHeight(DEFAULT_BOTTOM_PANEL);
+      setIsBottomPanelCollapsed(false);
+    } else {
+      setBottomPanelHeight(COLLAPSED_BOTTOM_PANEL);
+      setIsBottomPanelCollapsed(true);
     }
   };
 
+  // Shared Canvas props
+  const canvasProps = {
+    messages,
+    status: status as "idle" | "streaming" | "submitted" | "error",
+    chatId: id,
+    annotationsByMessage,
+    onStartThread: handleStartThread,
+    onAskLucinova: handleAskLucinova,
+    onOpenAnnotation: handleOpenAnnotation,
+    setInput,
+    input,
+    handleSubmit,
+    stop,
+    attachments,
+    setAttachments,
+    sendMessage,
+    isGuest,
+    usageLimitInfo,
+  };
+
+  // For threads, render compact layout with Canvas + inline input (no right sidebar)
+  if (isThread) {
+    return (
+      <div
+        ref={containerRef}
+        className={`flex h-full bg-paper ${className} max-h-full overflow-hidden`}
+      >
+        <div className="flex-1 flex flex-col min-w-0 h-full max-h-full overflow-hidden">
+          <Canvas
+            {...canvasProps}
+            isThread={true}
+            selectedText={selectedText}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const showMobileOverlay = activeThread || activeAnnotation || pendingAnnotation;
+
+  // Shared RightSidebar props
+  const rightSidebarProps = {
+    input,
+    setInput,
+    handleSubmit,
+    status: status as "idle" | "streaming" | "submitted" | "error",
+    stop,
+    attachments,
+    setAttachments,
+    messages,
+    sendMessage,
+    selectedNodeType,
+    setSelectedNodeType,
+    activeThread,
+    activeAnnotation,
+    pendingAnnotation,
+    onCloseThread: handleCloseThread,
+    onCloseAnnotation: handleCloseAnnotation,
+    onCreateAnnotation: handleCreateAnnotation,
+    onAnnotationCreated: handleAnnotationCreated,
+    onAnnotationDeleted: handleAnnotationDeleted,
+    selectedModel,
+    setSelectedModel,
+    isMounted,
+    chatId: id,
+    isUserPro,
+    isGuest,
+    usageLimitInfo,
+  };
+
+  // Main chat layout
   return (
     <div
-      className={`flex flex-col bg-secondary h-full max-h-full overflow-hidden ${className}`}
+      ref={containerRef}
+      className={`flex h-full bg-paper ${className}`}
     >
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-card flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <Sparkles className="size-4 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground">
-              Ask Lucinova
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              New annotation
-            </p>
-          </div>
+      {/* Mobile: Vertical split (Canvas top + bottom panel) */}
+      <div ref={mobileContainerRef} className="flex flex-col flex-1 min-w-0 lg:hidden h-full">
+        {/* Canvas fills remaining space */}
+        <div className="flex-1 min-h-0">
+          <Canvas {...canvasProps} isThread={false} />
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+
+        {/* Drag handle */}
+        <div
+          className="shrink-0 flex items-center justify-center border-t border-border bg-muted/50 cursor-row-resize touch-none"
+          style={{ height: 24 }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsBottomResizing(true);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setIsBottomResizing(true);
+          }}
+          onClick={toggleBottomPanel}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize chat panel"
         >
-          ×
-        </button>
-      </div>
-
-      {/* Selected Text Display */}
-      <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
-        <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-          {'"'}{selectedText}{'"'}
-        </div>
-      </div>
-
-      {/* Empty state with suggestions */}
-      <div className="flex-1 overflow-y-auto p-4 bg-card">
-        <div className="text-center max-w-md mx-auto py-8">
-          <div className="size-12 mx-auto mb-4 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 flex items-center justify-center">
-            <Sparkles className="size-6 text-purple-600 dark:text-purple-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Ask about this text
-          </h3>
-          <p className="text-muted-foreground mb-6 text-sm">
-            What would you like to know about the selected text?
-          </p>
-
-          {/* Quick suggestions */}
-          <div className="flex flex-col gap-2 mb-4">
-            <button
-              onClick={() => setInput("Can you explain this in simpler terms?")}
-              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <p className="text-sm text-foreground/80">
-                Explain this in simpler terms
-              </p>
-            </button>
-
-            <button
-              onClick={() => setInput("What are the key points here?")}
-              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <p className="text-sm text-foreground/80">
-                What are the key points?
-              </p>
-            </button>
-
-            <button
-              onClick={() => setInput("Can you give me an example?")}
-              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <p className="text-sm text-foreground/80">
-                Give me an example
-              </p>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-border p-3 sm:p-4 shrink-0 bg-card">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a question about this text..."
-            className="flex-1 px-4 py-2 rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500"
-            disabled={isCreating}
+          <ChevronUp
+            className={`size-4 text-muted-foreground transition-transform duration-200 ${
+              isBottomPanelCollapsed ? "rotate-180" : ""
+            }`}
           />
-          <button
-            type="submit"
-            disabled={!input.trim() || isCreating}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-muted disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-          >
-            {isCreating ? "..." : "Ask"}
-          </button>
-        </form>
+        </div>
+
+        {/* Bottom panel — RightSidebar */}
+        <div
+          className="shrink-0 overflow-hidden border-t border-border"
+          style={{ height: bottomPanelHeight }}
+        >
+          <RightSidebar {...rightSidebarProps} />
+        </div>
       </div>
+
+      {/* Desktop: Horizontal layout (Canvas + resize + right sidebar) */}
+      <div className="hidden lg:flex flex-1 min-w-0 h-full">
+        {/* Canvas */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <Canvas {...canvasProps} isThread={false} />
+        </div>
+
+        {/* Resize handle */}
+        <div
+          className="flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            setIsResizing(true);
+          }}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+        >
+          <div className="w-px bg-border" />
+          <div className="flex-1 hover:bg-muted/60 transition-colors" />
+        </div>
+
+        {/* Right Sidebar */}
+        <div
+          className="h-full min-w-0 overflow-hidden border-l border-border"
+          style={{ width: sidebarWidth }}
+        >
+          <RightSidebar {...rightSidebarProps} />
+        </div>
+      </div>
+
+      {/* Mobile: Full screen overlay for thread/annotation */}
+      {showMobileOverlay && (
+        <div className="fixed inset-0 z-50 lg:hidden bg-card">
+          <RightSidebar {...rightSidebarProps} />
+        </div>
+      )}
     </div>
   );
 }

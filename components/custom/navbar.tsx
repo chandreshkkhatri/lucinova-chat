@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { auth, signOut } from "@/app/(auth)/auth";
 
-import { History } from "./history";
 import { MobileMenuButton } from "./mobile-menu-button";
+import { MobileSidebarContent } from "./mobile-sidebar-content";
 import { NavbarLogo } from "./navbar-logo";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
@@ -24,7 +24,7 @@ export const Navbar = async () => {
           {/* Mobile menu button - only show when user is logged in */}
           {session && (
             <MobileMenuButton>
-              <History user={session.user} inSheet={true} />
+              <MobileSidebarContent user={session.user} />
             </MobileMenuButton>
           )}
 
