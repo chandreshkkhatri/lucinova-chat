@@ -43,55 +43,32 @@ export function CanvasNodeComponent({
 }: CanvasNodeProps) {
   const { threadCount } = useThreadCount(message.id, chatId);
 
-  if (node.type === "mermaid") {
+  // Render node content based on type
+  const renderNodeContent = () => {
+    if (node.type === "mermaid") {
+      return <MermaidRenderer content={node.content} />;
+    }
+    if (node.type === "code") {
+      return <CodeBlock code={node.content} language={node.language} />;
+    }
+    // Default: text node
     return (
-      <div className="group relative">
-        <div className={`flex gap-2 p-2 sm:p-3 ${node.role === "user" ? "justify-end" : ""}`}>
-          {node.role === "assistant" && (
-            <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-transparent p-0.5">
-                <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={28} height={28} quality={90} className="size-full object-contain" />
-              </AvatarFallback>
-            </Avatar>
-          )}
-          <div className={`flex-1 ${isThread ? "max-w-[90%] sm:max-w-[85%]" : "max-w-[90%] sm:max-w-[85%] md:max-w-2xl"} ${node.role === "user" ? "text-right" : ""}`}>
-            <MermaidRenderer content={node.content} />
+      <div className={`inline-block ${node.role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2" : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"}`}>
+        <div className="flex items-start gap-2">
+          <div className="flex-1 break-words">
+            <EnhancedMessage
+              message={message}
+              chatId={chatId}
+              annotations={annotations}
+              onAskLucinova={(selectedText) => onAskLucinova?.(message.id, selectedText)}
+              onOpenAnnotation={onOpenAnnotation}
+            />
           </div>
-          {node.role === "user" && (
-            <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">U</AvatarFallback>
-            </Avatar>
-          )}
         </div>
       </div>
     );
-  }
+  };
 
-  if (node.type === "code") {
-    return (
-      <div className="group relative">
-        <div className={`flex gap-2 p-2 sm:p-3 ${node.role === "user" ? "justify-end" : ""}`}>
-          {node.role === "assistant" && (
-            <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-transparent p-0.5">
-                <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={28} height={28} quality={90} className="size-full object-contain" />
-              </AvatarFallback>
-            </Avatar>
-          )}
-          <div className={`flex-1 ${isThread ? "max-w-[90%] sm:max-w-[85%]" : "max-w-[90%] sm:max-w-[85%] md:max-w-2xl"} ${node.role === "user" ? "text-right" : ""}`}>
-            <CodeBlock code={node.content} language={node.language} />
-          </div>
-          {node.role === "user" && (
-            <Avatar className="size-8 shrink-0">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">U</AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Default: text node — use existing EnhancedMessage rendering
   return (
     <div className="group relative">
       <div className={`flex gap-2 p-2 sm:p-3 ${node.role === "user" ? "justify-end" : ""}`}>
@@ -104,21 +81,9 @@ export function CanvasNodeComponent({
         )}
 
         <div className={`flex-1 ${isThread ? "max-w-[90%] sm:max-w-[85%]" : "max-w-[90%] sm:max-w-[85%] md:max-w-2xl"} ${node.role === "user" ? "text-right" : ""}`}>
-          <div className={`inline-block ${node.role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2" : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"}`}>
-            <div className="flex items-start gap-2">
-              <div className="flex-1 break-words">
-                <EnhancedMessage
-                  message={message}
-                  chatId={chatId}
-                  annotations={annotations}
-                  onAskLucinova={(selectedText) => onAskLucinova?.(message.id, selectedText)}
-                  onOpenAnnotation={onOpenAnnotation}
-                />
-              </div>
-            </div>
-          </div>
+          {renderNodeContent()}
 
-          {/* Actions */}
+          {/* Actions — shared across all node types */}
           {showActions && !isThread && node.role === "assistant" && (
             <div className="flex items-center gap-1 mt-2 opacity-100 transition-opacity duration-200">
               {threadCount > 0 && (

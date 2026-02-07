@@ -31,20 +31,12 @@ export function PendingAnnotationView({
 
     setIsCreating(true);
     try {
-      const res = await fetch("/api/annotations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messageId,
-          chatId,
-          selectedText,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to create annotation");
-
-      const { annotation } = await res.json();
-      onAnnotationCreated(annotation.id, selectedText);
+      const annotationId = await onCreateAnnotation(input.trim());
+      if (annotationId) {
+        onAnnotationCreated(annotationId, selectedText);
+      } else {
+        setIsCreating(false);
+      }
     } catch (error) {
       console.error("Failed to create annotation:", error);
       setIsCreating(false);
@@ -64,7 +56,7 @@ export function PendingAnnotationView({
             <p className="text-xs text-muted-foreground">New annotation</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted text-muted-foreground">
+        <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted text-muted-foreground" aria-label="Close">
           ×
         </button>
       </div>

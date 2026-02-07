@@ -12,6 +12,8 @@ import useSWR from "swr";
 import { IChat } from "@/db/models";
 import { fetcher } from "@/lib/utils";
 
+type ChatListItem = IChat & { id: string };
+
 import {
   InfoIcon,
   MoreHorizontalIcon,
@@ -49,7 +51,7 @@ export const HistoryPanel = ({
     data: history,
     isLoading,
     mutate,
-  } = useSWR<Array<IChat>>(user ? "/api/history" : null, fetcher, {
+  } = useSWR<Array<ChatListItem>>(user ? "/api/history" : null, fetcher, {
     fallbackData: [],
   });
 
@@ -63,8 +65,8 @@ export const HistoryPanel = ({
   const [editingTitle, setEditingTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleEditClick = (chat: IChat) => {
-    setEditingChatId((chat as any)._id.toString());
+  const handleEditClick = (chat: ChatListItem) => {
+    setEditingChatId(chat.id);
     setEditingTitle(chat.title || "");
   };
 
@@ -83,10 +85,10 @@ export const HistoryPanel = ({
     mutate(
       (history) =>
         history?.map((c) =>
-          (c as any)._id.toString() === editingChatId
+          c.id === editingChatId
             ? { ...c, title: editingTitle }
             : c,
-        ) as IChat[],
+        ) as ChatListItem[],
       false,
     );
 
@@ -116,7 +118,7 @@ export const HistoryPanel = ({
         mutate((history) => {
           if (history) {
             return history.filter(
-              (h) => (h as any)._id.toString() !== deleteId,
+              (h) => h.id !== deleteId,
             );
           }
         });
@@ -190,16 +192,16 @@ export const HistoryPanel = ({
             {history &&
               history.map((chat) => (
                 <div
-                  key={(chat as any)._id.toString()}
+                  key={chat.id}
                   className={cx(
                     "group flex items-center justify-between p-3 rounded-lg hover:bg-card transition-colors",
                     {
                       "bg-card shadow-sm":
-                        (chat as any)._id.toString() === id,
+                        chat.id === id,
                     },
                   )}
                 >
-                  {editingChatId === (chat as any)._id.toString() ? (
+                  {editingChatId === chat.id ? (
                     <Input
                       ref={inputRef}
                       value={editingTitle}
@@ -218,7 +220,7 @@ export const HistoryPanel = ({
                         asChild
                       >
                         <Link
-                          href={`/chat/${(chat as any)._id.toString()}`}
+                          href={`/chat/${chat.id}`}
                           className="block truncate"
                           title={chat.title || "Untitled Chat"}
                         >
@@ -256,7 +258,7 @@ export const HistoryPanel = ({
                           className="flex items-center gap-2 w-full justify-start font-normal"
                           variant="ghost"
                           onClick={() => {
-                            setDeleteId((chat as any)._id.toString());
+                            setDeleteId(chat.id);
                             setShowDeleteDialog(true);
                           }}
                         >

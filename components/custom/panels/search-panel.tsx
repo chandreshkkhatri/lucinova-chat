@@ -11,6 +11,8 @@ import { Search } from "lucide-react";
 import { IChat } from "@/db/models";
 import { fetcher } from "@/lib/utils";
 
+type ChatListItem = IChat & { id: string };
+
 import { InfoIcon } from "../icons";
 import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
@@ -23,7 +25,7 @@ export const SearchPanel = ({
   const { id } = useParams();
   const [query, setQuery] = useState("");
 
-  const { data: history } = useSWR<Array<IChat>>(
+  const { data: history } = useSWR<Array<ChatListItem>>(
     user ? "/api/history" : null,
     fetcher,
     { fallbackData: [] },
@@ -76,12 +78,12 @@ export const SearchPanel = ({
           <div className="space-y-1">
             {filteredChats.map((chat) => (
               <div
-                key={(chat as any)._id.toString()}
+                key={chat.id}
                 className={cx(
                   "flex items-center p-3 rounded-lg hover:bg-card transition-colors",
                   {
                     "bg-card shadow-sm":
-                      (chat as any)._id.toString() === id,
+                      chat.id === id,
                   },
                 )}
               >
@@ -91,7 +93,7 @@ export const SearchPanel = ({
                   asChild
                 >
                   <Link
-                    href={`/chat/${(chat as any)._id.toString()}`}
+                    href={`/chat/${chat.id}`}
                     className="block truncate"
                     title={chat.title || "Untitled Chat"}
                   >

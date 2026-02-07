@@ -277,6 +277,7 @@ export function Chat({
           messageId: pendingAnnotation.messageId,
           chatId: id,
           selectedText: pendingAnnotation.selectedText,
+          firstMessage,
         }),
       });
 
