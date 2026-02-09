@@ -35,8 +35,10 @@ export default function Page() {
       toast.error("You must accept the Terms & Conditions to register");
     } else if (state.status === "success") {
       toast.success("Account created successfully");
-      trackSignUpConversion();
-      router.refresh();
+      // Await tracking beacon before navigating to avoid losing the event
+      trackSignUpConversion("email").then(() => {
+        router.refresh();
+      });
     }
   }, [state, router]);
 
