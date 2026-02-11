@@ -52,7 +52,7 @@ export const HistoryPanel = ({
 }) => {
   const { id } = useParams();
   const pathname = usePathname();
-  const { selectedProjectId, setSelectedProjectId } = useSidebar();
+  const { selectedProjectId, setSelectedProjectId, togglePanel } = useSidebar();
 
   const {
     data: history,
@@ -175,7 +175,10 @@ export const HistoryPanel = ({
           {selectedProject ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setSelectedProjectId(null)}
+                onClick={() => {
+                  setSelectedProjectId(null);
+                  togglePanel("projects");
+                }}
                 className="p-1 rounded hover:bg-accent text-muted-foreground"
               >
                 <ArrowLeft className="h-4 w-4" />

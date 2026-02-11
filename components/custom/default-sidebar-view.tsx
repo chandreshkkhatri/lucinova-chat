@@ -90,60 +90,80 @@ export function DefaultSidebarView({
           <Select value={selectedModel} onValueChange={setSelectedModel}>
             <SelectTrigger className="w-full h-9 bg-muted/50 border-border text-sm">
               <div className="flex items-center gap-2">
-                <Sparkles className="size-3.5 text-primary" />
+                <Sparkles className="size-3.5 text-primary shrink-0" />
                 <SelectValue placeholder="Select a model" />
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Info className="size-3 text-muted-foreground shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Powered by {appConfig.getGeminiName(selectedModel)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="gemini-3.0-flash" className="hover:bg-muted">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-flash")}</span>
+              <SelectItem
+                value="gemini-3.0-flash"
+                className="hover:bg-muted"
+                suffix={
                   <TooltipProvider delayDuration={300}>
                     <Tooltip>
                       <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Info className="size-3 text-muted-foreground" />
+                        <Info className="size-3 text-muted-foreground ml-2 shrink-0" />
                       </TooltipTrigger>
                       <TooltipContent side="right">
                         <p>Powered by {appConfig.getGeminiName("gemini-3.0-flash")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </div>
+                }
+              >
+                <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-flash")}</span>
               </SelectItem>
-              <SelectItem value="gemini-2.5-flash" className="hover:bg-muted">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
+              <SelectItem
+                value="gemini-2.5-flash"
+                className="hover:bg-muted"
+                suffix={
                   <TooltipProvider delayDuration={300}>
                     <Tooltip>
                       <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Info className="size-3 text-muted-foreground" />
+                        <Info className="size-3 text-muted-foreground ml-2 shrink-0" />
                       </TooltipTrigger>
                       <TooltipContent side="right">
                         <p>Powered by {appConfig.getGeminiName("gemini-2.5-flash")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </div>
+                }
+              >
+                <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
               </SelectItem>
               <SelectItem
                 value="gemini-3.0-pro"
                 className={isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"}
                 disabled={!isUserPro}
+                suffix={
+                  <span className="pointer-events-auto flex items-center gap-1.5 ml-2">
+                    {!isUserPro && <span className="text-xs text-muted-foreground">Pro</span>}
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Info className="size-3 text-muted-foreground shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>Powered by {appConfig.getGeminiName("gemini-3.0-pro")}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </span>
+                }
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-pro")}</span>
                   <Crown className="size-3 text-yellow-500" />
-                  {!isUserPro && <span className="text-xs text-muted-foreground ml-1">Pro</span>}
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Info className="size-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Powered by {appConfig.getGeminiName("gemini-3.0-pro")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
               </SelectItem>
             </SelectContent>
