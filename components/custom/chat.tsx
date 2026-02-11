@@ -12,6 +12,7 @@ import type { NodeType } from "@/lib/message-to-nodes";
 import { Canvas } from "./canvas";
 import type { SavedAnnotation } from "./enhanced-message";
 import { RightSidebar } from "./right-sidebar";
+import { useSidebar } from "./sidebar-context";
 import { Attachment } from "./types";
 
 import type { FileUIPart } from "ai";
@@ -54,6 +55,7 @@ export function Chat({
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
+  const { selectedProjectId } = useSidebar();
 
   // Model selection state
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
@@ -176,6 +178,7 @@ export function Chat({
         body: {
           id: chatIdForSubmit,
           modelId: selectedModel,
+          ...(selectedProjectId && { projectId: selectedProjectId }),
           ...(isThread && { parentMessageId, mainChatId, selectedText }),
         },
       }
