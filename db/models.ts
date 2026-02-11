@@ -33,6 +33,10 @@ export interface IUser extends Document {
       benefitUsedMonths?: number; // Track discount usage (0-3)
     };
   }>;
+  // Referral fields
+  referralCode?: string;
+  referredBy?: string;
+  referralCount?: number;
   // Password reset fields
   resetToken?: string;
   resetTokenExpiry?: Date;
@@ -81,6 +85,9 @@ const userSchema = new Schema<IUser>(
         },
       },
     ],
+    referralCode: { type: String, unique: true, sparse: true },
+    referredBy: { type: String },
+    referralCount: { type: Number, default: 0 },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
     termsAcceptedAt: { type: Date },

@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 import { z } from "zod";
 
 import { createUser, getUserByEmail } from "@/db/queries";
+import { getUserByReferralCode, processReferral } from "@/lib/referral";
 
 import { signIn } from "./auth";
 
@@ -15,6 +16,7 @@ const authFormSchema = z.object({
 
 const registerFormSchema = authFormSchema.extend({
   acceptTerms: z.literal("true"),
+  referralCode: z.string().optional(),
 });
 
 export interface LoginActionState {
@@ -76,6 +78,7 @@ export const register = async (
       email: formData.get("email"),
       password: formData.get("password"),
       acceptTerms: formData.get("acceptTerms"),
+      referralCode: formData.get("referralCode") || undefined,
     });
 
     const existing = await getUserByEmail(validatedData.email);
@@ -95,6 +98,18 @@ export const register = async (
       undefined, // oauthProviderId
       new Date() // termsAcceptedAt
     );
+
+    // Process referral if a valid referral code was provided
+    if (validatedData.referralCode) {
+      try {
+        const referrer = await getUserByReferralCode(validatedData.referralCode);
+        if (referrer?.email) {
+          await processReferral(referrer.email, validatedData.email);
+        }
+      } catch (err) {
+        console.error("[Register] Referral processing error:", err);
+      }
+    }
 
     await signIn("credentials", {
       email: validatedData.email,

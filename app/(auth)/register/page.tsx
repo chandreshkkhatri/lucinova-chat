@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useActionState, useEffect, useState, Suspense } from "react";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 
@@ -13,8 +13,10 @@ import { trackSignUpConversion } from "@/lib/gtag";
 
 import { register, RegisterActionState } from "../actions";
 
-export default function Page() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref") || "";
 
   const [email, setEmail] = useState("");
   const [state, formAction] = useActionState<RegisterActionState, FormData>(
@@ -44,16 +46,24 @@ export default function Page() {
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get("email") as string);
+    // Inject referral code from URL into the form data
+    if (referralCode) {
+      formData.set("referralCode", referralCode);
+    }
     formAction(formData);
   };
 
   const handleGoogleSignIn = async () => {
     try {
+      // Set referral code cookie so the OAuth callback can read it
+      if (referralCode) {
+        document.cookie = `referral_code=${encodeURIComponent(referralCode)};path=/;max-age=600;SameSite=Lax`;
+      }
       const result = await signIn("google", {
         callbackUrl: "/",
         redirect: true,
       });
-      
+
       // If signIn returns an error, it means OAuth is not configured
       if (result?.error) {
         toast.error("Google OAuth is not configured. Please check your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.");
@@ -73,6 +83,13 @@ export default function Page() {
       </div>
 
       <div className="relative w-full max-w-md mx-4 overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-border shadow-2xl">
+        {referralCode && (
+          <div className="bg-primary/10 border-b border-primary/20 px-6 py-3 text-center">
+            <p className="text-sm text-primary font-medium">
+              You were referred by a friend! You&apos;ll get 50% off your first Pro month.
+            </p>
+          </div>
+        )}
         <div className="p-6">
           <div className="flex flex-col items-center justify-center gap-4 text-center">
             {/* Logo and branding */}
@@ -166,5 +183,17 @@ export default function Page() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }
