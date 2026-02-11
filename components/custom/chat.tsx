@@ -198,6 +198,7 @@ export function Chat({
   const [activeAnnotation, setActiveAnnotation] = useState<{
     id: string;
     selectedText: string;
+    initialMessage?: string;
   } | null>(null);
 
   // Pending annotation (before first message is sent)
@@ -290,6 +291,7 @@ export function Chat({
       setActiveAnnotation({
         id: annotation.id,
         selectedText: annotation.selectedText,
+        initialMessage: firstMessage,
       });
       setPendingAnnotation(null);
 

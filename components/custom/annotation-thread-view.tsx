@@ -15,6 +15,7 @@ import { MultimodalInput } from "./multimodal-input";
 interface AnnotationThreadViewProps {
   annotationId: string;
   selectedText: string;
+  initialMessage?: string;
   chatId: string;
   onClose: () => void;
   onDelete?: () => void;
@@ -25,6 +26,7 @@ interface AnnotationThreadViewProps {
 export function AnnotationThreadView({
   annotationId,
   selectedText,
+  initialMessage,
   chatId,
   onClose,
   onDelete,
@@ -34,6 +36,7 @@ export function AnnotationThreadView({
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initialMessageSentRef = useRef(false);
 
   const [input, setInput] = useState("");
 
@@ -64,6 +67,14 @@ export function AnnotationThreadView({
     }
     loadMessages();
   }, [annotationId, setMessages]);
+
+  // Auto-send the initial message (from PendingAnnotationView) on first load
+  useEffect(() => {
+    if (!isLoading && initialMessage && !initialMessageSentRef.current) {
+      initialMessageSentRef.current = true;
+      sendMessage({ text: initialMessage }, { body: { modelId } });
+    }
+  }, [isLoading, initialMessage, sendMessage, modelId]);
 
   const isChatLoading = status === "submitted" || status === "streaming";
 
