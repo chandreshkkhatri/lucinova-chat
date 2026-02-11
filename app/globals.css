@@ -59,6 +59,22 @@
     animation-delay: 0.4s;
   }
 
+  /* Canvas empty state animations */
+  @keyframes canvas-float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes canvas-fade-in-up {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes canvas-draw-line {
+    0% { stroke-dashoffset: 200; }
+    100% { stroke-dashoffset: 0; }
+  }
+
   /* Modern Paper Background with Education Doodles */
   .bg-paper {
     background-color: #fdf8f3; /* Warm cream matching peach theme */
@@ -162,5 +178,12 @@
     font-style: normal;
     font-weight: 100 900;
     src: url(/fonts/geist-mono.woff2) format("woff2");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

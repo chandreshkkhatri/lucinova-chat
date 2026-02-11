@@ -85,7 +85,7 @@ export function Chat({
     setIsMounted(true);
   }, []);
 
-  const { messages, sendMessage, status, stop, setMessages } = useChat({
+  const { messages, sendMessage, status, stop, setMessages, regenerate } = useChat({
     id: chatIdForSubmit,
     transport: new TextStreamChatTransport({
       api: isThread ? "/api/thread" : "/api/chat",
@@ -309,6 +309,30 @@ export function Chat({
     [mutateAnnotations]
   );
 
+  // Edit last user message and regenerate
+  const handleEditMessage = useCallback(
+    (messageId: string, newText: string) => {
+      const msgIndex = messages.findIndex((m) => m.id === messageId);
+      if (msgIndex === -1) return;
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[msgIndex] = {
+          ...updated[msgIndex],
+          parts: [{ type: "text" as const, text: newText }],
+        };
+        return updated.slice(0, msgIndex + 1);
+      });
+
+      regenerate();
+    },
+    [messages, setMessages, regenerate]
+  );
+
+  const handleRegenerate = useCallback(() => {
+    regenerate();
+  }, [regenerate]);
+
   // Desktop sidebar resize effect
   useEffect(() => {
     if (isThread) return;
@@ -433,6 +457,8 @@ export function Chat({
     sendMessage,
     isGuest,
     usageLimitInfo,
+    onEditMessage: handleEditMessage,
+    onRegenerate: handleRegenerate,
   };
 
   // For threads, render compact layout with Canvas + inline input (no right sidebar)

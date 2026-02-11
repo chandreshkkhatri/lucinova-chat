@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { Sparkles, Reply } from "lucide-react";
+import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
 import Image from "next/image";
 import { useMemo, Dispatch, SetStateAction } from "react";
 
@@ -12,6 +12,7 @@ import { messagesToNodes } from "@/lib/message-to-nodes";
 import { CanvasNodeComponent } from "./canvas-node";
 import { MultimodalInput } from "./multimodal-input";
 import { UsageLimitBanner } from "./usage-limit-banner";
+
 import type { SavedAnnotation } from "./enhanced-message";
 import type { Attachment } from "./types";
 
@@ -41,6 +42,8 @@ interface CanvasProps {
     limit: number;
     periodEnd: Date | string;
   } | null;
+  onEditMessage?: (messageId: string, newText: string) => void;
+  onRegenerate?: () => void;
 }
 
 export function Canvas({
@@ -62,9 +65,21 @@ export function Canvas({
   sendMessage,
   isGuest,
   usageLimitInfo,
+  onEditMessage,
+  onRegenerate,
 }: CanvasProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
+
+  // Find last user/assistant messages for edit/regenerate actions
+  const lastUserMessageId = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "user")?.id,
+    [messages]
+  );
+  const lastAssistantMessageId = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
+    [messages]
+  );
 
   // Convert messages to canvas nodes
   const nodes = useMemo(() => messagesToNodes(messages), [messages]);
@@ -111,32 +126,111 @@ export function Canvas({
                   <h3 className="text-lg font-semibold text-foreground mb-2">Thread Discussion</h3>
                   <p className="text-muted-foreground mb-6 text-sm">Continue the conversation about the parent message.</p>
                 </>
-              ) : (
-                <>
-                  <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
-                    <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={64} height={64} className="size-full object-contain" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Lucidity</h2>
-                  <p className="text-muted-foreground mb-6">Think in threads, learn in layers.</p>
-                  <div className="flex flex-col gap-2 mb-4">
-                    {[
-                      { label: "Explain a complex concept simply", value: "Explain a complex concept to me" },
-                      { label: "Create a personalized study plan", value: "Help me create a study plan for a new subject" },
-                      { label: "Summarize and extract key points", value: "Summarize this text and extract key learning points" },
-                    ].map((suggestion) => (
-                      <button key={suggestion.value} onClick={() => setInput(suggestion.value)} className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors">
-                        <p className="text-sm text-foreground/80">{suggestion.label}</p>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="text-xs text-muted-foreground hidden lg:block">
-                    Start a conversation in the sidebar
-                  </div>
-                  <div className="text-xs text-muted-foreground lg:hidden">
-                    Type your message below to start
-                  </div>
-                </>
-              )}
+              ) : null}
+            </div>
+          </div>
+        ) : messages.length === 0 && !isThread ? (
+          <div className="relative flex items-center justify-center h-full p-8 overflow-hidden">
+            {/* Layer 0: Dot placement hints */}
+            <div className="absolute inset-0 pointer-events-none hidden md:block" aria-hidden="true">
+              {[
+                { top: "12%", left: "15%" },
+                { top: "22%", right: "18%" },
+                { bottom: "28%", left: "22%" },
+                { bottom: "15%", right: "12%" },
+                { top: "45%", left: "8%" },
+                { top: "35%", right: "8%" },
+              ].map((pos, i) => (
+                <div
+                  key={i}
+                  className="absolute size-2 rounded-full bg-primary/15 dark:bg-primary/10"
+                  style={{
+                    ...pos,
+                    animation: `canvas-fade-in-up 600ms ease-out ${800 + i * 100}ms forwards`,
+                    opacity: 0,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Layer 1: Floating pin cards + connector lines */}
+            <div className="absolute inset-0 pointer-events-none hidden md:block" aria-hidden="true">
+              {[
+                { label: "Ideas", icon: <Sparkles className="size-4" />, position: { top: "14%", left: "12%" }, rotation: "-3deg", floatDuration: "6s", animDelay: "0s" },
+                { label: "Threads", icon: <Reply className="size-4" />, position: { top: "18%", right: "14%" }, rotation: "2deg", floatDuration: "7s", animDelay: "1.5s" },
+                { label: "Notes", icon: <MessageSquare className="size-4" />, position: { bottom: "22%", left: "16%" }, rotation: "2.5deg", floatDuration: "8s", animDelay: "0.8s" },
+                { label: "Code", icon: <FileCode className="size-4" />, position: { bottom: "16%", right: "10%" }, rotation: "-2deg", floatDuration: "6.5s", animDelay: "2s" },
+              ].map((card, i) => (
+                <div
+                  key={card.label}
+                  className="absolute flex items-center gap-2 px-3 py-2 rounded-lg border border-border/60 bg-card/80 dark:bg-card/60 backdrop-blur-sm shadow-sm text-muted-foreground"
+                  style={{
+                    ...card.position,
+                    transform: `rotate(${card.rotation})`,
+                    animation: `canvas-fade-in-up 600ms ease-out ${200 + i * 150}ms forwards, canvas-float ${card.floatDuration} ease-in-out ${card.animDelay} infinite`,
+                    opacity: 0,
+                  }}
+                >
+                  {card.icon}
+                  <span className="text-xs font-medium">{card.label}</span>
+                </div>
+              ))}
+
+              {/* Dashed connector lines */}
+              <svg className="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none">
+                <path
+                  d="M 18 20 Q 35 35 50 50"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="0.15"
+                  strokeDasharray="2 2"
+                  strokeLinecap="round"
+                  opacity="0.25"
+                  style={{ strokeDashoffset: 200, animation: "canvas-draw-line 800ms ease-in-out 1s forwards" }}
+                />
+                <path
+                  d="M 82 22 Q 70 40 55 48"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="0.15"
+                  strokeDasharray="2 2"
+                  strokeLinecap="round"
+                  opacity="0.2"
+                  style={{ strokeDashoffset: 200, animation: "canvas-draw-line 800ms ease-in-out 1.3s forwards" }}
+                />
+              </svg>
+            </div>
+
+            {/* Layer 2: Center content */}
+            <div
+              className="relative z-20 text-center max-w-md"
+              style={{ animation: "canvas-fade-in-up 600ms ease-out 100ms forwards", opacity: 0 }}
+            >
+              <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
+                <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={64} height={64} className="size-full object-contain" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Lucidity Canvas</h2>
+              <p className="text-muted-foreground mb-6">Your thinking space. Ask questions, explore ideas, branch into threads.</p>
+              <div className="flex flex-col gap-2 mb-4">
+                {[
+                  { label: "Explain a complex concept simply", value: "Explain a complex concept to me" },
+                  { label: "Create a personalized study plan", value: "Help me create a study plan for a new subject" },
+                  { label: "Summarize and extract key points", value: "Summarize this text and extract key learning points" },
+                ].map((suggestion, i) => (
+                  <button
+                    key={suggestion.value}
+                    onClick={() => setInput(suggestion.value)}
+                    className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
+                    style={{ animation: `canvas-fade-in-up 500ms ease-out ${400 + i * 100}ms forwards`, opacity: 0 }}
+                  >
+                    <p className="text-sm text-foreground/80">{suggestion.label}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-muted-foreground hidden lg:block">
+                Start a conversation in the sidebar →
+              </div>
+              <div className="text-xs text-muted-foreground lg:hidden">
+                Type your message below to start
+              </div>
             </div>
           </div>
         ) : (
@@ -156,6 +250,10 @@ export function Canvas({
                   onStartThread={onStartThread}
                   isThread={isThread}
                   showActions={!isThread}
+                  onEditMessage={onEditMessage}
+                  onRegenerate={onRegenerate}
+                  isLastUserMessage={message.role === "user" && message.id === lastUserMessageId}
+                  isLastAssistantMessage={message.role === "assistant" && message.id === lastAssistantMessageId}
                 />
               );
             })}

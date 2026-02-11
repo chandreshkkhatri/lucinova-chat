@@ -152,7 +152,7 @@ export function EnhancedMessage({
     <div className="relative group">
       <div
         ref={containerRef}
-        className="message-content relative z-10 max-w-full break-words whitespace-pre-wrap"
+        className="message-content relative z-10 max-w-full break-words prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
       >
         <Markdown>{content}</Markdown>
 
