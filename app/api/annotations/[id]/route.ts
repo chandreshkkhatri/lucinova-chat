@@ -39,7 +39,7 @@ export async function GET(
     messages: messages.map((m: any) => ({
       id: m._id.toString(),
       role: m.senderId.toString() === (annotation as any).userId?.toString() ? "user" : "assistant",
-      content: m.body,
+      parts: [{ type: "text", text: m.body }],
       createdAt: m.createdAt,
     })),
     messageCount,

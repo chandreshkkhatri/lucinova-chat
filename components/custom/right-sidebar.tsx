@@ -228,6 +228,7 @@ export function RightSidebar({
       {hasThread && (
         <TabsContent value="thread" className="flex-1 mt-0 overflow-hidden">
           <ThreadView
+            key={activeThread!.parentMessage.id}
             parentMessage={activeThread!.parentMessage}
             selectedText={activeThread!.selectedText}
             mainChatId={chatId}
@@ -242,6 +243,7 @@ export function RightSidebar({
         <TabsContent value="annotation" className="flex-1 mt-0 overflow-hidden">
           {activeAnnotation ? (
             <AnnotationThreadView
+              key={activeAnnotation.id}
               annotationId={activeAnnotation.id}
               selectedText={activeAnnotation.selectedText}
               initialMessage={activeAnnotation.initialMessage}

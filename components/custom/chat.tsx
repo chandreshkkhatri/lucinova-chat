@@ -5,7 +5,7 @@ import { TextStreamChatTransport, UIMessage } from "ai";
 import { ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 
 import type { NodeType } from "@/lib/message-to-nodes";
 
@@ -95,6 +95,11 @@ export function Chat({
       const url = `/chat/${chatIdForSubmit}`;
       window.history.replaceState({}, "", url);
       onFinish?.();
+
+      // Revalidate history cache to pick up server-generated title
+      setTimeout(() => {
+        globalMutate("/api/history");
+      }, 3000);
     },
     onError: (error) => {
       console.error("Chat error:", error);
