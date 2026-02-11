@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Settings } from "lucide-react";
+import { FolderKanban, Search, Settings } from "lucide-react";
 import cx from "classnames";
 
 import { MessageIcon, PencilEditIcon } from "./icons";
@@ -21,6 +21,7 @@ interface ActivityBarItem {
 
 const activityBarItems: ActivityBarItem[] = [
   { id: "history", icon: <MessageIcon size={20} />, label: "Chat History" },
+  { id: "projects", icon: <FolderKanban className="h-5 w-5" />, label: "Projects" },
   { id: "search", icon: <Search className="h-5 w-5" />, label: "Search" },
   { id: "settings", icon: <Settings className="h-5 w-5" />, label: "Settings" },
 ];

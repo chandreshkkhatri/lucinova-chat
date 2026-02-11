@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureConnection } from "./connection";
-import { User, Chat, Message, Payment, Annotation, Usage } from "./models";
+import { User, Chat, Message, Payment, Annotation, Usage, Project } from "./models";
 
 // Re-export types for external use
 export { Chat } from "./models";
@@ -653,4 +653,78 @@ export async function getUsageHistory(userId: string, limit = 12) {
   await ensureConnection();
 
   return Usage.find({ userId }).sort({ periodStart: -1 }).limit(limit).lean();
+}
+
+// Project functions
+export async function createProject(
+  userId: string,
+  name: string,
+  color?: string
+) {
+  await ensureConnection();
+  const project = await Project.create({ userId, name, color });
+  return { ...project.toObject(), id: project._id.toString() };
+}
+
+export async function getProjectsByUserId(userId: string) {
+  await ensureConnection();
+  const projects = await Project.find({ userId })
+    .sort({ createdAt: -1 })
+    .lean();
+  return projects.map((p: any) => ({ ...p, id: p._id.toString() }));
+}
+
+export async function getProjectById(projectId: string) {
+  await ensureConnection();
+  const project = await Project.findById(projectId).lean();
+  if (project && !Array.isArray(project)) {
+    return { ...project, id: (project as any)._id.toString() };
+  }
+  return project;
+}
+
+export async function updateProject(
+  projectId: string,
+  updates: { name?: string; color?: string }
+) {
+  await ensureConnection();
+  const project = await Project.findByIdAndUpdate(projectId, updates, {
+    new: true,
+  }).lean();
+  if (project && !Array.isArray(project)) {
+    return { ...project, id: (project as any)._id.toString() };
+  }
+  return project;
+}
+
+export async function deleteProject(projectId: string) {
+  await ensureConnection();
+  // Unlink all chats from this project
+  await Chat.updateMany(
+    { projectId },
+    { $set: { projectId: null } }
+  );
+  return await Project.findByIdAndDelete(projectId);
+}
+
+export async function updateChatProject(
+  chatId: string,
+  projectId: string | null
+) {
+  await ensureConnection();
+  const chat = await Chat.findByIdAndUpdate(
+    chatId,
+    { projectId },
+    { new: true }
+  ).lean();
+  if (!chat || Array.isArray(chat)) return null;
+  return { ...chat, id: (chat as any)._id.toString() };
+}
+
+export async function getChatsByProject(userId: string, projectId: string) {
+  await ensureConnection();
+  const chats = await Chat.find({ userId, projectId })
+    .sort({ lastMsgAt: -1 })
+    .lean();
+  return chats.map((chat: any) => ({ ...chat, id: chat._id.toString() }));
 }

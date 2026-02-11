@@ -1,5 +1,6 @@
 import { auth } from "@/app/(auth)/auth";
 import { ActivityBar } from "@/components/custom/activity-bar";
+import { CommandPalette } from "@/components/custom/command-palette";
 import { EnhancedChatUI } from "@/components/custom/enhanced-chat-ui";
 import { GoogleSignupTracker } from "@/components/custom/google-signup-tracker";
 import { SidebarProvider } from "@/components/custom/sidebar-context";
@@ -31,6 +32,7 @@ export default async function ChatLayout({
   return (
     <EnhancedChatUI>
       <SidebarProvider>
+        <CommandPalette />
         <div className="flex h-dvh pt-16">
           <ActivityBar />
           <SidebarPanel user={session?.user ? { ...(session.user as any) } : undefined} />

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { useSidebar } from "./sidebar-context";
 import { HistoryPanel } from "./panels/history-panel";
+import { ProjectsPanel } from "./panels/projects-panel";
 import { SearchPanel } from "./panels/search-panel";
 import { SettingsPanel } from "./panels/settings-panel";
 
@@ -33,6 +34,7 @@ export function SidebarPanel({ user }: { user: User | undefined }) {
                 className="h-full"
               >
                 {activePanel === "history" && <HistoryPanel user={user} />}
+                {activePanel === "projects" && <ProjectsPanel />}
                 {activePanel === "search" && <SearchPanel user={user} />}
                 {activePanel === "settings" && <SettingsPanel />}
               </motion.div>

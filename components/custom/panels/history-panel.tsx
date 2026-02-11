@@ -14,12 +14,15 @@ import { fetcher } from "@/lib/utils";
 
 type ChatListItem = IChat & { id: string };
 
+import { ArrowLeft, FolderKanban } from "lucide-react";
+
 import {
   InfoIcon,
   MoreHorizontalIcon,
   PencilEditIcon,
   TrashIcon,
 } from "../icons";
+import { useSidebar } from "../sidebar-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +38,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
 import { Input } from "../../ui/input";
@@ -46,6 +52,7 @@ export const HistoryPanel = ({
 }) => {
   const { id } = useParams();
   const pathname = usePathname();
+  const { selectedProjectId, setSelectedProjectId } = useSidebar();
 
   const {
     data: history,
@@ -55,9 +62,38 @@ export const HistoryPanel = ({
     fallbackData: [],
   });
 
+  // Fetch projects for grouping and the "Move to Project" submenu
+  const { data: projects } = useSWR(
+    user ? "/api/projects" : null,
+    fetcher
+  );
+
   useEffect(() => {
     mutate();
   }, [pathname, mutate]);
+
+  // Filter chats by project if a project is selected
+  const filteredHistory = selectedProjectId
+    ? history?.filter((chat: any) => chat.projectId === selectedProjectId)
+    : history;
+
+  const selectedProject = selectedProjectId
+    ? projects?.find((p: any) => p.id === selectedProjectId)
+    : null;
+
+  const handleMoveToProject = async (chatId: string, projectId: string | null) => {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: chatId, projectId }),
+      });
+      if (!res.ok) throw new Error("Failed to move chat");
+      mutate();
+    } catch (error) {
+      console.error("Failed to move chat to project:", error);
+    }
+  };
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -136,14 +172,37 @@ export const HistoryPanel = ({
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">
-            Chats
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {history === undefined
-              ? "Loading chats..."
-              : `${history.length} conversations`}
-          </p>
+          {selectedProject ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedProjectId(null)}
+                className="p-1 rounded hover:bg-accent text-muted-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-foreground truncate">
+                  {selectedProject.name}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredHistory === undefined
+                    ? "Loading..."
+                    : `${filteredHistory.length} chats`}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="text-lg font-semibold text-foreground">
+                Chats
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {history === undefined
+                  ? "Loading chats..."
+                  : `${history.length} conversations`}
+              </p>
+            </>
+          )}
         </div>
 
         {/* New Chat Button */}
@@ -170,10 +229,12 @@ export const HistoryPanel = ({
             </div>
           ) : null}
 
-          {!isLoading && history?.length === 0 && user ? (
+          {!isLoading && filteredHistory?.length === 0 && user ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm text-center p-4">
               <InfoIcon size={32} />
-              <p className="mt-2">You have no saved chats.</p>
+              <p className="mt-2">
+                {selectedProjectId ? "No chats in this project." : "You have no saved chats."}
+              </p>
             </div>
           ) : null}
 
@@ -189,8 +250,8 @@ export const HistoryPanel = ({
           ) : null}
 
           <div className="space-y-1">
-            {history &&
-              history.map((chat) => (
+            {filteredHistory &&
+              filteredHistory.map((chat) => (
                 <div
                   key={chat.id}
                   className={cx(
@@ -253,6 +314,35 @@ export const HistoryPanel = ({
                           Edit
                         </Button>
                       </DropdownMenuItem>
+                      {projects && projects.length > 0 && (
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="flex items-center gap-2">
+                            <FolderKanban className="h-4 w-4" />
+                            Move to Project
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="z-[60]">
+                            <DropdownMenuItem
+                              onClick={() => handleMoveToProject(chat.id, null)}
+                            >
+                              None (Ungrouped)
+                            </DropdownMenuItem>
+                            {projects.map((project: any) => (
+                              <DropdownMenuItem
+                                key={project.id}
+                                onClick={() => handleMoveToProject(chat.id, project.id)}
+                              >
+                                {project.color && (
+                                  <span
+                                    className="inline-block w-2 h-2 rounded-full mr-2"
+                                    style={{ backgroundColor: project.color }}
+                                  />
+                                )}
+                                {project.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      )}
                       <DropdownMenuItem asChild>
                         <Button
                           className="flex items-center gap-2 w-full justify-start font-normal"

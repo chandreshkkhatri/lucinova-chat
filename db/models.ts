@@ -100,11 +100,35 @@ userSchema.index({ "badges.badgeId": 1 });
 export const User =
   mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 
+// Project schema - groups related chats into workspaces
+export interface IProject extends Document {
+  userId: mongoose.Types.ObjectId | string;
+  name: string;
+  color?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+const projectSchema = new Schema<IProject>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    name: { type: String, required: true },
+    color: { type: String },
+  },
+  { timestamps: true }
+);
+projectSchema.index({ userId: 1, createdAt: -1 });
+export const Project =
+  mongoose.models.Project || mongoose.model<IProject>("Project", projectSchema);
+
 // Chat schema (single chat per conversation)
 export interface IChat extends Document {
   userId: mongoose.Types.ObjectId | string;
   aiId: mongoose.Types.ObjectId | string;
   title?: string;
+  projectId?: mongoose.Types.ObjectId | string;
+  tags?: string[];
+  summary?: string;
+  category?: string;
   lastMsgAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -115,12 +139,17 @@ const chatSchema = new Schema<IChat>(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     aiId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     title: { type: String },
+    projectId: { type: Schema.Types.ObjectId, ref: "Project", default: null },
+    tags: [{ type: String }],
+    summary: { type: String },
+    category: { type: String },
     lastMsgAt: { type: Date, default: Date.now, required: true },
   },
   { timestamps: true }
 );
 chatSchema.index({ userId: 1, lastMsgAt: -1 });
 chatSchema.index({ lastMsgAt: -1 });
+chatSchema.index({ userId: 1, projectId: 1, lastMsgAt: -1 });
 export const Chat =
   mongoose.models.Chat || mongoose.model<IChat>("Chat", chatSchema);
 

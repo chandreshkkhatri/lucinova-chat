@@ -16,7 +16,9 @@ import {
   createUser,
   deleteChatById,
   getChatById,
+  getProjectById,
   getUserByEmail,
+  updateChatProject,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
 import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
@@ -392,6 +394,42 @@ export async function PUT(request: Request) {
   await Chat.findByIdAndUpdate(id, { title });
 
   return new Response("OK", { status: 200 });
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const user = await getUserByEmail(session.user.email);
+    if (!user) {
+      return new Response("User not found", { status: 401 });
+    }
+
+    const userId = (user as any)._id.toString();
+    const { id, projectId } = await request.json();
+
+    const chat = await getChatById({ id });
+    if (!chat || (chat as any).userId.toString() !== userId) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    // Verify user owns the target project
+    if (projectId) {
+      const project = await getProjectById(projectId);
+      if (!project || (project as any).userId.toString() !== userId) {
+        return new Response("Project not found", { status: 404 });
+      }
+    }
+
+    await updateChatProject(id, projectId || null);
+    return new Response("OK", { status: 200 });
+  } catch (error) {
+    console.error("[Chat] PATCH error:", error);
+    return new Response("Internal server error", { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
