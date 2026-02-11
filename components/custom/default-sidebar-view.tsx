@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { MessageSquare, Sparkles, FileCode, GitBranch, Crown } from "lucide-react";
+import { MessageSquare, Sparkles, FileCode, GitBranch, Crown, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction } from "react";
 
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
 import type { NodeType } from "@/lib/message-to-nodes";
 
@@ -94,25 +95,55 @@ export function DefaultSidebarView({
               </div>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem
-                value="gemini-3.0-flash"
-                className={isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"}
-                disabled={!isUserPro}
-              >
+              <SelectItem value="gemini-3.0-flash" className="hover:bg-muted">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-flash")}</span>
-                  <Crown className="size-3 text-yellow-500" />
-                  {!isUserPro && <span className="text-xs text-muted-foreground ml-1">Pro</span>}
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Info className="size-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Powered by {appConfig.getGeminiName("gemini-3.0-flash")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </SelectItem>
               <SelectItem value="gemini-2.5-flash" className="hover:bg-muted">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Info className="size-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Powered by {appConfig.getGeminiName("gemini-2.5-flash")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </SelectItem>
-              <SelectItem value="gemini-2.0-flash" className="hover:bg-muted">
+              <SelectItem
+                value="gemini-3.0-pro"
+                className={isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"}
+                disabled={!isUserPro}
+              >
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.0-flash")}</span>
+                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-pro")}</span>
+                  <Crown className="size-3 text-yellow-500" />
+                  {!isUserPro && <span className="text-xs text-muted-foreground ml-1">Pro</span>}
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Info className="size-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Powered by {appConfig.getGeminiName("gemini-3.0-pro")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </SelectItem>
             </SelectContent>

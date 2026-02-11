@@ -5,7 +5,6 @@
 
 // Pricing per million tokens (USD) - based on Gemini pricing
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  "gemini-2.0-flash": { input: 0.075, output: 0.3 },
   "gemini-2.5-flash": { input: 0.075, output: 0.3 },
   "gemini-2.5-pro": { input: 1.25, output: 10.0 },
   "gemini-3.0-flash": { input: 0.075, output: 0.3 },
@@ -34,7 +33,7 @@ export function calculateUnitsFromTokens(
   outputTokens: number
 ): number {
   // Default to flash pricing if model not found
-  const pricing = MODEL_PRICING[modelId] || MODEL_PRICING["gemini-2.5-flash"];
+  const pricing = MODEL_PRICING[modelId] || MODEL_PRICING["gemini-3.0-flash"];
 
   // Calculate cost in USD
   const inputCost = (inputTokens / 1_000_000) * pricing.input;

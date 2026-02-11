@@ -38,7 +38,7 @@ export function Chat({
   isUserPro = false,
   isGuest = false,
   selectedText,
-  defaultModelId = "gemini-2.5-flash",
+  defaultModelId = "gemini-3.0-flash",
 }: {
   id: string;
   initialMessages: Array<UIMessage>;

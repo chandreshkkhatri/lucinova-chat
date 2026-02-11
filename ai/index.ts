@@ -5,9 +5,9 @@ import { customMiddleware } from "./custom-middleware";
 
 // Allow overriding model IDs via environment variables, default to supported v1beta models
 const PRIMARY_MODEL_ID =
-  process.env.GOOGLE_GEMINI_PRIMARY_MODEL || "gemini-2.5-pro";
+  process.env.GOOGLE_GEMINI_PRIMARY_MODEL || "gemini-3.0-pro";
 const FAST_MODEL_ID =
-  process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-2.5-flash";
+  process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-3.0-flash";
 
 // Default model ID used when no specific model is requested
 export const DEFAULT_MODEL_ID = FAST_MODEL_ID;

@@ -37,5 +37,5 @@
 ## Extra tips
 
 - `middleware.ts` applies NextAuth guards to almost everything except payment + auth session endpoints; keep new routes either behind auth or explicitly whitelisted.
-- `lib/config.ts` controls model naming and pricing; read from `NEXT_PUBLIC_MODEL_DISPLAY_MODE` and `NEXT_PUBLIC_PRO_MONTHLY_PRICE_INR` instead of hard-coding.
+- `lib/config.ts` controls model naming (Lucinova branding) and pricing; read from `NEXT_PUBLIC_PRO_MONTHLY_PRICE_INR` instead of hard-coding.
 - Streaming handlers (`streamText`) return `toDataStreamResponse()`. If you add side effects, use the `onFinish` callback as shown in `/api/chat` and `/api/thread` so the stream stays uninterrupted.
