@@ -36,9 +36,13 @@ export function trackConversion(
 
 /**
  * Track sign-up conversion
- * Call this when a user successfully registers
+ * Call this when a user successfully registers.
+ * Returns a promise that resolves after a short delay to allow beacons to fire
+ * before any subsequent navigation.
  */
-export function trackSignUpConversion() {
+export function trackSignUpConversion(
+  method: "email" | "google" = "email"
+): Promise<void> {
   const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL;
   if (conversionLabel) {
     trackConversion(conversionLabel);
@@ -47,9 +51,12 @@ export function trackSignUpConversion() {
   // Also send as a GA4 event for analytics
   if (typeof window !== "undefined" && window.gtag) {
     window.gtag("event", "sign_up", {
-      method: "email",
+      method,
     });
   }
+
+  // Allow time for gtag beacons to be dispatched before navigation
+  return new Promise((resolve) => setTimeout(resolve, 300));
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check, Award } from "lucide-react";
+import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check, Award, Copy, Link2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -598,6 +598,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                 ))}
               </div>
             )}
+            <ReferralSection />
           </div>
         );
 
@@ -1168,6 +1169,136 @@ function BillingHistory({
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+interface ReferralStats {
+  referralCode: string;
+  referralCount: number;
+  referralLink: string;
+  nextBadge: {
+    name: string;
+    referralsNeeded: number;
+    referralsRemaining: number;
+  } | null;
+}
+
+function ReferralSection() {
+  const [stats, setStats] = useState<ReferralStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/referral/stats")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch referral stats");
+        return res.json();
+      })
+      .then((data: ReferralStats) => {
+        setStats(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const handleCopy = async () => {
+    if (!stats?.referralLink) return;
+    try {
+      await navigator.clipboard.writeText(stats.referralLink);
+      setCopied(true);
+      toast.success("Referral link copied!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mt-8 bg-muted rounded-lg p-6">
+        <p className="text-muted-foreground">Loading referral info...</p>
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
+  const progressPercent = stats.nextBadge
+    ? ((stats.nextBadge.referralsNeeded - stats.nextBadge.referralsRemaining) /
+        stats.nextBadge.referralsNeeded) *
+      100
+    : 100;
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <Link2 className="size-5" />
+        Refer a Friend
+      </h3>
+      <div className="bg-muted rounded-lg p-6 space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Share your referral link with friends. They get 50% off their first Pro
+          month, and you earn badges with free Pro months!
+        </p>
+
+        {/* Referral Link */}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            readOnly
+            value={stats.referralLink}
+            className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-card text-foreground font-mono truncate"
+          />
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors shrink-0"
+          >
+            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">Total Referrals</p>
+            <p className="text-2xl font-bold text-foreground">
+              {stats.referralCount}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">Next Badge</p>
+            <p className="text-sm font-semibold text-foreground">
+              {stats.nextBadge ? stats.nextBadge.name : "All earned!"}
+            </p>
+          </div>
+        </div>
+
+        {/* Progress */}
+        {stats.nextBadge && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Progress to {stats.nextBadge.name}
+              </span>
+              <span className="font-semibold">
+                {stats.nextBadge.referralsNeeded -
+                  stats.nextBadge.referralsRemaining}{" "}
+                / {stats.nextBadge.referralsNeeded} referrals
+              </span>
+            </div>
+            <div className="h-2 bg-card rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all"
+                style={{ width: `${Math.min(100, progressPercent)}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

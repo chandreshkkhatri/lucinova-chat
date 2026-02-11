@@ -3,7 +3,30 @@
  * Central location for all badge definitions and their benefits
  */
 
-export const BADGE_DEFINITIONS = {
+interface DiscountBenefit {
+  type: "discount";
+  discount: number;
+  durationMonths: number;
+  appliesTo: string;
+}
+
+interface FreeProBenefit {
+  type: "free-pro";
+  freeMonths: number;
+  appliesTo: string;
+}
+
+export type BadgeBenefit = DiscountBenefit | FreeProBenefit;
+
+export interface BadgeDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  benefit?: BadgeBenefit;
+}
+
+export const BADGE_DEFINITIONS: Record<string, BadgeDefinition> = {
   "early-bird": {
     id: "early-bird",
     name: "Early Bird",
@@ -11,12 +34,46 @@ export const BADGE_DEFINITIONS = {
     icon: "🐦",
     benefit: {
       type: "discount",
-      discount: 0.75, // 75% off
+      discount: 0.75,
       durationMonths: 3,
       appliesTo: "pro-plan",
     },
   },
-} as const;
+  "connector": {
+    id: "connector",
+    name: "Connector",
+    description: "Referred 5 friends to Lucidity",
+    icon: "🔗",
+    benefit: {
+      type: "free-pro",
+      freeMonths: 1,
+      appliesTo: "pro-plan",
+    },
+  },
+  "ambassador": {
+    id: "ambassador",
+    name: "Ambassador",
+    description: "Referred 15 friends to Lucidity",
+    icon: "🌟",
+    benefit: {
+      type: "free-pro",
+      freeMonths: 3,
+      appliesTo: "pro-plan",
+    },
+  },
+  "referred-friend": {
+    id: "referred-friend",
+    name: "Referred Friend",
+    description: "Joined Lucidity through a friend's referral",
+    icon: "🤝",
+    benefit: {
+      type: "discount",
+      discount: 0.5,
+      durationMonths: 1,
+      appliesTo: "pro-plan",
+    },
+  },
+};
 
 export type BadgeId = keyof typeof BADGE_DEFINITIONS;
 
@@ -39,8 +96,8 @@ export function isBadgeDefined(badgeId: string): boolean {
 /**
  * Get badge definition by ID
  */
-export function getBadgeDefinition(badgeId: string) {
-  return BADGE_DEFINITIONS[badgeId as BadgeId];
+export function getBadgeDefinition(badgeId: string): BadgeDefinition | undefined {
+  return BADGE_DEFINITIONS[badgeId];
 }
 
 /**

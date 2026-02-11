@@ -1,9 +1,11 @@
 import { compare } from "bcrypt-ts";
+import { cookies } from "next/headers";
 import NextAuth, { User, Session } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
 import { getUserByEmail, createUser, getUserById } from "@/db/queries";
+import { getUserByReferralCode, processReferral } from "@/lib/referral";
 
 import { authConfig } from "./auth.config";
 
@@ -66,6 +68,21 @@ const nextAuthConfig = {
               "google",
               account.providerAccountId
             );
+
+            // Process referral if cookie exists
+            try {
+              const cookieStore = await cookies();
+              const referralCode = cookieStore.get("referral_code")?.value;
+              if (referralCode) {
+                const referrer = await getUserByReferralCode(referralCode);
+                if (referrer?.email) {
+                  await processReferral(referrer.email, user.email);
+                }
+                cookieStore.delete("referral_code");
+              }
+            } catch (err) {
+              console.error("[OAuth] Referral processing error:", err);
+            }
           }
           return true;
         } catch (error) {

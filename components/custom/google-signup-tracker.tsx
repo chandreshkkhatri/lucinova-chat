@@ -34,7 +34,7 @@ export function GoogleSignupTracker({
 
     if (createdAtDate > fiveMinutesAgo) {
       // This is a new Google sign-up, track the conversion
-      trackSignUpConversion();
+      trackSignUpConversion("google");
       // Mark as tracked to prevent duplicate conversions
       localStorage.setItem(trackedKey, "true");
     }

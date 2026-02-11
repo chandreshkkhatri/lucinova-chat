@@ -1,7 +1,10 @@
 import { auth } from "@/app/(auth)/auth";
+import { ActivityBar } from "@/components/custom/activity-bar";
+import { CommandPalette } from "@/components/custom/command-palette";
 import { EnhancedChatUI } from "@/components/custom/enhanced-chat-ui";
 import { GoogleSignupTracker } from "@/components/custom/google-signup-tracker";
-import { History } from "@/components/custom/history";
+import { SidebarProvider } from "@/components/custom/sidebar-context";
+import { SidebarPanel } from "@/components/custom/sidebar-panel";
 import { getUserByEmail } from "@/db/queries";
 
 export default async function ChatLayout({
@@ -28,10 +31,14 @@ export default async function ChatLayout({
 
   return (
     <EnhancedChatUI>
-      <div className="flex h-dvh pt-16">
-        <History user={session?.user ? { ...(session.user as any) } : undefined} />
-        <main className="flex-1 flex flex-col min-w-0">{children}</main>
-      </div>
+      <SidebarProvider>
+        <CommandPalette />
+        <div className="flex h-dvh pt-16">
+          <ActivityBar />
+          <SidebarPanel user={session?.user ? { ...(session.user as any) } : undefined} />
+          <main className="flex-1 flex flex-col min-w-0">{children}</main>
+        </div>
+      </SidebarProvider>
       {userData && (
         <GoogleSignupTracker
           userId={userData.id}

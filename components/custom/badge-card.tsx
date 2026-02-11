@@ -4,6 +4,7 @@ import { Award } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BADGE_DEFINITIONS } from "@/lib/badges";
+import type { BadgeBenefit } from "@/lib/badges";
 
 interface BadgeCardProps {
   badge: {
@@ -16,8 +17,24 @@ interface BadgeCardProps {
   };
 }
 
+function getBenefitLabel(benefit: BadgeBenefit): string {
+  if (benefit.type === "discount") {
+    return `${Math.round(benefit.discount * 100)}% off on ${benefit.appliesTo.replace("-", " ")}`;
+  }
+  if (benefit.type === "free-pro") {
+    return `${benefit.freeMonths} free Pro month${benefit.freeMonths > 1 ? "s" : ""}`;
+  }
+  return "";
+}
+
+function getBenefitDuration(benefit: BadgeBenefit): number {
+  if (benefit.type === "discount") return benefit.durationMonths;
+  if (benefit.type === "free-pro") return benefit.freeMonths;
+  return 0;
+}
+
 export function BadgeCard({ badge }: BadgeCardProps) {
-  const badgeDefinition = BADGE_DEFINITIONS[badge.badgeId as keyof typeof BADGE_DEFINITIONS];
+  const badgeDefinition = BADGE_DEFINITIONS[badge.badgeId];
 
   if (!badgeDefinition) {
     return null;
@@ -25,7 +42,7 @@ export function BadgeCard({ badge }: BadgeCardProps) {
 
   const userRank = badge.metadata?.userRank;
   const benefitUsedMonths = badge.metadata?.benefitUsedMonths ?? 0;
-  const durationMonths = badgeDefinition.benefit?.durationMonths ?? 0;
+  const durationMonths = badgeDefinition.benefit ? getBenefitDuration(badgeDefinition.benefit) : 0;
   const earnedDate = new Date(badge.earnedAt);
   const earnedDateFormatted = earnedDate.toLocaleDateString("en-US", {
     year: "numeric",
@@ -33,7 +50,7 @@ export function BadgeCard({ badge }: BadgeCardProps) {
     day: "numeric",
   });
 
-  const progressPercentage = (benefitUsedMonths / durationMonths) * 100;
+  const progressPercentage = durationMonths > 0 ? (benefitUsedMonths / durationMonths) * 100 : 0;
 
   return (
     <Card className="overflow-hidden">
@@ -56,25 +73,24 @@ export function BadgeCard({ badge }: BadgeCardProps) {
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-semibold">
-                {badgeDefinition.benefit.discount && `${Math.round(badgeDefinition.benefit.discount * 100)}% off`}
-                {badgeDefinition.benefit.appliesTo && ` on ${badgeDefinition.benefit.appliesTo.replace("-", " ")}`}
+                {getBenefitLabel(badgeDefinition.benefit)}
               </span>
             </div>
-            {badgeDefinition.benefit.durationMonths && (
+            {durationMonths > 0 && (
               <div className="text-xs text-muted-foreground">
-                Valid for {badgeDefinition.benefit.durationMonths} months
+                Valid for {durationMonths} month{durationMonths > 1 ? "s" : ""}
               </div>
             )}
           </div>
         )}
 
         {/* Benefit Usage Progress */}
-        {badgeDefinition.benefit?.durationMonths && (
+        {durationMonths > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Benefit Usage</span>
               <span className="font-semibold">
-                {benefitUsedMonths} / {durationMonths} months
+                {benefitUsedMonths} / {durationMonths} month{durationMonths > 1 ? "s" : ""}
               </span>
             </div>
             <Progress value={Math.min(progressPercentage, 100)} className="h-2" />
