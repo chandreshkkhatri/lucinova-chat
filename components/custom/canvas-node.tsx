@@ -2,8 +2,9 @@
 
 import { UIMessage } from "ai";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Reply, ChevronRight, Pencil, RefreshCw } from "lucide-react";
+import { Handle, Position, NodeProps } from "@xyflow/react";
 
 import { useThreadCount } from "@/components/custom/use-thread-count";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,8 +20,8 @@ import { MermaidRenderer } from "./mermaid-renderer";
 import { CodeBlock } from "./code-block";
 import type { CanvasNode as CanvasNodeType } from "@/lib/message-to-nodes";
 
-interface CanvasNodeProps {
-  node: CanvasNodeType;
+// Define the data structure we expect in the node
+export type CanvasNodeData = {
   message: UIMessage;
   chatId: string;
   annotations?: SavedAnnotation[];
@@ -33,23 +34,33 @@ interface CanvasNodeProps {
   onRegenerate?: () => void;
   isLastUserMessage?: boolean;
   isLastAssistantMessage?: boolean;
-}
+  // Node content from our transformation
+  type: "text" | "code" | "mermaid";
+  content: string;
+  language?: string;
+  role: "user" | "assistant" | "system" | "data";
+};
 
-export function CanvasNodeComponent({
-  node,
-  message,
-  chatId,
-  annotations = [],
-  onAskLucinova,
-  onOpenAnnotation,
-  onStartThread,
-  isThread = false,
-  showActions = true,
-  onEditMessage,
-  onRegenerate,
-  isLastUserMessage = false,
-  isLastAssistantMessage = false,
-}: CanvasNodeProps) {
+export const CanvasNodeComponent = memo(({ data }: NodeProps<Node<CanvasNodeData>>) => {
+  const {
+    message,
+    chatId,
+    annotations = [],
+    onAskLucinova,
+    onOpenAnnotation,
+    onStartThread,
+    isThread = false,
+    showActions = true,
+    onEditMessage,
+    onRegenerate,
+    isLastUserMessage = false,
+    isLastAssistantMessage = false,
+    type,
+    content,
+    language,
+    role
+  } = data;
+
   const { threadCount } = useThreadCount(message.id, chatId);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
@@ -61,17 +72,17 @@ export function CanvasNodeComponent({
 
   // Render node content based on type
   const renderNodeContent = () => {
-    if (node.type === "mermaid") {
-      return <MermaidRenderer content={node.content} />;
+    if (type === "mermaid") {
+      return <MermaidRenderer content={content} />;
     }
-    if (node.type === "code") {
-      return <CodeBlock code={node.content} language={node.language} />;
+    if (type === "code") {
+      return <CodeBlock code={content} language={language} />;
     }
     // Default: text node
     return (
-      <div className={`inline-block ${node.role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2" : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"}`}>
+      <div className={`inline-block w-full ${role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3" : "bg-muted rounded-2xl rounded-tl-sm px-4 py-3"}`}>
         <div className="flex items-start gap-2">
-          <div className="flex-1 break-words">
+          <div className="flex-1 break-words min-w-0">
             <EnhancedMessage
               message={message}
               chatId={chatId}
@@ -86,19 +97,26 @@ export function CanvasNodeComponent({
   };
 
   return (
-    <div className="group relative">
-      <div className={`flex gap-2 p-2 sm:p-3 ${node.role === "user" ? "justify-end" : ""}`}>
-        {node.role === "assistant" && (
-          <Avatar className="size-8 shrink-0">
+    <div className="group relative max-w-[600px] min-w-[300px]">
+      {/* Input Handle (Target) - for incoming connections (replies) */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!bg-muted-foreground/50 !w-3 !h-3 !-top-1.5"
+      />
+
+      <div className={`flex gap-2 p-2 ${role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+        {role === "assistant" && (
+          <Avatar className="size-8 shrink-0 mt-1">
             <AvatarFallback className="bg-transparent p-0.5">
               <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={28} height={28} quality={90} className="size-full object-contain" />
             </AvatarFallback>
           </Avatar>
         )}
 
-        <div className={`flex-1 ${isThread ? "max-w-[90%] sm:max-w-[85%]" : "max-w-[90%] sm:max-w-[85%] md:max-w-2xl"} ${node.role === "user" ? "text-right" : ""}`}>
+        <div className={`flex-1 overflow-hidden ${role === "user" ? "text-right" : "text-left"}`}>
           {/* Inline edit UI for user messages */}
-          {isEditing && node.role === "user" ? (
+          {isEditing && role === "user" ? (
             <div className="w-full text-left">
               <textarea
                 value={editText}
@@ -108,7 +126,9 @@ export function CanvasNodeComponent({
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setIsEditing(false);
+                  e.stopPropagation(); // Prevent canvas key hijacking
                 }}
+                onMouseDown={(e) => e.stopPropagation()} // Prevent drag on query
               />
               <div className="flex justify-end gap-2 mt-1.5">
                 <button
@@ -133,7 +153,7 @@ export function CanvasNodeComponent({
           )}
 
           {/* Edit action for last user message */}
-          {showActions && !isThread && node.role === "user" && isLastUserMessage && !isEditing && (
+          {showActions && !isThread && role === "user" && isLastUserMessage && !isEditing && (
             <div className="flex items-center justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 onClick={() => {
@@ -149,7 +169,7 @@ export function CanvasNodeComponent({
           )}
 
           {/* Actions for assistant messages */}
-          {showActions && !isThread && node.role === "assistant" && (
+          {showActions && !isThread && role === "assistant" && (
             <div className="flex items-center gap-1 mt-2 opacity-100 transition-opacity duration-200">
               {threadCount > 0 && (
                 <button
@@ -191,12 +211,22 @@ export function CanvasNodeComponent({
           )}
         </div>
 
-        {node.role === "user" && (
-          <Avatar className="size-8 shrink-0">
+        {role === "user" && (
+          <Avatar className="size-8 shrink-0 mt-1">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">U</AvatarFallback>
           </Avatar>
         )}
       </div>
+
+      {/* Output Handle (Source) - for outgoing connections (starting threads) */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!bg-muted-foreground/50 !w-3 !h-3 !-bottom-1.5"
+      />
     </div>
   );
-}
+});
+
+CanvasNodeComponent.displayName = "CanvasNodeComponent";
+

@@ -57,35 +57,53 @@ export async function POST(request: NextRequest) {
 
     const event = JSON.parse(rawBody);
     console.log("[Razorpay Webhook] Event received:", event.event);
+    console.log("[Razorpay Webhook] Event contains_id:", event.payload?.subscription?.entity?.id);
 
     // Handle different event types
-    switch (event.event) {
-      case "subscription.charged":
-        await handleSubscriptionCharged(event);
-        break;
-      case "subscription.activated":
-        await handleSubscriptionActivated(event);
-        break;
-      case "subscription.cancelled":
-        await handleSubscriptionCancelled(event);
-        break;
-      case "subscription.completed":
-        await handleSubscriptionCompleted(event);
-        break;
-      case "subscription.halted":
-      case "subscription.paused":
-        await handleSubscriptionPaused(event);
-        break;
-      case "payment.failed":
-        await handlePaymentFailed(event);
-        break;
-      default:
-        console.log("[Razorpay Webhook] Unhandled event type:", event.event);
+    // Each handler is wrapped in try-catch to log errors without masking them
+    let handlerError: Error | null = null;
+    try {
+      switch (event.event) {
+        case "subscription.charged":
+          await handleSubscriptionCharged(event);
+          console.log("[Razorpay Webhook] subscription.charged handled successfully");
+          break;
+        case "subscription.activated":
+          await handleSubscriptionActivated(event);
+          console.log("[Razorpay Webhook] subscription.activated handled successfully");
+          break;
+        case "subscription.cancelled":
+          await handleSubscriptionCancelled(event);
+          break;
+        case "subscription.completed":
+          await handleSubscriptionCompleted(event);
+          break;
+        case "subscription.halted":
+        case "subscription.paused":
+          await handleSubscriptionPaused(event);
+          break;
+        case "payment.failed":
+          await handlePaymentFailed(event);
+          break;
+        default:
+          console.log("[Razorpay Webhook] Unhandled event type:", event.event);
+      }
+    } catch (handlerErr: any) {
+      handlerError = handlerErr;
+      console.error(`[Razorpay Webhook] HANDLER ERROR for ${event.event}:`, handlerErr.message, handlerErr.stack);
+    }
+
+    if (handlerError) {
+      // Return 500 so Razorpay retries the webhook
+      return NextResponse.json(
+        { error: "Webhook handler failed", event: event.event, message: handlerError.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[Razorpay Webhook] Processing error:", error);
+    console.error("[Razorpay Webhook] Processing error:", error.message, error.stack);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
