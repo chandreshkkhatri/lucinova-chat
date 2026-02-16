@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
+import { Sparkles, Reply, MessageSquare, FileCode, GitBranch } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useCallback } from "react";
 import {
@@ -312,16 +312,17 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
         <p className="text-muted-foreground mb-6">Your thinking space. Ask questions, explore ideas, branch into threads.</p>
         <div className="flex flex-col gap-2 mb-4">
           {[
-            { label: "Explain a complex concept simply", value: "Explain a complex concept to me" },
-            { label: "Create a personalized study plan", value: "Help me create a study plan for a new subject" },
-            { label: "Summarize and extract key points", value: "Summarize this text and extract key learning points" },
+            { label: "Write a clear explanation", value: "Explain a complex concept to me in simple terms", icon: <MessageSquare className="size-4 text-blue-500 shrink-0" /> },
+            { label: "Draw a diagram", value: "Create a Mermaid diagram that visualizes the relationship between these concepts", icon: <GitBranch className="size-4 text-green-500 shrink-0" /> },
+            { label: "Generate code", value: "Write a code snippet that demonstrates this concept with comments", icon: <FileCode className="size-4 text-orange-500 shrink-0" /> },
           ].map((suggestion, i) => (
             <button
               key={suggestion.value}
               onClick={() => setInput(suggestion.value)}
-              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
+              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors flex items-center gap-3"
               style={{ animation: `canvas-fade-in-up 500ms ease-out ${400 + i * 100}ms forwards`, opacity: 0 }}
             >
+              {suggestion.icon}
               <p className="text-sm text-foreground/80">{suggestion.label}</p>
             </button>
           ))}

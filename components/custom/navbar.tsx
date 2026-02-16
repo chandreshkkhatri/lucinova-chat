@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { auth, signOut } from "@/app/(auth)/auth";
+import { ensureConnection } from "@/db/connection";
+import { User } from "@/db/models";
 
 import { MobileMenuButton } from "./mobile-menu-button";
 import { MobileSidebarContent } from "./mobile-sidebar-content";
@@ -16,6 +18,18 @@ import {
 
 export const Navbar = async () => {
   let session = await auth();
+
+  // Check if user is Pro
+  let isUserPro = false;
+  if (session?.user?.email) {
+    try {
+      await ensureConnection();
+      const dbUser = await User.findOne({ email: session.user.email }).select("isPro").lean();
+      isUserPro = !!(dbUser as any)?.isPro;
+    } catch (e) {
+      // Silently fail — show Pricing as fallback
+    }
+  }
 
   return (
     <>
@@ -40,13 +54,24 @@ export const Navbar = async () => {
             >
               About
             </Link>
-            <Link
-              href="/pricing"
-              className="text-muted-foreground hover:text-foreground font-medium transition-colors"
-              prefetch={false}
-            >
-              Pricing
-            </Link>
+            {isUserPro ? (
+              <Link
+                href="/account"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500/10 to-violet-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-semibold text-sm hover:from-purple-500/20 hover:to-violet-500/20 transition-all"
+                prefetch={false}
+              >
+                <svg className="size-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>
+                Pro
+              </Link>
+            ) : (
+              <Link
+                href="/pricing"
+                className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+                prefetch={false}
+              >
+                Pricing
+              </Link>
+            )}
           </div>
 
           {!session && <ThemeToggle />}

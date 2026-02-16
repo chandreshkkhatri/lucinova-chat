@@ -47,9 +47,9 @@ interface DefaultSidebarViewProps {
 }
 
 const nodeTypeOptions: { value: NodeType; label: string; icon: React.ReactNode }[] = [
-  { value: "text", label: "Text", icon: <MessageSquare className="size-4" /> },
-  { value: "mermaid", label: "Mermaid", icon: <GitBranch className="size-4" /> },
-  { value: "code", label: "Code", icon: <FileCode className="size-4" /> },
+  { value: "text", label: "Write text", icon: <MessageSquare className="size-4" /> },
+  { value: "mermaid", label: "Draw a diagram", icon: <GitBranch className="size-4" /> },
+  { value: "code", label: "Generate code", icon: <FileCode className="size-4" /> },
 ];
 
 export function DefaultSidebarView({
