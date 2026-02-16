@@ -1,9 +1,10 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { CountryCodeSelect } from "@/components/custom/country-code-select";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appConfig } from "@/lib/config";
+import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
 
 interface RazorpayPaymentModalProps {
   isOpen: boolean;
@@ -24,6 +26,7 @@ interface RazorpayPaymentModalProps {
   userEmail?: string;
   userName?: string;
   userPhone?: string;
+  userCountryCode?: string;
 }
 
 // Remove global Window interface declaration as it's in types/razorpay.d.ts
@@ -36,16 +39,22 @@ export function RazorpayPaymentModal({
   userEmail = "",
   userName = "",
   userPhone = "",
+  userCountryCode = "",
 }: RazorpayPaymentModalProps) {
   const currency = appConfig.pricing.currency;
   const symbol = appConfig.getCurrencySymbol(currency);
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [countryCode, setCountryCode] = useState(userCountryCode || "");
   const [formData, setFormData] = useState({
     customerName: userName,
     customerEmail: userEmail,
     customerPhone: userPhone || "",
   });
+
+  const handleCountryChange = useCallback((code: string) => {
+    setCountryCode(code);
+  }, []);
 
   useEffect(() => {
     // Load Razorpay checkout script
@@ -86,10 +95,11 @@ export function RazorpayPaymentModal({
         return;
       }
 
-      // Validate phone number
-      const phoneRegex = /^[6-9]\d{9}$/;
-      if (!phoneRegex.test(formData.customerPhone.replace(/\D/g, ""))) {
-        toast.error("Please enter a valid 10-digit Indian mobile number");
+      // Validate phone number based on selected country
+      const phoneDigits = formData.customerPhone.replace(/\D/g, "");
+      const selectedCountry = getCountryByCode(countryCode || DEFAULT_COUNTRY_CODE);
+      if (!validatePhone(phoneDigits, countryCode || DEFAULT_COUNTRY_CODE)) {
+        toast.error(`Please enter a valid phone number for ${selectedCountry?.name || "your country"}`);
         setIsLoading(false);
         return;
       }
@@ -126,6 +136,7 @@ export function RazorpayPaymentModal({
       onClose();
 
       // Prepare Razorpay checkout options
+      const dialCode = selectedCountry?.dialCode || "+1";
       const options = {
         key: data.razorpayKeyId,
         subscription_id: data.subscriptionId,
@@ -135,7 +146,7 @@ export function RazorpayPaymentModal({
         prefill: {
           name: formData.customerName,
           email: formData.customerEmail,
-          contact: `+91${formData.customerPhone}`,
+          contact: `${dialCode}${phoneDigits}`,
         },
         theme: {
           color: "#3b82f6",
@@ -179,9 +190,9 @@ export function RazorpayPaymentModal({
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only numbers and format
+    // Allow only numbers and limit length (15 digits max for international)
     const value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 10) {
+    if (value.length <= 15) {
       setFormData((prev) => ({ ...prev, customerPhone: value }));
     }
   };
@@ -193,9 +204,7 @@ export function RazorpayPaymentModal({
           <DialogTitle>Subscribe to {planName}</DialogTitle>
           <DialogDescription>
             Monthly subscription for {symbol}
-            {(amount / 100).toLocaleString(
-              currency === "INR" ? "en-IN" : undefined
-            )}
+            {(amount / 100).toLocaleString()}
             /month
           </DialogDescription>
         </DialogHeader>
@@ -240,11 +249,17 @@ export function RazorpayPaymentModal({
           <div className="space-y-2">
             <Label htmlFor="phone">Mobile Number</Label>
             <div className="flex gap-2">
-              <Input className="w-20" value="+91" disabled />
+              <CountryCodeSelect
+                value={countryCode}
+                onChange={handleCountryChange}
+                autoDetect={!countryCode}
+                disabled={isLoading}
+              />
               <Input
                 id="phone"
                 type="tel"
-                placeholder="9876543210"
+                inputMode="numeric"
+                placeholder={getCountryByCode(countryCode || DEFAULT_COUNTRY_CODE)?.placeholder || "Phone number"}
                 value={formData.customerPhone}
                 onChange={handlePhoneChange}
                 required
@@ -252,8 +267,8 @@ export function RazorpayPaymentModal({
                 className="flex-1"
               />
             </div>
-            <p className="text-xs text-gray-500">
-              Enter 10-digit Indian mobile number
+            <p className="text-xs text-muted-foreground">
+              Enter your mobile number without country code
             </p>
           </div>
 
@@ -266,9 +281,7 @@ export function RazorpayPaymentModal({
               <span>Amount</span>
               <span className="font-medium">
                 {symbol}
-                {(amount / 100).toLocaleString(
-                  currency === "INR" ? "en-IN" : undefined
-                )}
+                {(amount / 100).toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between text-sm mt-2">

@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/currency";
 import { trackPurchaseConversion } from "@/lib/gtag";
 
 function PaymentSuccessContent() {
@@ -41,7 +42,7 @@ function PaymentSuccessContent() {
           if (!conversionTracked.current && data?.orderAmount) {
             trackPurchaseConversion(
               Number(data.orderAmount),
-              "INR",
+              data.currency,
               data.orderId
             );
             conversionTracked.current = true;
@@ -58,7 +59,7 @@ function PaymentSuccessContent() {
           if (!conversionTracked.current && data?.orderAmount) {
             trackPurchaseConversion(
               Number(data.orderAmount),
-              "INR",
+              data.currency,
               data.orderId
             );
             conversionTracked.current = true;
@@ -119,7 +120,10 @@ function PaymentSuccessContent() {
                 Amount Paid
               </span>
               <span className="text-sm font-medium">
-                ₹{Number(orderDetails.orderAmount).toLocaleString("en-IN")}
+                {formatCurrency(
+                  Number(orderDetails.orderAmount) * 100,
+                  orderDetails.currency
+                )}
               </span>
             </div>
             <div className="flex justify-between">

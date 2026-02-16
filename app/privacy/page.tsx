@@ -242,7 +242,52 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  9. Children's Privacy
+                  9. California Privacy Rights (CCPA)
+                </h2>
+                <p>
+                  If you are a California resident, you have specific rights
+                  under the California Consumer Privacy Act (CCPA):
+                </p>
+
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
+                  9.1 Right to Know
+                </h3>
+                <p>
+                  You have the right to request disclosure of the personal
+                  information we collect, use, and share about you.
+                </p>
+
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
+                  9.2 Right to Delete
+                </h3>
+                <p>
+                  You have the right to request deletion of your personal
+                  information, subject to certain exceptions.
+                </p>
+
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
+                  9.3 Right to Opt-Out
+                </h3>
+                <p>
+                  We do not sell your personal information. If our practices
+                  change, we will update this policy and provide an opt-out
+                  mechanism.
+                </p>
+
+                <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
+                  9.4 Exercising Your Rights
+                </h3>
+                <p>
+                  To exercise these rights, please contact us at
+                  privacy@lucidity.chat with "CCPA Request" in the subject
+                  line. We will verify your identity and respond within 45
+                  days.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-foreground mb-3">
+                  10. Children's Privacy
                 </h2>
                 <p>
                   Our service is not intended for children under 13 years of
@@ -254,7 +299,7 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  10. International Data Transfers
+                  11. International Data Transfers
                 </h2>
                 <p>
                   Your information may be transferred to and processed in
@@ -266,7 +311,7 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  11. Changes to This Privacy Policy
+                  12. Changes to This Privacy Policy
                 </h2>
                 <p>
                   We may update this Privacy Policy from time to time. We will
@@ -279,7 +324,7 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  12. Contact Information
+                  13. Contact Information
                 </h2>
                 <p>
                   If you have any questions about this Privacy Policy or our

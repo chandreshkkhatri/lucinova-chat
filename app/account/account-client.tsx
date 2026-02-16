@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
-import { CountryCodeSelect } from "@/components/custom/country-code-select";
 import { BadgeCard } from "@/components/custom/badge-card";
+import { CountryCodeSelect } from "@/components/custom/country-code-select";
 import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
 
 interface AccountClientProps {
@@ -19,6 +19,8 @@ interface AccountClientProps {
     plan?: "free" | "pro";
     isPro?: boolean;
     currentPeriodEnd?: string | Date | null;
+    subscriptionStatus?: "active" | "inactive" | "canceled" | null;
+    subscriptionId?: string | null;
     badges?: Array<{
       badgeId: string;
       earnedAt: Date | string;
@@ -190,10 +192,10 @@ export default function AccountClient({ user }: AccountClientProps) {
     setIsRefreshing(true);
     toast.info("Refreshing account data...");
     try {
-      // Hard refresh to get latest data from server
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       toast.error("Failed to refresh");
+    } finally {
       setIsRefreshing(false);
     }
   }
@@ -209,11 +211,51 @@ export default function AccountClient({ user }: AccountClientProps) {
     fetchBilling();
   }
 
+  // Cancellation state
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period."
+      )
+    ) {
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const res = await fetch("/api/payment/razorpay/cancel-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cancelAtCycleEnd: true }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to cancel subscription");
+      }
+
+      toast.success("Subscription canceled. You will retain access until the end of your billing period.");
+      // Refresh to show updated status
+      setTimeout(() => router.refresh(), 1500);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel subscription");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const menuItems = [
     {
       id: "account",
       label: "Account Information",
       icon: User,
+    },
+    {
+      id: "subscription",
+      label: "Subscription",
+      icon: Crown,
     },
     {
       id: "usage",
@@ -404,7 +446,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                         <p className="text-xs text-muted-foreground mt-1">
                           Plan expires{" "}
                           {new Date(user.currentPeriodEnd).toLocaleDateString(
-                            "en-IN"
+                            "en-US"
                           )}
                         </p>
                       )}
@@ -416,6 +458,115 @@ export default function AccountClient({ user }: AccountClientProps) {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        );
+
+      case "subscription":
+        return (
+          <div>
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
+              Subscription
+            </h2>
+            <div className="bg-muted rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-medium text-foreground">
+                    Current Plan
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {user.isPro ? "Pro Plan" : "Free Plan"}
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${user.isPro
+                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                    : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                    }`}
+                >
+                  {user.isPro ? "Pro" : "Free"}
+                </span>
+              </div>
+
+              {user.isPro && user.currentPeriodEnd && (
+                <div className="mb-6 p-4 bg-card rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {user.subscriptionStatus === "canceled"
+                          ? "Access expires on"
+                          : "Next billing date"}
+                      </p>
+                      <p className="text-foreground font-medium">
+                        {new Date(user.currentPeriodEnd).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    {user.subscriptionStatus === "canceled" && (
+                      <span className="px-3 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-sm font-medium">
+                        Canceled
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {user.isPro && user.subscriptionStatus !== "canceled" && user.subscriptionId && (
+                <div className="border-t border-border pt-6">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
+                    Cancel Subscription
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    If you cancel, you will still have access to Pro features until the
+                    end of your current billing period.
+                  </p>
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={isCancelling}
+                    className="bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    {isCancelling ? (
+                      <>
+                        <Loader2 className="inline mr-2 size-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      "Cancel Subscription"
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {!user.isPro && (
+                <div className="border-t border-border pt-6">
+                  <p className="text-muted-foreground mb-4">
+                    Upgrade to Pro for 5,000 units per month and premium features.
+                  </p>
+                  <button
+                    onClick={() => router.push("/beta/pricing")}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium transition-colors"
+                  >
+                    Upgrade to Pro
+                  </button>
+                </div>
+              )}
+
+              {user.isPro && user.subscriptionStatus === "canceled" && (
+                <div className="border-t border-border pt-6">
+                  <p className="text-muted-foreground mb-4">
+                    Your subscription has been canceled. Resubscribe to continue with Pro after your current period ends.
+                  </p>
+                  <button
+                    onClick={() => router.push("/beta/pricing")}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium transition-colors"
+                  >
+                    Resubscribe
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -531,13 +682,12 @@ export default function AccountClient({ user }: AccountClientProps) {
                             !item.disabled && setActiveSection(item.id)
                           }
                           disabled={item.disabled}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                            activeSection === item.id
-                              ? "bg-primary/10 text-primary"
-                              : item.disabled
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${activeSection === item.id
+                            ? "bg-primary/10 text-primary"
+                            : item.disabled
                               ? "text-muted-foreground/50 cursor-not-allowed"
                               : "text-foreground hover:bg-muted"
-                          }`}
+                            }`}
                         >
                           <Icon className="size-5" />
                           <span className="text-sm font-medium">
@@ -814,11 +964,10 @@ function UsageSection({ isPro }: { isPro: boolean }) {
             </p>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              isPro
-                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-            }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${isPro
+              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+              : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+              }`}
           >
             {isPro ? "Pro" : "Free"} Plan
           </span>
@@ -836,13 +985,12 @@ function UsageSection({ isPro }: { isPro: boolean }) {
           </div>
           <div className="h-3 bg-card rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${
-                current.percentUsed >= 100
-                  ? "bg-red-500"
-                  : current.percentUsed >= 80
+              className={`h-full rounded-full transition-all ${current.percentUsed >= 100
+                ? "bg-red-500"
+                : current.percentUsed >= 80
                   ? "bg-amber-500"
                   : "bg-primary"
-              }`}
+                }`}
               style={{ width: `${Math.min(100, current.percentUsed)}%` }}
             />
           </div>
@@ -862,7 +1010,7 @@ function UsageSection({ isPro }: { isPro: boolean }) {
                 0,
                 Math.ceil(
                   (new Date(current.periodEnd).getTime() - Date.now()) /
-                    (1000 * 60 * 60 * 24)
+                  (1000 * 60 * 60 * 24)
                 )
               )}{" "}
               days
@@ -997,14 +1145,13 @@ function BillingHistory({
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${
-                        String(p.status).toUpperCase().includes("SUCCESS") ||
+                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${String(p.status).toUpperCase().includes("SUCCESS") ||
                         String(p.status).toUpperCase().includes("PAID")
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                          : String(p.status).toUpperCase().includes("FAILED")
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                        : String(p.status).toUpperCase().includes("FAILED")
                           ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {String(p.status).replaceAll("_", " ")}
                     </span>
@@ -1077,8 +1224,8 @@ function ReferralSection() {
 
   const progressPercent = stats.nextBadge
     ? ((stats.nextBadge.referralsNeeded - stats.nextBadge.referralsRemaining) /
-        stats.nextBadge.referralsNeeded) *
-      100
+      stats.nextBadge.referralsNeeded) *
+    100
     : 100;
 
   return (

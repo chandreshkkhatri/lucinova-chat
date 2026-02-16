@@ -1,5 +1,7 @@
 // Google Ads Conversion Tracking Utility
 
+import { appConfig } from "./config";
+
 declare global {
   interface Window {
     gtag: (
@@ -63,19 +65,20 @@ export function trackSignUpConversion(
  */
 export function trackPurchaseConversion(
   value: number,
-  currency: string = "INR",
+  currency?: string,
   transactionId?: string
 ) {
+  const finalCurrency = currency || appConfig.pricing.currency;
   const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL;
   if (conversionLabel) {
-    trackConversion(conversionLabel, value, currency);
+    trackConversion(conversionLabel, value, finalCurrency);
   }
 
   // Also send as a GA4 event for analytics
   if (typeof window !== "undefined" && window.gtag) {
     window.gtag("event", "purchase", {
       value,
-      currency,
+      currency: finalCurrency,
       transaction_id: transactionId,
     });
   }

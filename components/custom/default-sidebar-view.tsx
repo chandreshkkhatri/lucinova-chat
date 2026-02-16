@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { MessageSquare, Sparkles, FileCode, GitBranch, Crown, Info } from "lucide-react";
+import { MessageSquare, Sparkles, FileCode, GitBranch, Crown, Info, Type, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction } from "react";
 
@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
-import type { NodeType } from "@/lib/message-to-nodes";
 
 import { MultimodalInput } from "./multimodal-input";
 import { UsageLimitBanner } from "./usage-limit-banner";
+
 import type { Attachment } from "./types";
+import type { NodeType } from "@/lib/message-to-nodes";
 
 interface DefaultSidebarViewProps {
   input: string;
@@ -44,13 +45,9 @@ interface DefaultSidebarViewProps {
   setSelectedModel: (model: string) => void;
   isUserPro: boolean;
   isMounted: boolean;
+  selectedNode: { id: string; content: string; role: string; type: string } | null;
 }
 
-const nodeTypeOptions: { value: NodeType; label: string; icon: React.ReactNode }[] = [
-  { value: "text", label: "Text", icon: <MessageSquare className="size-4" /> },
-  { value: "mermaid", label: "Mermaid", icon: <GitBranch className="size-4" /> },
-  { value: "code", label: "Code", icon: <FileCode className="size-4" /> },
-];
 
 export function DefaultSidebarView({
   input,
@@ -70,149 +67,141 @@ export function DefaultSidebarView({
   setSelectedModel,
   isUserPro,
   isMounted,
+  selectedNode,
 }: DefaultSidebarViewProps) {
   const router = useRouter();
 
   return (
     <div className="flex flex-col h-full bg-secondary">
-      {/* Header with model selector */}
-      <div className="px-4 py-3 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+      {/* Header with model selector - Stacked layout */}
+      <div className="px-4 py-3 border-b border-border bg-card shrink-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles className="size-4 text-primary" />
           </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Chat</h2>
-            <p className="text-xs text-muted-foreground">Ask anything</p>
-          </div>
+          <h2 className="font-semibold text-foreground">Chat</h2>
         </div>
+
         {isMounted ? (
           <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger className="w-full h-9 bg-muted/50 border-border text-sm">
-              <div className="flex items-center gap-2">
-                <Sparkles className="size-3.5 text-primary shrink-0" />
-                <SelectValue placeholder="Select a model" />
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Info className="size-3 text-muted-foreground shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Powered by {appConfig.getGeminiName(selectedModel)}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+            <SelectTrigger className="w-full h-8 bg-muted/50 border-border text-xs">
+              <div className="flex items-center gap-1.5 truncate">
+                <Sparkles className="size-3 text-primary shrink-0" />
+                <SelectValue placeholder="Model" />
               </div>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem
                 value="gemini-3.0-flash"
                 className="hover:bg-muted"
-                suffix={
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Info className="size-3 text-muted-foreground ml-2 shrink-0" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Powered by {appConfig.getGeminiName("gemini-3.0-flash")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                }
               >
-                <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-flash")}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium text-xs">Gemini 3.0 Flash</span>
+                  <span className="text-[10px] text-muted-foreground">Fastest & lightweight</span>
+                </div>
               </SelectItem>
               <SelectItem
                 value="gemini-2.5-flash"
                 className="hover:bg-muted"
-                suffix={
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Info className="size-3 text-muted-foreground ml-2 shrink-0" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Powered by {appConfig.getGeminiName("gemini-2.5-flash")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                }
               >
-                <span className="font-medium">{appConfig.getModelDisplayName("gemini-2.5-flash")}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium text-xs">Gemini 2.5 Flash</span>
+                  <span className="text-[10px] text-muted-foreground">Previous gen fast</span>
+                </div>
               </SelectItem>
               <SelectItem
                 value="gemini-3.0-pro"
                 className={isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"}
                 disabled={!isUserPro}
-                suffix={
-                  <span className="pointer-events-auto flex items-center gap-1.5 ml-2">
-                    {!isUserPro && <span className="text-xs text-muted-foreground">Pro</span>}
-                    <TooltipProvider delayDuration={300}>
-                      <Tooltip>
-                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Info className="size-3 text-muted-foreground shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <p>Powered by {appConfig.getGeminiName("gemini-3.0-pro")}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </span>
-                }
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{appConfig.getModelDisplayName("gemini-3.0-pro")}</span>
-                  <Crown className="size-3 text-yellow-500" />
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-xs">Gemini 3.0 Pro</span>
+                    <span className="text-[10px] text-muted-foreground">Best reasoning</span>
+                  </div>
+                  {!isUserPro && <Crown className="size-3 text-yellow-500 shrink-0" />}
                 </div>
               </SelectItem>
             </SelectContent>
           </Select>
         ) : (
-          <div className="w-full h-9 bg-muted rounded animate-pulse" />
+          <div className="w-full h-8 bg-muted rounded animate-pulse" />
         )}
       </div>
 
-      {/* Welcome / empty state */}
+      {/* Center content: Suggestions or Node Context */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex flex-col items-center justify-center h-full text-center max-w-sm mx-auto">
-          <div className="size-12 mx-auto mb-4 rounded-xl bg-muted border border-border flex items-center justify-center">
-            <MessageSquare className="size-6 text-muted-foreground" />
+        {selectedNode ? (
+          /* Node Context View */
+          <div className="flex flex-col gap-4">
+            {/* Node type badge */}
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${selectedNode.type === "mermaid" ? "bg-green-500/10 text-green-500" :
+                selectedNode.type === "code" ? "bg-orange-500/10 text-orange-500" :
+                  "bg-blue-500/10 text-blue-500"
+                }`}>
+                {selectedNode.type === "mermaid" ? <GitBranch className="size-4" /> :
+                  selectedNode.type === "code" ? <FileCode className="size-4" /> :
+                    <MessageSquare className="size-4" />}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground capitalize">
+                  {selectedNode.role === "user" ? "Your message" : "AI response"}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {selectedNode.type === "mermaid" ? "Diagram" : selectedNode.type} node
+                </p>
+              </div>
+            </div>
+
+            {/* Content preview */}
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Eye className="size-3 text-muted-foreground" />
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Preview</span>
+              </div>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap line-clamp-6">
+                {selectedNode.content || "(empty)"}
+              </p>
+            </div>
+
+            {/* Quick actions hint */}
+            <div className="text-xs text-muted-foreground space-y-1.5 px-1">
+              <p>💬 Type below to ask about this node</p>
+              <p>↩️ Click <b>Reply</b> on the node to start a thread</p>
+              <p>✨ Select text on the node to annotate</p>
+            </div>
           </div>
-          <h3 className="text-base font-semibold text-foreground mb-2">
-            Start a conversation
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Type below to chat. Select text in the canvas to annotate it, or click Reply to start a thread.
-          </p>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p>Use the node type selector to create specific content types like diagrams or code.</p>
+        ) : (
+          /* Suggestions View */
+          <div className="flex flex-col h-full">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Get started</h3>
+              <p className="text-xs text-muted-foreground">Click a suggestion or type your own below.</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {[
+                { label: "Write a clear explanation", value: "Explain a complex concept to me in simple terms", icon: <MessageSquare className="size-4 text-blue-500 shrink-0" /> },
+                { label: "Draw a diagram", value: "Create a Mermaid diagram that visualizes the relationship between these concepts", icon: <GitBranch className="size-4 text-green-500 shrink-0" /> },
+                { label: "Generate code", value: "Write a code snippet that demonstrates this concept with comments", icon: <FileCode className="size-4 text-orange-500 shrink-0" /> },
+              ].map((suggestion) => (
+                <button
+                  key={suggestion.value}
+                  onClick={() => setInput(suggestion.value)}
+                  className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3"
+                >
+                  {suggestion.icon}
+                  <p className="text-sm text-foreground/80">{suggestion.label}</p>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Input area */}
       <div className="border-t border-border p-3 sm:p-4 shrink-0 bg-card">
         <div className="space-y-3">
-          {/* Node type selector */}
-          <div className="flex items-center gap-2">
-            <Select value={selectedNodeType} onValueChange={(v) => setSelectedNodeType(v as NodeType)}>
-              <SelectTrigger className="w-full h-8 bg-muted/50 border-border text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {nodeTypeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value} className="hover:bg-muted">
-                    <div className="flex items-center gap-2">
-                      {option.icon}
-                      <span>{option.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Chat input */}
           {usageLimitInfo?.exceeded ? (
             <UsageLimitBanner
@@ -245,6 +234,8 @@ export function DefaultSidebarView({
               messages={messages}
               sendMessage={sendMessage}
               handleSubmit={handleSubmit}
+              selectedNodeType={selectedNodeType}
+              setSelectedNodeType={setSelectedNodeType}
             />
           )}
         </div>

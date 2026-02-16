@@ -32,14 +32,14 @@ export const appConfig = {
 
   // Pricing & currency configuration
   pricing: {
-    // Public price (in rupees) for client-side display
-    proMonthlyRupees: Number(
-      process.env.NEXT_PUBLIC_PRO_MONTHLY_PRICE_INR ||
-        process.env.PRO_MONTHLY_PRICE_INR ||
-        2000
+    // Public price for client-side display (in major currency unit, e.g., dollars not cents)
+    proMonthlyPrice: Number(
+      process.env.NEXT_PUBLIC_PRO_MONTHLY_PRICE ||
+        process.env.PRO_MONTHLY_PRICE ||
+        20
     ),
     // Currency code and symbol
-    currency: (process.env.NEXT_PUBLIC_CURRENCY || "INR").toUpperCase(),
+    currency: (process.env.NEXT_PUBLIC_CURRENCY || "USD").toUpperCase(),
   },
 
   // Helpers

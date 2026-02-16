@@ -57,6 +57,7 @@ interface RightSidebarProps {
     limit: number;
     periodEnd: Date | string;
   } | null;
+  selectedNode: { id: string; content: string; role: string; type: string } | null;
 }
 
 export function RightSidebar({
@@ -86,6 +87,7 @@ export function RightSidebar({
   isUserPro,
   isGuest,
   usageLimitInfo,
+  selectedNode,
 }: RightSidebarProps) {
   const hasThread = !!activeThread;
   const hasAnnotation = !!(activeAnnotation || pendingAnnotation);
@@ -129,6 +131,7 @@ export function RightSidebar({
         setSelectedModel={setSelectedModel}
         isUserPro={isUserPro}
         isMounted={isMounted}
+        selectedNode={selectedNode}
       />
     );
   }
@@ -222,6 +225,7 @@ export function RightSidebar({
           setSelectedModel={setSelectedModel}
           isUserPro={isUserPro}
           isMounted={isMounted}
+          selectedNode={selectedNode}
         />
       </TabsContent>
 

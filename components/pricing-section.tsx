@@ -15,6 +15,7 @@ import { appConfig } from "@/lib/config";
 
 interface PricingSectionProps {
   isUserPro?: boolean;
+  isAuthenticated?: boolean;
   userBadges?: Array<{
     badgeId: string;
     metadata?: {
@@ -23,9 +24,13 @@ interface PricingSectionProps {
   }>;
 }
 
-export function PricingSection({ isUserPro = false, userBadges = [] }: PricingSectionProps) {
-  const priceRupees = appConfig.pricing.proMonthlyRupees;
-  const pricePaise = Math.round(priceRupees * 100);
+export function PricingSection({
+  isUserPro = false,
+  isAuthenticated = false,
+  userBadges = [],
+}: PricingSectionProps) {
+  const price = appConfig.pricing.proMonthlyPrice;
+  const priceInCents = Math.round(price * 100); // Razorpay expects amount in smallest currency unit
   const currency = appConfig.pricing.currency;
   const symbol = appConfig.getCurrencySymbol(currency);
 
@@ -36,8 +41,11 @@ export function PricingSection({ isUserPro = false, userBadges = [] }: PricingSe
     earlyBirdBadge.metadata?.benefitUsedMonths !== undefined &&
     earlyBirdBadge.metadata.benefitUsedMonths < 3;
 
-  const discountedPrice = hasActiveEarlyBirdDiscount ? Math.round(priceRupees * 0.25) : priceRupees;
-  const discountedPricePaise = Math.round(discountedPrice * 100);
+  const discountedPrice = hasActiveEarlyBirdDiscount
+    ? Math.round(price * 0.25)
+    : price;
+  const discountedPriceInCents = Math.round(discountedPrice * 100);
+
   return (
     <section className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-12">
@@ -91,31 +99,47 @@ export function PricingSection({ isUserPro = false, userBadges = [] }: PricingSe
             </div>
           ) : (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                Coming Soon
+              <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                Popular
               </span>
             </div>
           )}
           <CardHeader>
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
-            {hasActiveEarlyBirdDiscount && (
+            {hasActiveEarlyBirdDiscount ? (
               <div className="mt-4 space-y-2">
                 <div className="inline-block">
                   <p className="text-xs font-medium text-muted-foreground line-through">
-                    {symbol}{priceRupees}/month
+                    {symbol}
+                    {price.toLocaleString()}/month
                   </p>
                 </div>
                 <div>
                   <span className="text-4xl font-bold text-amber-600 dark:text-amber-400">
-                    {symbol}{discountedPrice}
+                    {symbol}
+                    {discountedPrice}
                   </span>
                   <span className="text-muted-foreground ml-2">/month</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   75% off for first 3 months (
                   {3 - (earlyBirdBadge.metadata?.benefitUsedMonths || 0)} month
-                  {3 - (earlyBirdBadge.metadata?.benefitUsedMonths || 0) === 1 ? "" : "s"} remaining)
+                  {3 - (earlyBirdBadge.metadata?.benefitUsedMonths || 0) === 1
+                    ? ""
+                    : "s"}{" "}
+                  remaining)
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <span className="text-4xl font-bold">
+                  {symbol}
+                  {price.toLocaleString()}
+                </span>
+                <span className="text-muted-foreground">/month</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Plus applicable taxes
                 </p>
               </div>
             )}
@@ -140,27 +164,34 @@ export function PricingSection({ isUserPro = false, userBadges = [] }: PricingSe
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
             {isUserPro ? (
-              <Button disabled className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed">
+              <Button
+                disabled
+                className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed"
+              >
                 ✓ Current Plan
               </Button>
             ) : hasActiveEarlyBirdDiscount ? (
               <PaymentButton
-                amount={discountedPricePaise}
+                amount={discountedPriceInCents}
                 planName="Pro Monthly Subscription"
                 buttonText="Subscribe with Early Bird Discount"
               />
+            ) : isAuthenticated ? (
+              <PaymentButton
+                amount={priceInCents}
+                planName="Lucidity Pro Monthly"
+                className="w-full"
+                buttonText="Subscribe Now"
+              />
             ) : (
-              <Button
-                disabled
-                className="w-full bg-muted text-muted-foreground border border-dashed border-border cursor-not-allowed"
-              >
-                Coming Soon
+              <Button className="w-full" asChild>
+                <Link href="/login">Log in to upgrade</Link>
               </Button>
             )}
             {!isUserPro && !hasActiveEarlyBirdDiscount && (
               <p className="text-xs text-center text-muted-foreground">
-                The Pro subscription is still rolling out. Register to be notified
-                when we launch.
+                Secure monthly billing via Razorpay. See our refund policy for
+                cancellation terms.
               </p>
             )}
           </CardFooter>

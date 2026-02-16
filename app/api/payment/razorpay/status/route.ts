@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { appConfig } from "@/lib/config";
 import { fetchRazorpayPayment, fetchRazorpaySubscription } from "@/lib/razorpay";
 
 function jsonError(message: string, status = 400, details?: string | object) {
@@ -49,6 +50,11 @@ export async function GET(request: NextRequest) {
       try {
         const subscription = await fetchRazorpaySubscription(subscriptionId);
 
+        // Get amount and currency from subscription
+        // Razorpay subscriptions may have amount and currency on the object
+        const amountInMajor = ((subscription as any).quantity || 1) * ((subscription as any).item?.amount || 0) / 100;
+        const currency = (subscription as any).item?.currency?.toUpperCase() || (subscription as any).currency?.toUpperCase() || appConfig.pricing.currency;
+
         const response = {
           success: true,
           subscriptionId: subscription.id,
@@ -58,7 +64,9 @@ export async function GET(request: NextRequest) {
           planId: subscription.plan_id,
           customerId: subscription.customer_id,
           notes: subscription.notes,
-          orderAmount: 0,
+          orderAmount: amountInMajor,
+          amount: ((subscription as any).quantity || 1) * ((subscription as any).item?.amount || 0),
+          currency: currency,
         };
 
         return NextResponse.json(response);

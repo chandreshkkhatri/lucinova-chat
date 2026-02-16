@@ -31,62 +31,67 @@ export default function RefundPolicyPage() {
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  Cancellation Policy
+                  Subscription Cancellation
                 </h2>
                 <ul className="list-disc list-inside ml-4 mt-2 space-y-3">
                   <li>
-                    Cancellations will be considered only if the request is made
-                    immediately after placing the order. However, the
-                    cancellation request may not be entertained if the orders
-                    have been communicated to the vendors/merchants and they
-                    have initiated the process of shipping them.
+                    You may cancel your subscription at any time through your
+                    account settings or by contacting our customer service team.
                   </li>
                   <li>
-                    Rebundled Company does not accept cancellation requests for
-                    perishable items like flowers, eatables etc. However,
-                    refund/replacement can be made if the customer establishes
-                    that the quality of product delivered is not good.
+                    Upon cancellation, your subscription will remain active until
+                    the end of the current billing period. You will not be
+                    charged for any subsequent billing periods.
+                  </li>
+                  <li>
+                    No refunds will be provided for the current billing period
+                    upon cancellation, except as stated in the Refund Policy
+                    section below.
                   </li>
                 </ul>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  Damaged or Defective Items
+                  Service Issues and Technical Refunds
                 </h2>
                 <ul className="list-disc list-inside ml-4 mt-2 space-y-3">
                   <li>
-                    In case of receipt of damaged or defective items please
-                    report the same to our Customer Service team. The request
-                    will, however, be entertained once the merchant has checked
-                    and determined the same at his own end. This should be
-                    reported within <strong>7 Days</strong> of receipt of the
-                    products.
+                    If you experience technical issues that prevent you from
+                    using the service, please contact our customer service team
+                    immediately at support@lucidity.chat.
                   </li>
                   <li>
-                    In case you feel that the product received is not as shown
-                    on the site or as per your expectations, you must bring it
-                    to the notice of our customer service within{" "}
-                    <strong>7 Days</strong> of receiving the product. The
-                    Customer Service Team after looking into your complaint will
-                    take an appropriate decision.
+                    Refunds for the current billing period may be considered if
+                    you experience significant technical issues that prevent
+                    service use. You must report the issue within{" "}
+                    <strong>7 Days</strong> of the billing date with detailed
+                    information about the problem.
+                  </li>
+                  <li>
+                    Our Customer Service Team will investigate your complaint and
+                    determine whether a refund or credit is appropriate.
                   </li>
                 </ul>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-foreground mb-3">
-                  Refund Policy
+                  Refund Processing
                 </h2>
                 <ul className="list-disc list-inside ml-4 mt-2 space-y-3">
                   <li>
-                    In case of complaints regarding products that come with a
-                    warranty from manufacturers, please refer the issue to them.
+                    When a refund is approved by Rebundled Company, it will be
+                    credited to your original payment method or account balance
+                    within <strong>7-15 Business Days</strong>.
                   </li>
                   <li>
-                    In case of any Refunds approved by the Rebundled Company,
-                    it'll take <strong>9-15 Days</strong> for the refund to be
-                    processed to the end customer.
+                    The exact timeline depends on your payment method and your
+                    financial institution's processing time.
+                  </li>
+                  <li>
+                    We recommend checking your account settings and email for
+                    confirmation of refund approval and processing status.
                   </li>
                 </ul>
               </section>
