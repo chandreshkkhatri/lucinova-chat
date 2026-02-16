@@ -41,7 +41,8 @@ export type CanvasNodeData = {
   role: "user" | "assistant" | "system" | "data";
 };
 
-export const CanvasNodeComponent = memo(({ data }: NodeProps<Node<CanvasNodeData>>) => {
+export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
+  const data = rawData as CanvasNodeData;
   const {
     message,
     chatId,

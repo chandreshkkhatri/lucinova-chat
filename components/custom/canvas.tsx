@@ -77,9 +77,8 @@ function CanvasGraph({ messages, status, isThread, chatId, annotationsByMessage,
       // Find existing node to preserve position if it exists
       const existingNode = nodes.find((n) => n.id === msg.id);
 
-      const role = msg.role === "data" ? "data" :
-        msg.role === "system" ? "system" :
-          msg.role === "user" ? "user" : "assistant";
+      const role = msg.role === "system" ? "system" :
+        msg.role === "user" ? "user" : "assistant";
 
       const textPart = msg.parts?.find(p => p.type === "text");
       const content = textPart && "text" in textPart ? textPart.text : "";

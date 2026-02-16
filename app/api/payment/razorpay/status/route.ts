@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
 
         // Get amount and currency from subscription
         // Razorpay subscriptions may have amount and currency on the object
-        const amountInMajor = (subscription.quantity || 1) * (subscription.item?.amount || 0) / 100;
-        const currency = subscription.item?.currency || subscription.currency || "INR";
+        const amountInMajor = ((subscription as any).quantity || 1) * ((subscription as any).item?.amount || 0) / 100;
+        const currency = (subscription as any).item?.currency || (subscription as any).currency || "INR";
 
         const response = {
           success: true,
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
           customerId: subscription.customer_id,
           notes: subscription.notes,
           orderAmount: amountInMajor,
-          amount: (subscription.quantity || 1) * (subscription.item?.amount || 0),
+          amount: ((subscription as any).quantity || 1) * ((subscription as any).item?.amount || 0),
           currency: currency,
         };
 

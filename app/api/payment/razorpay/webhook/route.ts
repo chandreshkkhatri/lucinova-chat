@@ -341,15 +341,48 @@ async function handleSubscriptionActivated(event: any) {
   }
 
   const subscriptionId = subscription.id;
-  const customerEmail = subscription.notes?.customer_email;
+  let customerEmail = subscription.notes?.customer_email;
+  let customerName = subscription.notes?.customer_name;
+
+  // Fallback: try to get email from customer_id
+  if (!customerEmail && subscription.customer_id) {
+    try {
+      const rz = ensureRazorpayClient();
+      if (!("error" in rz)) {
+        // @ts-ignore - razorpay client types
+        const cust = await rz.client.customers.fetch(subscription.customer_id);
+        if (cust?.email) customerEmail = cust.email;
+        if (cust?.name && !customerName) customerName = cust.name;
+      }
+    } catch (err) {
+      console.error("[Subscription Activated] Failed to fetch customer:", err);
+    }
+  }
 
   console.log("[Subscription Activated] Subscription activated:", {
     subscriptionId,
     customer: customerEmail,
   });
 
-  // Note: We activate on charge, not on activation
-  // This logs the event for reference
+  if (!customerEmail) {
+    console.error("[Subscription Activated] No customer email available for subscription:", subscriptionId);
+    return;
+  }
+
+  // Activate the pro subscription
+  await ensureConnection();
+  const updatedUser = await activateProSubscriptionByEmail(customerEmail, 30, "razorpay");
+
+  if (updatedUser) {
+    // Store the subscriptionId on the user record
+    await User.findOneAndUpdate(
+      { email: customerEmail.toLowerCase() },
+      { subscriptionId }
+    );
+    console.log("[Subscription Activated] Pro subscription activated for:", customerEmail);
+  } else {
+    console.error("[Subscription Activated] Failed to activate pro for:", customerEmail);
+  }
 }
 
 async function handleSubscriptionCancelled(event: any) {

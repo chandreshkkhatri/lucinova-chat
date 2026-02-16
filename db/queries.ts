@@ -228,6 +228,9 @@ export async function recordPaymentOnce({
   provider,
   subscriptionId,
   paymentId,
+  taxAmount,
+  taxRate,
+  taxJurisdiction,
   raw,
 }: {
   orderId: string;
@@ -241,6 +244,9 @@ export async function recordPaymentOnce({
   provider?: "razorpay";
   subscriptionId?: string;
   paymentId?: string;
+  taxAmount?: number;
+  taxRate?: number;
+  taxJurisdiction?: string;
   raw?: any;
 }) {
   await ensureConnection();
@@ -261,6 +267,9 @@ export async function recordPaymentOnce({
         provider,
         subscriptionId,
         paymentId,
+        taxAmount,
+        taxRate,
+        taxJurisdiction,
         raw,
       },
     },
