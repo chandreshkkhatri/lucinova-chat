@@ -1,7 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
+import { Sparkles, Reply, MessageSquare, FileCode, GitBranch } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useCallback } from "react";
 import {
@@ -56,6 +56,7 @@ interface CanvasProps {
   } | null;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
+  onNodeSelect?: (nodeData: { id: string; content: string; role: string; type: string } | null) => void;
 }
 
 const nodeTypes = {
@@ -153,30 +154,44 @@ function CanvasGraph({ messages, status, isThread, chatId, annotationsByMessage,
         maxZoom={4}
         defaultEdgeOptions={{ type: 'smoothstep' }}
         proOptions={{ hideAttribution: true }}
+        onNodeClick={(_event, node) => {
+          const data = node.data as CanvasNodeData;
+          props.onNodeSelect?.({
+            id: node.id,
+            content: data.content,
+            role: data.role,
+            type: data.type,
+          });
+        }}
+        onPaneClick={() => {
+          props.onNodeSelect?.(null);
+        }}
       >
         <Background gap={20} size={1} color="hsl(var(--muted-foreground))" className="opacity-20" />
         <Controls className="bg-background border-border text-foreground fill-foreground" />
       </ReactFlow>
 
       {/* Floating Input for Thread Mode */}
-      {isThread && (
-        <div className="absolute bottom-0 left-0 right-0 z-50 p-4 pointer-events-none">
-          <div className="max-w-4xl mx-auto pointer-events-auto bg-background/80 backdrop-blur-sm rounded-xl border border-border shadow-lg p-1">
-            <MultimodalInput
-              input={props.input}
-              setInput={props.setInput}
-              isLoading={status === "streaming" || status === "submitted"}
-              stop={props.stop}
-              attachments={props.attachments}
-              setAttachments={props.setAttachments}
-              messages={messages}
-              sendMessage={props.sendMessage}
-              handleSubmit={props.handleSubmit}
-            />
+      {
+        isThread && (
+          <div className="absolute bottom-0 left-0 right-0 z-50 p-4 pointer-events-none">
+            <div className="max-w-4xl mx-auto pointer-events-auto bg-background/80 backdrop-blur-sm rounded-xl border border-border shadow-lg p-1">
+              <MultimodalInput
+                input={props.input}
+                setInput={props.setInput}
+                isLoading={status === "streaming" || status === "submitted"}
+                stop={props.stop}
+                attachments={props.attachments}
+                setAttachments={props.setAttachments}
+                messages={messages}
+                sendMessage={props.sendMessage}
+                handleSubmit={props.handleSubmit}
+              />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 
@@ -302,30 +317,19 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
 
       {/* Layer 2: Center content */}
       <div
-        className="relative z-20 text-center max-w-md"
-        style={{ animation: "canvas-fade-in-up 600ms ease-out 100ms forwards", opacity: 0 }}
+        className="relative z-20 text-center max-w-md px-8 py-10 rounded-2xl"
+        style={{
+          animation: "canvas-fade-in-up 600ms ease-out 100ms forwards",
+          opacity: 0,
+          background: "radial-gradient(ellipse at center, hsl(var(--card)) 40%, transparent 70%)",
+        }}
       >
         <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
           <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={64} height={64} className="size-full object-contain" />
         </div>
         <h2 className="text-2xl font-bold text-foreground mb-2">Lucidity Canvas</h2>
-        <p className="text-muted-foreground mb-6">Your thinking space. Ask questions, explore ideas, branch into threads.</p>
-        <div className="flex flex-col gap-2 mb-4">
-          {[
-            { label: "Explain a complex concept simply", value: "Explain a complex concept to me" },
-            { label: "Create a personalized study plan", value: "Help me create a study plan for a new subject" },
-            { label: "Summarize and extract key points", value: "Summarize this text and extract key learning points" },
-          ].map((suggestion, i) => (
-            <button
-              key={suggestion.value}
-              onClick={() => setInput(suggestion.value)}
-              className="p-3 text-left rounded-lg border border-border hover:bg-muted transition-colors"
-              style={{ animation: `canvas-fade-in-up 500ms ease-out ${400 + i * 100}ms forwards`, opacity: 0 }}
-            >
-              <p className="text-sm text-foreground/80">{suggestion.label}</p>
-            </button>
-          ))}
-        </div>
+        <p className="text-muted-foreground mb-2">Your thinking space. Ask questions, explore ideas, branch into threads.</p>
+        <p className="text-sm text-muted-foreground/60">Use the sidebar to get started →</p>
       </div>
     </div>
   )

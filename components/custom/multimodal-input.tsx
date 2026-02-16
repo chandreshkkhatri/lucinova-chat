@@ -1,14 +1,22 @@
 "use client";
 
 import { UIMessage } from "ai";
-import { FileText, Mic, MicOff, Plus, Send, Square, Trash2, X } from "lucide-react";
+import { FileText, Mic, MicOff, Plus, Send, Square, Trash2, X, MessageSquare, GitBranch, FileCode, Check } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Attachment } from "./types";
+import type { NodeType } from "@/lib/message-to-nodes";
 
 interface MultimodalInputProps {
   input: string;
@@ -24,7 +32,15 @@ interface MultimodalInputProps {
     options?: { body?: any }
   }) => Promise<void>;
   handleSubmit: (e?: React.FormEvent) => void;
+  selectedNodeType?: NodeType;
+  setSelectedNodeType?: (type: NodeType) => void;
 }
+
+const nodeTypeOptions: { value: NodeType; label: string; icon: React.ReactNode }[] = [
+  { value: "text", label: "Write text", icon: <MessageSquare className="size-4" /> },
+  { value: "mermaid", label: "Draw a diagram", icon: <GitBranch className="size-4" /> },
+  { value: "code", label: "Generate code", icon: <FileCode className="size-4" /> },
+];
 
 // Maximum recording duration in milliseconds (60 seconds)
 const MAX_RECORDING_DURATION = 60000;
@@ -39,6 +55,8 @@ export function MultimodalInput({
   messages,
   sendMessage,
   handleSubmit,
+  selectedNodeType,
+  setSelectedNodeType,
 }: MultimodalInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -374,27 +392,7 @@ export function MultimodalInput({
       )}
 
       {/* Main Input Container */}
-      <div className="flex items-end gap-2 p-2 bg-card border border-border rounded-2xl shadow-sm">
-        {/* Attachment Button */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0 size-10 rounded-xl hover:bg-muted"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isLoading || isRecording}
-        >
-          <Plus className="size-5 text-muted-foreground" />
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="invisible absolute size-0 opacity-0 pointer-events-none"
-          multiple
-          accept="image/*,application/pdf,.txt,.doc,.docx"
-          onChange={handleFileSelect}
-        />
-
+      <div className="p-2 bg-card border border-border rounded-2xl shadow-sm focus-within:ring-1 focus-within:ring-primary/20 transition-all">
         {/* Textarea */}
         <Textarea
           ref={textareaRef}
@@ -403,74 +401,140 @@ export function MultimodalInput({
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? "Recording audio..." : "Type a message..."}
           disabled={isLoading || isRecording}
-          className="flex-1 min-h-[40px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
+          className="min-h-[60px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground p-2 text-base"
           rows={1}
         />
 
-        {/* Action Buttons */}
-        <div className="shrink-0">
-          {/* Mic Button - shown when no input and not loading */}
-          {showMicButton && (
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-2 mt-2">
+          {/* Left Side: Attachments & Node Type */}
+          <div className="flex items-center gap-1">
             <Button
               type="button"
+              variant="ghost"
               size="icon"
-              className="size-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
-              onClick={startRecording}
+              className="shrink-0 size-8 rounded-lg hover:bg-muted text-muted-foreground"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || isRecording}
             >
-              <Mic className="size-5" />
+              <Plus className="size-4" />
             </Button>
-          )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="invisible absolute size-0 opacity-0 pointer-events-none"
+              multiple
+              accept="image/*,application/pdf,.txt,.doc,.docx"
+              onChange={handleFileSelect}
+            />
 
-          {/* Send Recording Button */}
-          {showStopRecordingButton && (
-            <div className="flex gap-2">
+            {selectedNodeType && setSelectedNodeType && (
+              <DropdownMenu>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 size-8 rounded-lg hover:bg-muted text-muted-foreground"
+                          disabled={isLoading || isRecording}
+                        >
+                          {nodeTypeOptions.find((opt) => opt.value === selectedNodeType)?.icon}
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{nodeTypeOptions.find((opt) => opt.value === selectedNodeType)?.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <DropdownMenuContent align="start" className="w-48 p-1">
+                  {nodeTypeOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => setSelectedNodeType(option.value)}
+                      className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
+                    >
+                      <div className={`p-1 rounded-md ${selectedNodeType === option.value ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+                        {option.icon}
+                      </div>
+                      <span className="flex-1">{option.label}</span>
+                      {selectedNodeType === option.value && <Check className="size-3.5 text-primary" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+
+          {/* Right Side: Actions */}
+          <div className="flex items-center gap-2">
+            {/* Mic Button */}
+            {showMicButton && (
               <Button
                 type="button"
+                variant="ghost"
                 size="icon"
-                className="size-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg animate-in zoom-in-50 duration-200"
-                onClick={stopRecording}
+                className="size-8 rounded-lg hover:bg-muted text-muted-foreground"
+                onClick={startRecording}
               >
-                <Send className="size-5" />
+                <Mic className="size-4" />
               </Button>
+            )}
+
+            {/* Send Recording Button */}
+            {showStopRecordingButton && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="icon"
+                  className="size-8 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg animate-in zoom-in-50 duration-200"
+                  onClick={stopRecording}
+                >
+                  <Send className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="size-8 rounded-lg border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20 animate-in zoom-in-50 duration-200"
+                  onClick={cancelRecording}
+                >
+                  <Trash2 className="size-4 text-red-500" />
+                </Button>
+              </div>
+            )}
+
+            {/* Send Button */}
+            {showSendButton && (
+              <Button
+                type="submit"
+                size="icon"
+                className="size-8 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSubmit();
+                }}
+              >
+                <Send className="size-4" />
+              </Button>
+            )}
+
+            {/* Stop Generating Button */}
+            {showStopGenerating && (
               <Button
                 type="button"
                 size="icon"
                 variant="outline"
-                className="size-10 rounded-xl border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20 animate-in zoom-in-50 duration-200"
-                onClick={cancelRecording}
+                className="size-8 rounded-lg"
+                onClick={stop}
               >
-                <Trash2 className="size-5 text-red-500" />
+                <Square className="size-3" />
               </Button>
-            </div>
-          )}
-
-          {/* Send Button - shown when there's input */}
-          {showSendButton && (
-            <Button
-              type="submit"
-              size="icon"
-              className="size-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
-              onClick={(e) => {
-                e.preventDefault();
-                handleSubmit();
-              }}
-            >
-              <Send className="size-5" />
-            </Button>
-          )}
-
-          {/* Stop Generating Button - shown when loading */}
-          {showStopGenerating && (
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              className="size-10 rounded-xl"
-              onClick={stop}
-            >
-              <Square className="size-4" />
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
