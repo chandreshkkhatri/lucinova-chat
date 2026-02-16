@@ -43,18 +43,12 @@ export async function calculateSalesTax(
     };
   }
 
-  // US customer without state: Can't calculate
+  // US customer without state: Can't calculate — reject to avoid compliance issues
   if (!state) {
-    console.warn(
-      `[Tax] US customer without state - unable to calculate tax. Email: ${customerEmail}`
-    );
-    return {
-      taxAmount: 0,
-      taxRate: 0,
-      taxJurisdiction: "Unknown",
-      isTaxable: true, // Mark as taxable for compliance
-      provider: "none",
-    };
+    const message = `[Tax] Missing state for US customer; cannot calculate tax. Email: ${customerEmail ?? "unknown"
+      }`;
+    console.error(message);
+    throw new Error(message);
   }
 
   // Try TaxJar API if configured
@@ -100,7 +94,7 @@ async function calculateTaxWithTaxJar(
       body: JSON.stringify({
         // Required fields
         from_country: "US",
-        from_state: "CA", // Default origin state (configure as needed)
+        from_state: process.env.TAXJAR_FROM_STATE || "CA",
         to_state: state,
         amount: amountInDollars,
         // Optional fields for accuracy

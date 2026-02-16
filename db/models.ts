@@ -245,9 +245,10 @@ export interface IPayment extends Document {
   subscriptionId?: string; // Razorpay subscription_id
   paymentId?: string; // Razorpay payment_id
   // Tax fields
-  taxAmount?: number; // Tax collected (in cents/paise)
+  taxAmount?: number; // Tax collected (in cents)
   taxRate?: number; // Tax rate applied (e.g., 0.0875 for 8.75%)
   taxJurisdiction?: string; // e.g., "CA" or "NY"
+  taxCurrency?: string; // Currency of the tax amount (e.g., "USD")
   // Billing address snapshot at time of payment
   billingAddress?: {
     line1?: string;
@@ -266,7 +267,7 @@ const paymentSchema = new Schema<IPayment>(
     orderId: { type: String, required: true, unique: true },
     status: { type: String, required: true },
     amount: { type: Number, required: true },
-    currency: { type: String, default: "INR" },
+    currency: { type: String, default: "USD" },
     customerEmail: { type: String },
     customerName: { type: String },
     environment: { type: String, enum: ["production", "test"] },
@@ -277,6 +278,7 @@ const paymentSchema = new Schema<IPayment>(
     taxAmount: { type: Number },
     taxRate: { type: Number },
     taxJurisdiction: { type: String },
+    taxCurrency: { type: String },
     billingAddress: {
       line1: { type: String },
       line2: { type: String },

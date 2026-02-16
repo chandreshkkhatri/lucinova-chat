@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
-import { CountryCodeSelect } from "@/components/custom/country-code-select";
 import { BadgeCard } from "@/components/custom/badge-card";
+import { CountryCodeSelect } from "@/components/custom/country-code-select";
 import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
 
 interface AccountClientProps {
@@ -192,10 +192,10 @@ export default function AccountClient({ user }: AccountClientProps) {
     setIsRefreshing(true);
     toast.info("Refreshing account data...");
     try {
-      // Hard refresh to get latest data from server
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       toast.error("Failed to refresh");
+    } finally {
       setIsRefreshing(false);
     }
   }
@@ -238,7 +238,7 @@ export default function AccountClient({ user }: AccountClientProps) {
 
       toast.success("Subscription canceled. You will retain access until the end of your billing period.");
       // Refresh to show updated status
-      setTimeout(() => window.location.reload(), 1500);
+      setTimeout(() => router.refresh(), 1500);
     } catch (e: any) {
       toast.error(e.message || "Failed to cancel subscription");
     } finally {
@@ -446,7 +446,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                         <p className="text-xs text-muted-foreground mt-1">
                           Plan expires{" "}
                           {new Date(user.currentPeriodEnd).toLocaleDateString(
-                            "en-IN"
+                            "en-US"
                           )}
                         </p>
                       )}
@@ -479,11 +479,10 @@ export default function AccountClient({ user }: AccountClientProps) {
                   </p>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    user.isPro
-                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                      : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                  }`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${user.isPro
+                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                    : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                    }`}
                 >
                   {user.isPro ? "Pro" : "Free"}
                 </span>
@@ -499,7 +498,7 @@ export default function AccountClient({ user }: AccountClientProps) {
                           : "Next billing date"}
                       </p>
                       <p className="text-foreground font-medium">
-                        {new Date(user.currentPeriodEnd).toLocaleDateString("en-IN", {
+                        {new Date(user.currentPeriodEnd).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -683,13 +682,12 @@ export default function AccountClient({ user }: AccountClientProps) {
                             !item.disabled && setActiveSection(item.id)
                           }
                           disabled={item.disabled}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                            activeSection === item.id
-                              ? "bg-primary/10 text-primary"
-                              : item.disabled
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${activeSection === item.id
+                            ? "bg-primary/10 text-primary"
+                            : item.disabled
                               ? "text-muted-foreground/50 cursor-not-allowed"
                               : "text-foreground hover:bg-muted"
-                          }`}
+                            }`}
                         >
                           <Icon className="size-5" />
                           <span className="text-sm font-medium">
@@ -966,11 +964,10 @@ function UsageSection({ isPro }: { isPro: boolean }) {
             </p>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              isPro
-                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-            }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${isPro
+              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+              : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+              }`}
           >
             {isPro ? "Pro" : "Free"} Plan
           </span>
@@ -988,13 +985,12 @@ function UsageSection({ isPro }: { isPro: boolean }) {
           </div>
           <div className="h-3 bg-card rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${
-                current.percentUsed >= 100
-                  ? "bg-red-500"
-                  : current.percentUsed >= 80
+              className={`h-full rounded-full transition-all ${current.percentUsed >= 100
+                ? "bg-red-500"
+                : current.percentUsed >= 80
                   ? "bg-amber-500"
                   : "bg-primary"
-              }`}
+                }`}
               style={{ width: `${Math.min(100, current.percentUsed)}%` }}
             />
           </div>
@@ -1014,7 +1010,7 @@ function UsageSection({ isPro }: { isPro: boolean }) {
                 0,
                 Math.ceil(
                   (new Date(current.periodEnd).getTime() - Date.now()) /
-                    (1000 * 60 * 60 * 24)
+                  (1000 * 60 * 60 * 24)
                 )
               )}{" "}
               days
@@ -1149,14 +1145,13 @@ function BillingHistory({
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${
-                        String(p.status).toUpperCase().includes("SUCCESS") ||
+                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${String(p.status).toUpperCase().includes("SUCCESS") ||
                         String(p.status).toUpperCase().includes("PAID")
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                          : String(p.status).toUpperCase().includes("FAILED")
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                        : String(p.status).toUpperCase().includes("FAILED")
                           ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {String(p.status).replaceAll("_", " ")}
                     </span>
@@ -1229,8 +1224,8 @@ function ReferralSection() {
 
   const progressPercent = stats.nextBadge
     ? ((stats.nextBadge.referralsNeeded - stats.nextBadge.referralsRemaining) /
-        stats.nextBadge.referralsNeeded) *
-      100
+      stats.nextBadge.referralsNeeded) *
+    100
     : 100;
 
   return (

@@ -220,7 +220,7 @@ export async function recordPaymentOnce({
   orderId,
   status,
   amount,
-  currency = "INR",
+  currency = "USD",
   customerEmail,
   customerName,
   environment,
@@ -231,6 +231,7 @@ export async function recordPaymentOnce({
   taxAmount,
   taxRate,
   taxJurisdiction,
+  taxCurrency,
   raw,
 }: {
   orderId: string;
@@ -247,6 +248,7 @@ export async function recordPaymentOnce({
   taxAmount?: number;
   taxRate?: number;
   taxJurisdiction?: string;
+  taxCurrency?: string;
   raw?: any;
 }) {
   await ensureConnection();
@@ -270,6 +272,7 @@ export async function recordPaymentOnce({
         taxAmount,
         taxRate,
         taxJurisdiction,
+        taxCurrency,
         raw,
       },
     },

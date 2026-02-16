@@ -94,9 +94,29 @@ export async function POST(request: NextRequest) {
     }
 
     if (handlerError) {
-      // Return 500 so Razorpay retries the webhook
+      // For idempotent events, return 200 to prevent Razorpay retries
+      // since recordPaymentOnce already handles deduplication
+      const idempotentEvents = ["subscription.charged", "subscription.activated"];
+      const isIdempotent = idempotentEvents.includes(event.event);
+
+      if (isIdempotent) {
+        console.error(
+          `[Razorpay Webhook] Handler error for idempotent event ${event.event}, returning 200 to prevent retries:`,
+          handlerError.message
+        );
+        return NextResponse.json(
+          { error: "Webhook handler failed", event: event.event, message: handlerError.message, retriable: false },
+          { status: 200 }
+        );
+      }
+
+      // Non-idempotent events: return 500 so Razorpay retries
+      console.error(
+        `[Razorpay Webhook] Handler error for event ${event.event}, returning 500 to allow Razorpay retry:`,
+        handlerError.message
+      );
       return NextResponse.json(
-        { error: "Webhook handler failed", event: event.event, message: handlerError.message },
+        { error: "Webhook handler failed", event: event.event, message: handlerError.message, retriable: true },
         { status: 500 }
       );
     }
@@ -267,6 +287,7 @@ async function handleSubscriptionCharged(event: any) {
     taxAmount: taxAmount > 0 ? taxAmount : undefined,
     taxRate: taxRate > 0 ? taxRate : undefined,
     taxJurisdiction: taxJurisdiction !== "None" ? taxJurisdiction : undefined,
+    taxCurrency: taxAmount > 0 ? currency : undefined,
     raw: event,
   });
 
