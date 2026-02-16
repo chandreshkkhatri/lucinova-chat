@@ -62,6 +62,9 @@ export function Chat({
   const [input, setInput] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+  const [selectedNode, setSelectedNode] = useState<{
+    id: string; content: string; role: string; type: string;
+  } | null>(null);
 
   // Desktop sidebar resize state
   const [sidebarWidth, setSidebarWidth] = useState(384);
@@ -469,6 +472,7 @@ export function Chat({
     usageLimitInfo,
     onEditMessage: handleEditMessage,
     onRegenerate: handleRegenerate,
+    onNodeSelect: setSelectedNode,
   };
 
   // For threads, render compact layout with Canvas + inline input (no right sidebar)
@@ -519,6 +523,7 @@ export function Chat({
     isUserPro,
     isGuest,
     usageLimitInfo,
+    selectedNode,
   };
 
   // Main chat layout
@@ -552,9 +557,8 @@ export function Chat({
           aria-label="Resize chat panel"
         >
           <ChevronUp
-            className={`size-4 text-muted-foreground transition-transform duration-200 ${
-              isBottomPanelCollapsed ? "rotate-180" : ""
-            }`}
+            className={`size-4 text-muted-foreground transition-transform duration-200 ${isBottomPanelCollapsed ? "rotate-180" : ""
+              }`}
           />
         </div>
 
