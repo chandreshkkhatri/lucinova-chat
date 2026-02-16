@@ -35,6 +35,8 @@ export default async function AccountPage() {
         baseUser.name = dbUser.name || baseUser.name;
         baseUser.phone = dbUser.phone || null;
         baseUser.countryCode = dbUser.countryCode || null;
+        baseUser.subscriptionStatus = dbUser.subscriptionStatus || null;
+        baseUser.subscriptionId = dbUser.subscriptionId || null;
         baseUser.badges = dbUser.badges || [];
 
         console.log("[Account Page] Enriched user data:", {
@@ -42,6 +44,7 @@ export default async function AccountPage() {
           plan: baseUser.plan,
           isPro: baseUser.isPro,
           currentPeriodEnd: baseUser.currentPeriodEnd,
+          subscriptionStatus: baseUser.subscriptionStatus,
           badges: baseUser.badges?.length || 0,
         });
       }

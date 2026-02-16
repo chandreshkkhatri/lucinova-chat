@@ -11,8 +11,10 @@ import {
   incrementBadgeBenefitUsage,
   hasActiveBadgeBenefit,
 } from "@/db/queries";
+import { appConfig } from "@/lib/config";
 import { sendSubscriptionConfirmationEmail } from "@/lib/email";
 import { verifyRazorpayWebhook, ensureRazorpayClient } from "@/lib/razorpay";
+import { calculateSalesTax } from "@/lib/tax";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,35 +57,73 @@ export async function POST(request: NextRequest) {
 
     const event = JSON.parse(rawBody);
     console.log("[Razorpay Webhook] Event received:", event.event);
+    console.log("[Razorpay Webhook] Event contains_id:", event.payload?.subscription?.entity?.id);
 
     // Handle different event types
-    switch (event.event) {
-      case "subscription.charged":
-        await handleSubscriptionCharged(event);
-        break;
-      case "subscription.activated":
-        await handleSubscriptionActivated(event);
-        break;
-      case "subscription.cancelled":
-        await handleSubscriptionCancelled(event);
-        break;
-      case "subscription.completed":
-        await handleSubscriptionCompleted(event);
-        break;
-      case "subscription.halted":
-      case "subscription.paused":
-        await handleSubscriptionPaused(event);
-        break;
-      case "payment.failed":
-        await handlePaymentFailed(event);
-        break;
-      default:
-        console.log("[Razorpay Webhook] Unhandled event type:", event.event);
+    // Each handler is wrapped in try-catch to log errors without masking them
+    let handlerError: Error | null = null;
+    try {
+      switch (event.event) {
+        case "subscription.charged":
+          await handleSubscriptionCharged(event);
+          console.log("[Razorpay Webhook] subscription.charged handled successfully");
+          break;
+        case "subscription.activated":
+          await handleSubscriptionActivated(event);
+          console.log("[Razorpay Webhook] subscription.activated handled successfully");
+          break;
+        case "subscription.cancelled":
+          await handleSubscriptionCancelled(event);
+          break;
+        case "subscription.completed":
+          await handleSubscriptionCompleted(event);
+          break;
+        case "subscription.halted":
+        case "subscription.paused":
+          await handleSubscriptionPaused(event);
+          break;
+        case "payment.failed":
+          await handlePaymentFailed(event);
+          break;
+        default:
+          console.log("[Razorpay Webhook] Unhandled event type:", event.event);
+      }
+    } catch (handlerErr: any) {
+      handlerError = handlerErr;
+      console.error(`[Razorpay Webhook] HANDLER ERROR for ${event.event}:`, handlerErr.message, handlerErr.stack);
+    }
+
+    if (handlerError) {
+      // For idempotent events, return 200 to prevent Razorpay retries
+      // since recordPaymentOnce already handles deduplication
+      const idempotentEvents = ["subscription.charged", "subscription.activated"];
+      const isIdempotent = idempotentEvents.includes(event.event);
+
+      if (isIdempotent) {
+        console.error(
+          `[Razorpay Webhook] Handler error for idempotent event ${event.event}, returning 200 to prevent retries:`,
+          handlerError.message
+        );
+        return NextResponse.json(
+          { error: "Webhook handler failed", event: event.event, message: handlerError.message, retriable: false },
+          { status: 200 }
+        );
+      }
+
+      // Non-idempotent events: return 500 so Razorpay retries
+      console.error(
+        `[Razorpay Webhook] Handler error for event ${event.event}, returning 500 to allow Razorpay retry:`,
+        handlerError.message
+      );
+      return NextResponse.json(
+        { error: "Webhook handler failed", event: event.event, message: handlerError.message, retriable: true },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[Razorpay Webhook] Processing error:", error);
+    console.error("[Razorpay Webhook] Processing error:", error.message, error.stack);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -103,11 +143,18 @@ async function handleSubscriptionCharged(event: any) {
   const subscriptionId = subscription.id;
   const paymentId = payment.id;
   const amount = payment.amount / 100; // Convert paise to rupees
-  const currency = payment.currency || "INR";
+  const currency = payment.currency || appConfig.pricing.currency;
   const customerEmail = subscription.notes?.customer_email;
   const customerName = subscription.notes?.customer_name;
   const environment =
     process.env.RAZORPAY_ENVIRONMENT === "production" ? "production" : "test";
+
+  if (!payment.currency) {
+    console.warn(
+      `[Webhook] Payment ${paymentId} missing currency, ` +
+      `defaulting to ${appConfig.pricing.currency}`
+    );
+  }
 
   console.log("[Subscription Charged] Raw event payload:", JSON.stringify(event.payload, null, 2));
   console.log("[Subscription Charged] Processing payment:", {
@@ -190,7 +237,41 @@ async function handleSubscriptionCharged(event: any) {
     return;
   }
 
-  // Record the payment
+  // Calculate sales tax for US customers
+  let taxAmount = 0;
+  let taxRate = 0;
+  let taxJurisdiction = "None";
+  let taxProvider = "none";
+
+  try {
+    // Extract country from subscription notes or default to US if email domain suggests it
+    const country = "US"; // Razorpay doesn't always provide country; default to US for now
+    const state = subscription.notes?.customer_state; // If available, use this
+
+    if (country === "US" && state) {
+      const taxResult = await calculateSalesTax(
+        Math.round(amount * 100), // Convert to cents
+        currency,
+        country,
+        state,
+        effectiveEmail
+      );
+
+      taxAmount = taxResult.taxAmount;
+      taxRate = taxResult.taxRate;
+      taxJurisdiction = taxResult.taxJurisdiction;
+      taxProvider = taxResult.provider;
+
+      console.log(
+        `[Subscription Charged] Tax calculated: ${taxProvider} - $${(taxAmount / 100).toFixed(2)} for ${state}`
+      );
+    }
+  } catch (err) {
+    console.error("[Subscription Charged] Error calculating tax:", err);
+    // Continue without tax rather than fail payment
+  }
+
+  // Record the payment with tax information
   await recordPaymentOnce({
     orderId: paymentId,
     status: "SUCCESS",
@@ -203,6 +284,10 @@ async function handleSubscriptionCharged(event: any) {
     provider: "razorpay",
     subscriptionId,
     paymentId,
+    taxAmount: taxAmount > 0 ? taxAmount : undefined,
+    taxRate: taxRate > 0 ? taxRate : undefined,
+    taxJurisdiction: taxJurisdiction !== "None" ? taxJurisdiction : undefined,
+    taxCurrency: taxAmount > 0 ? currency : undefined,
     raw: event,
   });
 
@@ -277,15 +362,48 @@ async function handleSubscriptionActivated(event: any) {
   }
 
   const subscriptionId = subscription.id;
-  const customerEmail = subscription.notes?.customer_email;
+  let customerEmail = subscription.notes?.customer_email;
+  let customerName = subscription.notes?.customer_name;
+
+  // Fallback: try to get email from customer_id
+  if (!customerEmail && subscription.customer_id) {
+    try {
+      const rz = ensureRazorpayClient();
+      if (!("error" in rz)) {
+        // @ts-ignore - razorpay client types
+        const cust = await rz.client.customers.fetch(subscription.customer_id);
+        if (cust?.email) customerEmail = cust.email;
+        if (cust?.name && !customerName) customerName = cust.name;
+      }
+    } catch (err) {
+      console.error("[Subscription Activated] Failed to fetch customer:", err);
+    }
+  }
 
   console.log("[Subscription Activated] Subscription activated:", {
     subscriptionId,
     customer: customerEmail,
   });
 
-  // Note: We activate on charge, not on activation
-  // This logs the event for reference
+  if (!customerEmail) {
+    console.error("[Subscription Activated] No customer email available for subscription:", subscriptionId);
+    return;
+  }
+
+  // Activate the pro subscription
+  await ensureConnection();
+  const updatedUser = await activateProSubscriptionByEmail(customerEmail, 30, "razorpay");
+
+  if (updatedUser) {
+    // Store the subscriptionId on the user record
+    await User.findOneAndUpdate(
+      { email: customerEmail.toLowerCase() },
+      { subscriptionId }
+    );
+    console.log("[Subscription Activated] Pro subscription activated for:", customerEmail);
+  } else {
+    console.error("[Subscription Activated] Failed to activate pro for:", customerEmail);
+  }
 }
 
 async function handleSubscriptionCancelled(event: any) {
@@ -304,8 +422,14 @@ async function handleSubscriptionCancelled(event: any) {
     customer: customerEmail,
   });
 
-  // User's subscription will automatically expire when currentPeriodEnd passes
-  // No immediate action needed
+  // Mark subscription as canceled (user keeps access until currentPeriodEnd)
+  if (customerEmail) {
+    await ensureConnection();
+    await User.findOneAndUpdate(
+      { email: customerEmail.toLowerCase() },
+      { subscriptionStatus: "canceled" }
+    );
+  }
 }
 
 async function handleSubscriptionCompleted(event: any) {
@@ -371,7 +495,7 @@ async function handlePaymentFailed(event: any) {
     orderId: paymentId,
     status: "FAILED",
     amount,
-    currency: payment.currency || "INR",
+    currency: payment.currency || appConfig.pricing.currency,
     customerEmail,
     environment:
       process.env.RAZORPAY_ENVIRONMENT === "production" ? "production" : "test",

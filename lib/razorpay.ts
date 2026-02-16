@@ -86,3 +86,28 @@ export function verifyRazorpayWebhook(
 
   return expectedSignature === signature;
 }
+
+/**
+ * Cancels a Razorpay subscription
+ * @param cancelAtCycleEnd - If true, cancels at end of billing cycle; if false, cancels immediately
+ */
+export async function cancelRazorpaySubscription(
+  subscriptionId: string,
+  cancelAtCycleEnd: boolean = true
+) {
+  const rz = ensureRazorpayClient();
+  if ("error" in rz) throw new Error(rz.error);
+
+  try {
+    const subscription = await rz.client.subscriptions.cancel(
+      subscriptionId,
+      { cancel_at_cycle_end: cancelAtCycleEnd ? 1 : 0 } as any
+    );
+    return subscription;
+  } catch (error: any) {
+    throw new Error(
+      `Failed to cancel Razorpay subscription: ${error.error?.description || error.message}`
+    );
+  }
+}
+

@@ -34,6 +34,7 @@ export function PaymentButton({
   const [profile, setProfile] = useState<{
     name?: string;
     phone?: string;
+    countryCode?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -53,7 +54,11 @@ export function PaymentButton({
             const profRes = await fetch("/api/user/profile");
             if (profRes.ok) {
               const data = await profRes.json();
-              setProfile({ name: data.user?.name, phone: data.user?.phone });
+              setProfile({
+                name: data.user?.name,
+                phone: data.user?.phone,
+                countryCode: data.user?.countryCode,
+              });
             }
           } catch {}
         }
@@ -77,6 +82,7 @@ export function PaymentButton({
         userEmail={userSession?.user?.email}
         userName={profile?.name || userSession?.user?.name}
         userPhone={profile?.phone}
+        userCountryCode={profile?.countryCode}
       />
     </>
   );
