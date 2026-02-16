@@ -6,7 +6,7 @@ import {
   ModelMessage,
 } from "ai";
 
-import { geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
+import { geminiFlashModel, geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Chat } from "@/db/models";
@@ -17,6 +17,7 @@ import {
   deleteChatById,
   getChatById,
   getProjectById,
+  getProjectChatSummaries,
   getUserByEmail,
   updateChatProject,
 } from "@/db/queries";
@@ -126,7 +127,8 @@ export async function POST(request: Request) {
     id,
     messages,
     modelId,
-  }: { id: string; messages: Array<UIMessage>; modelId?: string } =
+    projectId: requestProjectId,
+  }: { id: string; messages: Array<UIMessage>; modelId?: string; projectId?: string } =
     await request.json();
 
   const session = await auth();
@@ -204,12 +206,27 @@ export async function POST(request: Request) {
   );
 
   // Only persist chat to DB for authenticated users
+  let validatedProjectId: string | undefined;
+  let chat: any = null;
+
   if (!isGuest && userId) {
+    // Validate project ownership if a projectId was provided
+    if (requestProjectId) {
+      try {
+        const project = await getProjectById(requestProjectId);
+        if (project && (project as any).userId.toString() === userId) {
+          validatedProjectId = requestProjectId;
+        }
+      } catch {
+        // Silently ignore invalid projectId
+      }
+    }
+
     /**
      * Ensure that a Chat document exists for this conversation.
      * We use the client-generated id so that front-end routing continues to work.
      */
-    let chat = await getChatById({ id });
+    chat = await getChatById({ id });
 
     if (!chat) {
       // Find or create the single AI user that represents the assistant
@@ -230,6 +247,7 @@ export async function POST(request: Request) {
         (aiUser as any)._id.toString(),
         "New Chat",
         id,
+        validatedProjectId,
       );
     }
 
@@ -312,9 +330,35 @@ export async function POST(request: Request) {
     ? getModelById(modelId)
     : getModelById(DEFAULT_MODEL_ID);
 
+  // --- Project Memory Retrieval ---
+  let projectMemoryContext = "";
+
+  if (!isGuest && userId && chat) {
+    const chatProjectId = validatedProjectId || chat?.projectId?.toString();
+
+    if (chatProjectId) {
+      try {
+        const siblingChatSummaries = await getProjectChatSummaries(chatProjectId, id, 5);
+
+        if (siblingChatSummaries.length > 0) {
+          const project = await getProjectById(chatProjectId);
+          const projectName = (project as any)?.name || "this project";
+
+          projectMemoryContext = `\n\nYou are working within the project "${projectName}". Here is context from previous conversations in this project:\n\n` +
+            siblingChatSummaries
+              .map((chat) => `[${chat.title}]: ${chat.summary}`)
+              .join("\n") +
+            `\n\nUse this context to provide more relevant and consistent responses. Reference previous conversations naturally when relevant, but don't force it.`;
+        }
+      } catch (err) {
+        console.error("[Chat API] Project memory retrieval failed:", err);
+      }
+    }
+  }
+
   const result = await streamText({
     model,
-    system: `${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.`,
+    system: `${appConfig.getModelIdentity()} You can help with various tasks including answering questions, providing explanations, and assisting with problem-solving. Today's date is ${new Date().toLocaleDateString()}.${projectMemoryContext}`,
     messages: coreMessages,
     onFinish: async ({ text, usage }) => {
       // Only persist for authenticated users
@@ -358,6 +402,40 @@ export async function POST(request: Request) {
 
             await ensureConnection();
             await Chat.findByIdAndUpdate(id, { title });
+          }
+        }
+
+        // Generate or update summary for project memory
+        // Only for chats in a project, at meaningful intervals:
+        // first at 4 messages (2 exchanges), then every 6 messages
+        const chatProjectId = (currentChat as any).projectId?.toString();
+        const totalMessages = messages.length + 1; // +1 for AI response
+        const shouldSummarize =
+          chatProjectId &&
+          totalMessages >= 4 &&
+          (totalMessages === 4 || (totalMessages - 4) % 6 === 0);
+
+        if (shouldSummarize) {
+          try {
+            const existingSummary = (currentChat as any).summary || "";
+            const recentMessages = coreMessages.slice(-8);
+            const recentText = recentMessages
+              .map((m) => `${m.role}: ${typeof m.content === "string" ? m.content : "[complex content]"}`)
+              .join("\n");
+
+            const summaryPrompt = existingSummary
+              ? `You are updating a summary of an ongoing conversation.\n\nPrevious summary:\n${existingSummary}\n\nNew messages since last summary:\n${recentText}\nAssistant: ${text}\n\nWrite an updated summary (2-4 sentences) covering the key topics, decisions, and context from this conversation. Focus on information useful for future conversations in the same project.`
+              : `Summarize this conversation in 2-4 sentences. Focus on key topics discussed, decisions made, and important context. This summary will provide context for future conversations in the same project.\n\n${recentText}\nAssistant: ${text}`;
+
+            const { text: summary } = await generateText({
+              model: geminiFlashModel,
+              prompt: summaryPrompt,
+            });
+
+            await ensureConnection();
+            await Chat.findByIdAndUpdate(id, { summary });
+          } catch (err) {
+            console.error("[Chat API] Summary generation failed:", err);
           }
         }
       }

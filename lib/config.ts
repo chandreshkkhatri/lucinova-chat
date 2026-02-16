@@ -1,44 +1,33 @@
-// Read from environment variable, default to 'custom' if not set
-const modelDisplayMode = process.env.NEXT_PUBLIC_MODEL_DISPLAY_MODE || "custom";
-const useCustomModelNames = modelDisplayMode === "custom";
-
 export const appConfig = {
-  // Model display configuration from environment variable
-  useCustomModelNames,
-
-  // Model name mappings
+  // Model display names (Lucinova branding)
   modelNames: {
-    custom: {
-      "gemini-2.0-flash": "Lucinova 1.0 Flash",
-      "gemini-2.5-flash": "Lucinova 1.5 Flash",
-      "gemini-2.5-pro": "Lucinova 1.5 Pro",
-      "gemini-3.0-flash": "Lucinova 2 Flash",
-      "gemini-3.0-pro": "Lucinova 2 Pro",
-    } as Record<string, string>,
-    original: {
-      "gemini-2.0-flash": "Gemini 2.0 Flash",
-      "gemini-2.5-flash": "Gemini 2.5 Flash",
-      "gemini-2.5-pro": "Gemini 2.5 Pro",
-      "gemini-3.0-flash": "Gemini 3.0 Flash",
-      "gemini-3.0-pro": "Gemini 3.0 Pro",
-    } as Record<string, string>,
-  },
+    "gemini-2.5-flash": "Lucinova 2.5 Flash",
+    "gemini-2.5-pro": "Lucinova 2.5 Pro",
+    "gemini-3.0-flash": "Lucinova 3 Flash",
+    "gemini-3.0-pro": "Lucinova 3 Pro",
+  } as Record<string, string>,
 
-  // System prompt identity configuration
+  // Underlying Gemini model IDs for tooltip display
+  geminiNames: {
+    "gemini-2.5-flash": "Gemini 2.5 Flash",
+    "gemini-2.5-pro": "Gemini 2.5 Pro",
+    "gemini-3.0-flash": "Gemini 3.0 Flash",
+    "gemini-3.0-pro": "Gemini 3.0 Pro",
+  } as Record<string, string>,
+
+  // System prompt identity
   getModelIdentity: () => {
-    if (useCustomModelNames) {
-      return "You are Lucinova, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself (only when asked) as Lucinova, not as Gemini or any other AI model.";
-    } else {
-      return "You are a helpful AI assistant powered by Gemini.";
-    }
+    return "You are Lucinova, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself (only when asked) as Lucinova, not as Gemini or any other AI model.";
   },
 
-  // Get display name for a model
+  // Get Lucinova display name for a model
   getModelDisplayName: (modelId: string): string => {
-    const nameMap = useCustomModelNames
-      ? appConfig.modelNames.custom
-      : appConfig.modelNames.original;
-    return nameMap[modelId] || modelId;
+    return appConfig.modelNames[modelId] || modelId;
+  },
+
+  // Get underlying Gemini model name (for tooltip)
+  getGeminiName: (modelId: string): string => {
+    return appConfig.geminiNames[modelId] || modelId;
   },
 
   // Pricing & currency configuration

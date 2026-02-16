@@ -24,22 +24,16 @@ interface EnhancedMessageProps {
 
 export function EnhancedMessage({
   message,
-  chatId,
   annotations = [],
   onAskLucinova,
   onOpenAnnotation,
 }: EnhancedMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const isUser = message.role === "user";
 
   // State for selection UI
   const [selectionRects, setSelectionRects] = useState<DOMRect[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [capturedText, setCapturedText] = useState<string>("");
-  const [containerDimensions, setContainerDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -72,10 +66,6 @@ export function EnhancedMessage({
       // Get rects relative to viewport
       const clientRects = Array.from(range.getClientRects());
       const containerRect = container.getBoundingClientRect();
-      setContainerDimensions({
-        width: containerRect.width,
-        height: containerRect.height,
-      });
 
       // Convert to relative coordinates
       const relativeRects = clientRects.map(
@@ -106,27 +96,11 @@ export function EnhancedMessage({
     setHasSelection(false);
   };
 
-  // Calculate highlight rect (last line) to connect wire from
-  const lastRect =
-    selectionRects.length > 0
-      ? selectionRects[selectionRects.length - 1]
-      : null;
+  // Button position: centered above the first highlighted line
+  const firstRect = selectionRects.length > 0 ? selectionRects[0] : null;
+  const buttonX = firstRect ? firstRect.left + firstRect.width / 2 : 0;
+  const buttonY = firstRect ? firstRect.top : 0;
 
-  // Wire positioning - curve above the text to avoid strike-through effect
-  // Start from the top corner of the last rect
-  const wireStartX = lastRect ? (isUser ? lastRect.left : lastRect.right) : 0;
-  const wireStartY = lastRect ? lastRect.top - 2 : 0; // Start from top of text, not middle
-
-  // Wire End Point (outside bubble)
-  const wireEndX = isUser ? -40 : containerDimensions.width + 40;
-  const wireEndY = wireStartY; // Keep horizontal alignment
-
-  // Control point for the curve (creates an arc above the text)
-  const curveHeight = 15; // How high the curve goes above the text
-  const controlX = (wireStartX + wireEndX) / 2;
-  const controlY = wireStartY - curveHeight;
-
-  // Fix for issues where content comes in as stringified objects
   // Fix for issues where content comes in as stringified objects
   let content = "";
   if ((message as any).parts) {
@@ -152,7 +126,7 @@ export function EnhancedMessage({
     <div className="relative group">
       <div
         ref={containerRef}
-        className="message-content relative z-10 max-w-full break-words whitespace-pre-wrap"
+        className="message-content relative max-w-full break-words prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
       >
         <Markdown>{content}</Markdown>
 
@@ -197,12 +171,11 @@ export function EnhancedMessage({
           annotations={annotations}
           containerRef={containerRef}
           onOpenAnnotation={onOpenAnnotation}
-          isUser={isUser}
         />
       )}
 
       {/* Selection Highlights and "Ask Lucinova" UI Overlay */}
-      {hasSelection && selectionRects.length > 0 && lastRect && (
+      {hasSelection && selectionRects.length > 0 && firstRect && (
         <div
           className="absolute inset-0 pointer-events-none z-20"
           data-selection-overlay="true"
@@ -221,37 +194,18 @@ export function EnhancedMessage({
             />
           ))}
 
-          {/* Wire SVG - curved path that goes above the text */}
-          <svg className="absolute overflow-visible inset-0 pointer-events-none">
-            <path
-              d={`M ${wireStartX} ${wireStartY} Q ${controlX} ${controlY} ${wireEndX} ${wireEndY}`}
-              className="stroke-purple-400 dark:stroke-purple-500/70"
-              strokeWidth="1.5"
-              fill="none"
-            />
-            {/* Dot at start */}
-            <circle
-              cx={wireStartX}
-              cy={wireStartY}
-              r="2.5"
-              className="fill-purple-400 dark:fill-purple-500/70"
-            />
-          </svg>
-
-          {/* "Ask Lucinova" Button */}
+          {/* "Ask Lucinova" Button - above first highlighted line */}
           <div
             className="absolute flex items-center justify-center"
             style={{
-              left: wireEndX,
-              top: wireEndY,
-              transform: isUser
-                ? "translate(-100%, -50%)"
-                : "translate(0, -50%)",
+              left: buttonX,
+              top: buttonY,
+              transform: "translate(-50%, -100%)",
             }}
           >
             <button
               onClick={handleAskLucinova}
-              className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-sm hover:scale-105 transition-all whitespace-nowrap"
+              className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 mb-1 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-md hover:scale-105 transition-all whitespace-nowrap"
             >
               <MessageSquareText className="size-3" />
               <span>Ask Lucinova</span>
@@ -268,21 +222,18 @@ function SavedAnnotationsOverlay({
   annotations,
   containerRef,
   onOpenAnnotation,
-  isUser,
 }: {
   annotations: SavedAnnotation[];
   containerRef: React.RefObject<HTMLDivElement>;
   onOpenAnnotation?: (id: string, text: string) => void;
-  isUser: boolean;
 }) {
   const [annotationRects, setAnnotationRects] = useState<
     Map<
       string,
       {
         rects: DOMRect[];
-        wireStart: { x: number; y: number };
-        wireEnd: { x: number; y: number };
-        controlPoint: { x: number; y: number };
+        buttonX: number;
+        buttonY: number;
       }
     >
   >(new Map());
@@ -297,7 +248,7 @@ function SavedAnnotationsOverlay({
     const containerRect = container.getBoundingClientRect();
     const newMap = new Map();
 
-    annotations.forEach((ann, index) => {
+    annotations.forEach((ann) => {
       const ranges = findTextRanges(container, ann.selectedText);
 
       if (ranges.length > 0) {
@@ -317,32 +268,17 @@ function SavedAnnotationsOverlay({
         if (relativeRects.length > 0) {
           const lastRect = relativeRects[relativeRects.length - 1];
 
-          // Start from top corner of the text
-          const startX = isUser ? lastRect.left : lastRect.right;
-          const startY = lastRect.top - 2;
-
-          // End outside the bubble
-          const endX = isUser ? -30 : containerRect.width + 30;
-          // Stagger vertically if multiple annotations to avoid overlap
-          const endY = startY + index * 20;
-
-          // Control point for curve (arc above text)
-          const curveHeight = 12 + index * 5;
-          const controlX = (startX + endX) / 2;
-          const controlY = Math.min(startY, endY) - curveHeight;
-
           newMap.set(ann.id, {
             rects: relativeRects,
-            wireStart: { x: startX, y: startY },
-            wireEnd: { x: endX, y: endY },
-            controlPoint: { x: controlX, y: controlY },
+            buttonX: lastRect.right,
+            buttonY: lastRect.top + lastRect.height / 2,
           });
         }
       }
     });
 
     setAnnotationRects(newMap);
-  }, [annotations, containerRef, isUser]);
+  }, [annotations, containerRef]);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
@@ -372,39 +308,13 @@ function SavedAnnotationsOverlay({
               />
             ))}
 
-            {/* Wire SVG - curved path that arcs above the text */}
-            <svg className="absolute overflow-visible inset-0 pointer-events-none">
-              <path
-                d={`M ${data.wireStart.x} ${data.wireStart.y} Q ${data.controlPoint.x} ${data.controlPoint.y} ${data.wireEnd.x} ${data.wireEnd.y}`}
-                className={`transition-all duration-200 fill-none ${
-                  isHovered
-                    ? "stroke-amber-400 dark:stroke-amber-500"
-                    : "stroke-amber-300 dark:stroke-amber-700/60"
-                }`}
-                strokeWidth={isHovered ? "2" : "1.5"}
-              />
-              {/* Dot at start point */}
-              <circle
-                cx={data.wireStart.x}
-                cy={data.wireStart.y}
-                r={isHovered ? 3 : 2}
-                className={`transition-all duration-200 ${
-                  isHovered
-                    ? "fill-amber-400 dark:fill-amber-500"
-                    : "fill-amber-300 dark:fill-amber-700/60"
-                }`}
-              />
-            </svg>
-
-            {/* Icon Button - Positioned at wire end */}
+            {/* Superscript footnote icon at end of highlighted text */}
             <div
-              className="absolute flex items-center justify-center"
+              className="absolute"
               style={{
-                left: data.wireEnd.x,
-                top: data.wireEnd.y,
-                transform: isUser
-                  ? "translate(-100%, -50%)"
-                  : "translate(0, -50%)",
+                left: data.buttonX,
+                top: data.buttonY,
+                transform: "translate(1px, -100%)",
               }}
               onMouseEnter={() => setHoveredId(ann.id)}
               onMouseLeave={() => setHoveredId(null)}
@@ -414,28 +324,24 @@ function SavedAnnotationsOverlay({
                   e.stopPropagation();
                   onOpenAnnotation?.(ann.id, ann.selectedText);
                 }}
-                className={`pointer-events-auto flex items-center justify-center size-6 rounded-full border shadow-sm transition-all ${
+                className={`pointer-events-auto inline-flex items-center justify-center rounded-sm transition-all ${
                   isHovered
-                    ? "bg-amber-100 dark:bg-amber-900 border-amber-400 text-amber-700 dark:text-amber-300 scale-110"
-                    : "bg-card border-amber-200 dark:border-amber-800/50 text-amber-500 dark:text-amber-400/70 scale-100"
+                    ? "text-amber-600 dark:text-amber-400 scale-125"
+                    : "text-amber-400 dark:text-amber-500/70 scale-100"
                 }`}
                 title="View thread"
               >
-                <MessageSquareText className="size-3.5" />
-              </button>
-
-              {/* Message Count Badge */}
-              {ann.messageCount !== undefined && ann.messageCount > 0 && (
-                <div
-                  className={`absolute -top-2 -right-2 text-[10px] font-bold rounded-full px-1.5 py-0.5 ${
+                <MessageSquareText className="size-3" />
+                {ann.messageCount !== undefined && ann.messageCount > 0 && (
+                  <span className={`text-[8px] font-bold leading-none -ml-0.5 ${
                     isHovered
-                      ? "bg-amber-500 text-white"
-                      : "bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400"
-                  }`}
-                >
-                  {ann.messageCount}
-                </div>
-              )}
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-amber-400 dark:text-amber-500/70"
+                  }`}>
+                    {ann.messageCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         );

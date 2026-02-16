@@ -5,13 +5,14 @@ import { TextStreamChatTransport, UIMessage } from "ai";
 import { ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 
 import type { NodeType } from "@/lib/message-to-nodes";
 
 import { Canvas } from "./canvas";
 import type { SavedAnnotation } from "./enhanced-message";
 import { RightSidebar } from "./right-sidebar";
+import { useSidebar } from "./sidebar-context";
 import { Attachment } from "./types";
 
 import type { FileUIPart } from "ai";
@@ -38,7 +39,7 @@ export function Chat({
   isUserPro = false,
   isGuest = false,
   selectedText,
-  defaultModelId = "gemini-2.5-flash",
+  defaultModelId = "gemini-3.0-flash",
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -54,6 +55,7 @@ export function Chat({
 }) {
   const router = useRouter();
   const chatIdForSubmit = isThread ? mainChatId! : id;
+  const { selectedProjectId } = useSidebar();
 
   // Model selection state
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
@@ -85,7 +87,7 @@ export function Chat({
     setIsMounted(true);
   }, []);
 
-  const { messages, sendMessage, status, stop, setMessages } = useChat({
+  const { messages, sendMessage, status, stop, setMessages, regenerate } = useChat({
     id: chatIdForSubmit,
     transport: new TextStreamChatTransport({
       api: isThread ? "/api/thread" : "/api/chat",
@@ -95,6 +97,11 @@ export function Chat({
       const url = `/chat/${chatIdForSubmit}`;
       window.history.replaceState({}, "", url);
       onFinish?.();
+
+      // Revalidate history cache to pick up server-generated title
+      setTimeout(() => {
+        globalMutate("/api/history");
+      }, 3000);
     },
     onError: (error) => {
       console.error("Chat error:", error);
@@ -171,6 +178,7 @@ export function Chat({
         body: {
           id: chatIdForSubmit,
           modelId: selectedModel,
+          ...(selectedProjectId && { projectId: selectedProjectId }),
           ...(isThread && { parentMessageId, mainChatId, selectedText }),
         },
       }
@@ -198,6 +206,7 @@ export function Chat({
   const [activeAnnotation, setActiveAnnotation] = useState<{
     id: string;
     selectedText: string;
+    initialMessage?: string;
   } | null>(null);
 
   // Pending annotation (before first message is sent)
@@ -290,6 +299,7 @@ export function Chat({
       setActiveAnnotation({
         id: annotation.id,
         selectedText: annotation.selectedText,
+        initialMessage: firstMessage,
       });
       setPendingAnnotation(null);
 
@@ -308,6 +318,30 @@ export function Chat({
     },
     [mutateAnnotations]
   );
+
+  // Edit last user message and regenerate
+  const handleEditMessage = useCallback(
+    (messageId: string, newText: string) => {
+      const msgIndex = messages.findIndex((m) => m.id === messageId);
+      if (msgIndex === -1) return;
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[msgIndex] = {
+          ...updated[msgIndex],
+          parts: [{ type: "text" as const, text: newText }],
+        };
+        return updated.slice(0, msgIndex + 1);
+      });
+
+      regenerate();
+    },
+    [messages, setMessages, regenerate]
+  );
+
+  const handleRegenerate = useCallback(() => {
+    regenerate();
+  }, [regenerate]);
 
   // Desktop sidebar resize effect
   useEffect(() => {
@@ -433,6 +467,8 @@ export function Chat({
     sendMessage,
     isGuest,
     usageLimitInfo,
+    onEditMessage: handleEditMessage,
+    onRegenerate: handleRegenerate,
   };
 
   // For threads, render compact layout with Canvas + inline input (no right sidebar)

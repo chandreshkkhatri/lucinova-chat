@@ -76,9 +76,6 @@ Required environment variables (see `.env.example`):
 # Google Gemini API
 GOOGLE_GENERATIVE_AI_API_KEY=****
 
-# Model Display Configuration
-NEXT_PUBLIC_MODEL_DISPLAY_MODE=custom  # "custom" (Lucinova) or "original" (Gemini)
-
 # Authentication
 AUTH_SECRET=****  # Generate via openssl rand -base64 32
 

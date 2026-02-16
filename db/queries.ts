@@ -289,6 +289,7 @@ export async function createChat(
   aiId: string,
   title?: string,
   chatId?: string,
+  projectId?: string,
 ) {
   await ensureConnection();
   const chatData: any = { userId, aiId };
@@ -301,6 +302,10 @@ export async function createChat(
   // the MongoDB document id stay in sync.
   if (chatId) {
     chatData._id = chatId;
+  }
+
+  if (projectId) {
+    chatData.projectId = projectId;
   }
 
   const chat = await Chat.create(chatData);
@@ -711,4 +716,32 @@ export async function getChatsByProject(userId: string, projectId: string) {
     .sort({ lastMsgAt: -1 })
     .lean();
   return chats.map((chat: any) => ({ ...chat, id: chat._id.toString() }));
+}
+
+/**
+ * Get summaries from sibling chats in the same project.
+ * Used for project memory injection into system prompts.
+ */
+export async function getProjectChatSummaries(
+  projectId: string,
+  excludeChatId: string,
+  limit = 5,
+) {
+  await ensureConnection();
+  const chats = await Chat.find({
+    projectId,
+    _id: { $ne: excludeChatId },
+    summary: { $exists: true, $nin: [null, ""] },
+  })
+    .sort({ lastMsgAt: -1 })
+    .limit(limit)
+    .select("title summary lastMsgAt")
+    .lean();
+
+  return chats.map((chat: any) => ({
+    id: chat._id.toString(),
+    title: chat.title || "Untitled",
+    summary: chat.summary,
+    lastMsgAt: chat.lastMsgAt,
+  }));
 }

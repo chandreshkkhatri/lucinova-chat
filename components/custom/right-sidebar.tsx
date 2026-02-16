@@ -2,7 +2,7 @@
 
 import { UIMessage } from "ai";
 import { MessageSquare, MessagesSquare, Sparkles, X } from "lucide-react";
-import { Dispatch, SetStateAction, useMemo } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 import type { NodeType } from "@/lib/message-to-nodes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,7 +31,7 @@ interface RightSidebarProps {
 
   // Sidebar content state
   activeThread: { parentMessage: UIMessage; selectedText?: string } | null;
-  activeAnnotation: { id: string; selectedText: string } | null;
+  activeAnnotation: { id: string; selectedText: string; initialMessage?: string } | null;
   pendingAnnotation: { messageId: string; selectedText: string } | null;
 
   // Sidebar actions
@@ -91,12 +91,22 @@ export function RightSidebar({
   const hasAnnotation = !!(activeAnnotation || pendingAnnotation);
   const hasMultipleTabs = hasThread || hasAnnotation;
 
-  // Determine active tab
-  const activeTab = useMemo(() => {
-    if (activeAnnotation || pendingAnnotation) return "annotation";
-    if (activeThread) return "thread";
-    return "chat";
+  // Tab state: auto-switch when views open, allow manual switching
+  const [activeTab, setActiveTab] = useState("chat");
+
+  useEffect(() => {
+    if (activeAnnotation || pendingAnnotation) {
+      setActiveTab("annotation");
+    } else if (activeThread) {
+      setActiveTab("thread");
+    }
   }, [activeAnnotation, pendingAnnotation, activeThread]);
+
+  // Reset to chat if the active tab's view was closed
+  useEffect(() => {
+    if (activeTab === "thread" && !hasThread) setActiveTab("chat");
+    if (activeTab === "annotation" && !hasAnnotation) setActiveTab("chat");
+  }, [activeTab, hasThread, hasAnnotation]);
 
   // When only the chat tab exists, render without tab chrome
   if (!hasMultipleTabs) {
@@ -124,7 +134,7 @@ export function RightSidebar({
   }
 
   return (
-    <Tabs value={activeTab} className="flex flex-col size-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col size-full">
       <TabsList className="w-full justify-start rounded-none border-b border-border bg-background h-9 p-0 shrink-0">
         <TabsTrigger
           value="chat"
@@ -141,15 +151,25 @@ export function RightSidebar({
           >
             <MessagesSquare className="size-3.5" />
             <span className="text-xs">Thread</span>
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 onCloseThread();
               }}
-              className="ml-0.5 rounded-sm p-0.5 hover:bg-muted"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onCloseThread();
+                }
+              }}
+              className="ml-0.5 rounded-sm p-0.5 hover:bg-muted cursor-pointer"
             >
               <X className="size-3" />
-            </button>
+            </div>
           </TabsTrigger>
         )}
 
@@ -160,15 +180,25 @@ export function RightSidebar({
           >
             <Sparkles className="size-3.5" />
             <span className="text-xs">Ask AI</span>
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 onCloseAnnotation();
               }}
-              className="ml-0.5 rounded-sm p-0.5 hover:bg-muted"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onCloseAnnotation();
+                }
+              }}
+              className="ml-0.5 rounded-sm p-0.5 hover:bg-muted cursor-pointer"
             >
               <X className="size-3" />
-            </button>
+            </div>
           </TabsTrigger>
         )}
       </TabsList>
@@ -198,6 +228,7 @@ export function RightSidebar({
       {hasThread && (
         <TabsContent value="thread" className="flex-1 mt-0 overflow-hidden">
           <ThreadView
+            key={activeThread!.parentMessage.id}
             parentMessage={activeThread!.parentMessage}
             selectedText={activeThread!.selectedText}
             mainChatId={chatId}
@@ -212,8 +243,10 @@ export function RightSidebar({
         <TabsContent value="annotation" className="flex-1 mt-0 overflow-hidden">
           {activeAnnotation ? (
             <AnnotationThreadView
+              key={activeAnnotation.id}
               annotationId={activeAnnotation.id}
               selectedText={activeAnnotation.selectedText}
+              initialMessage={activeAnnotation.initialMessage}
               chatId={chatId}
               onClose={onCloseAnnotation}
               onDelete={onAnnotationDeleted}
