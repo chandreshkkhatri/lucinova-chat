@@ -2,14 +2,16 @@
 
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport, UIMessage } from "ai";
-import { ChevronUp } from "lucide-react";
+import { ChevronUp, MessageSquare, Grid, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
 import type { NodeType } from "@/lib/message-to-nodes";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Canvas } from "./canvas";
+import { ChatList } from "./chat-list";
 import type { SavedAnnotation } from "./enhanced-message";
 import { RightSidebar } from "./right-sidebar";
 import { useSidebar } from "./sidebar-context";
@@ -89,6 +91,13 @@ export function Chat({
     limit: number;
     periodEnd: Date | string;
   } | null>(null);
+
+  // Feature Flag & View Mode Check
+  // Default to true if flag is missing/true, false if explicitly "false"
+  const isToggleEnabled =
+    process.env.NEXT_PUBLIC_FEATURE_FLAG_CANVAS_CHAT_TOGGLE !== "false";
+
+  const [viewMode, setViewMode] = useState<"chat" | "canvas">("chat");
 
   useEffect(() => {
     setIsMounted(true);
@@ -255,6 +264,8 @@ export function Chat({
       setActiveThread({ parentMessage, selectedText });
       setActiveAnnotation(null);
       setPendingAnnotation(null);
+      // Auto-switch to chat mode if in canvas? No, keep context.
+      // But if user wants to see thread sidebar in Chat mode, it should be visible.
     }
   };
 
@@ -492,6 +503,28 @@ export function Chat({
     onNodeSelect: setSelectedNode,
   };
 
+  // Shared ChatList props
+  const chatListProps = {
+    messages,
+    status: status as "idle" | "streaming" | "submitted" | "error",
+    chatId: id,
+    annotationsByMessage,
+    onStartThread: handleStartThread,
+    onAskLucinova: handleAskLucinova,
+    onOpenAnnotation: handleOpenAnnotation,
+    setInput,
+    input,
+    handleSubmit,
+    stop,
+    attachments,
+    setAttachments,
+    sendMessage,
+    isGuest,
+    usageLimitInfo,
+    selectedNodeType,
+    setSelectedNodeType,
+  };
+
   // For threads, render compact layout with Canvas + inline input (no right sidebar)
   if (isThread) {
     return (
@@ -544,81 +577,121 @@ export function Chat({
     selectedNode,
   };
 
-  // Main chat layout
+  // Determine if Right Sidebar should be visible in Chat Mode
+  // We only show it if there's an active context (thread/annotation)
+  const isRightSidebarVisible =
+    viewMode === "canvas" ||
+    !!activeThread ||
+    !!activeAnnotation ||
+    !!pendingAnnotation;
+
   return (
     <div ref={containerRef} className={`flex h-full bg-paper ${className}`}>
-      {/* Mobile: Vertical split (Canvas top + bottom panel) */}
+      {/* View Toggle (Top Center) */}
+      {isToggleEnabled && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm p-1">
+          <Tabs
+            value={viewMode}
+            onValueChange={(v) => setViewMode(v as any)}
+            className="w-[180px]"
+          >
+            <TabsList className="grid w-full grid-cols-2 h-8">
+              <TabsTrigger value="chat" className="text-xs">
+                <MessageSquare className="size-3.5 mr-1.5" />
+                Chat
+              </TabsTrigger>
+              <TabsTrigger value="canvas" className="text-xs">
+                <Grid className="size-3.5 mr-1.5" />
+                Canvas
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+
+      {/* Main Content Area */}
       <div
-        ref={mobileContainerRef}
-        className="flex flex-col flex-1 min-w-0 lg:hidden h-full"
+        className={`flex flex-col flex-1 min-w-0 h-full relative z-0 ${viewMode === "chat" ? "lg:flex" : ""}`}
       >
-        {/* Canvas fills remaining space */}
-        <div className="flex-1 min-h-0">
-          <Canvas {...canvasProps} isThread={false} />
-        </div>
-
-        {/* Drag handle */}
-        <div
-          className="shrink-0 flex items-center justify-center border-t border-border bg-muted/50 cursor-row-resize touch-none"
-          style={{ height: 24 }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            setIsBottomResizing(true);
-          }}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            setIsBottomResizing(true);
-          }}
-          onClick={toggleBottomPanel}
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize chat panel"
-        >
-          <ChevronUp
-            className={`size-4 text-muted-foreground transition-transform duration-200 ${
-              isBottomPanelCollapsed ? "rotate-180" : ""
-            }`}
-          />
-        </div>
-
-        {/* Bottom panel — RightSidebar */}
-        <div
-          className="shrink-0 overflow-hidden border-t border-border"
-          style={{ height: bottomPanelHeight }}
-        >
-          <RightSidebar {...rightSidebarProps} />
+        <div className="flex-1 h-full">
+          {/* If toggle is enabled AND mode is canvas, show Canvas. Otherwise (flag off or mode chat), show ChatList. */}
+          {isToggleEnabled && viewMode === "canvas" ? (
+            <Canvas {...canvasProps} isThread={false} />
+          ) : (
+            <ChatList {...chatListProps} />
+          )}
         </div>
       </div>
 
-      {/* Desktop: Horizontal layout (Canvas + resize + right sidebar) */}
-      <div className="hidden lg:flex flex-1 min-w-0 h-full">
-        {/* Canvas */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <Canvas {...canvasProps} isThread={false} />
-        </div>
+      {/* Desktop Right Sidebar */}
+      {/* In Chat Mode, only show if thread/annotation active */}
+      <div
+        className={`hidden lg:flex transition-all duration-300 ${!isRightSidebarVisible ? "w-0 border-none" : ""}`}
+        style={
+          isRightSidebarVisible ? { display: "flex" } : { display: "none" }
+        }
+      >
+        {isRightSidebarVisible && (
+          <>
+            <div
+              className="w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70 relative z-10"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                setIsResizing(true);
+              }}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+            >
+              <div className="w-px bg-border" />
+              <div className="flex-1 hover:bg-muted/60 transition-colors" />
+            </div>
+            <div
+              className="h-full min-w-0 overflow-hidden border-l border-border relative z-0"
+              style={{ width: sidebarWidth }}
+            >
+              <RightSidebar {...rightSidebarProps} />
+            </div>
+          </>
+        )}
+      </div>
 
-        {/* Resize handle */}
-        <div
-          className="flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            setIsResizing(true);
-          }}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize sidebar"
-        >
-          <div className="w-px bg-border" />
-          <div className="flex-1 hover:bg-muted/60 transition-colors" />
-        </div>
+      {/* Mobile Layout (simplified for now, mostly matching desktop logic but stacked/overlay) */}
+      {/* If toggle disabled: Chat only mode. Left sidebar (Canvas) logic not needed. */}
+      {/* If toggle enabled: */}
+      {/*   If Canvas mode: Show bottom panel (Right Sidebar) */}
+      {/*   If Chat mode: No bottom panel needed (ChatList has input) */}
 
-        {/* Right Sidebar */}
-        <div
-          className="h-full min-w-0 overflow-hidden border-l border-border"
-          style={{ width: sidebarWidth }}
-        >
-          <RightSidebar {...rightSidebarProps} />
-        </div>
+      <div className="lg:hidden fixed inset-0 pointer-events-none z-50">
+        {/* The bottom panel for Canvas on Mobile needs to be rendered if in Canvas mode */}
+        {isToggleEnabled && viewMode === "canvas" && (
+          <div
+            className="pointer-events-auto absolute inset-x-0 bottom-0 bg-background border-t border-border shadow-lg flex flex-col"
+            style={{ height: bottomPanelHeight }}
+          >
+            <div
+              className="shrink-0 flex items-center justify-center border-b border-border bg-muted/50 cursor-row-resize touch-none h-6"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsBottomResizing(true);
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                setIsBottomResizing(true);
+              }}
+              onClick={toggleBottomPanel}
+            >
+              <ChevronUp
+                className={`size-4 text-muted-foreground transition-transform duration-200 ${isBottomPanelCollapsed ? "rotate-180" : ""}`}
+              />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <RightSidebar {...rightSidebarProps} />
+            </div>
+          </div>
+        )}
+
+        {/* If Chat mode, Right Sidebar should only show as overlay if thread active */}
       </div>
 
       {/* Mobile: Full screen overlay for thread/annotation */}
