@@ -28,6 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { appConfig } from "@/lib/config";
+import { SUGGESTIONS } from "@/lib/constants";
 
 import { MultimodalInput } from "./multimodal-input";
 import { UsageLimitBanner } from "./usage-limit-banner";
@@ -113,44 +114,42 @@ export function DefaultSidebarView({
               </div>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem
-                value="gemini-3-flash-preview"
-                className="hover:bg-muted"
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium text-xs">Gemini 3.0 Flash</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    Fastest & lightweight
-                  </span>
-                </div>
-              </SelectItem>
-              <SelectItem value="gemini-2.5-flash" className="hover:bg-muted">
-                <div className="flex flex-col">
-                  <span className="font-medium text-xs">Gemini 2.5 Flash</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    Previous gen fast
-                  </span>
-                </div>
-              </SelectItem>
-              <SelectItem
-                value="gemini-3.0-pro"
-                className={
-                  isUserPro ? "hover:bg-muted" : "opacity-50 cursor-not-allowed"
-                }
-                disabled={!isUserPro}
-              >
-                <div className="flex items-center justify-between gap-2 w-full">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-xs">Gemini 3.0 Pro</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      Best reasoning
-                    </span>
-                  </div>
-                  {!isUserPro && (
-                    <Crown className="size-3 text-yellow-500 shrink-0" />
-                  )}
-                </div>
-              </SelectItem>
+              {Object.keys(appConfig.modelNames).map((modelId) => {
+                const isProModel = modelId.includes("pro"); // Simple heuristic or add to config
+                // Actually relying on specific logic for disabling is safer.
+                // The original code was:
+                // 3.0-pro: disabled={!isUserPro}
+
+                const isDisabled = modelId === "gemini-3.0-pro" && !isUserPro;
+                const showCrown = modelId === "gemini-3.0-pro" && !isUserPro;
+
+                return (
+                  <SelectItem
+                    key={modelId}
+                    value={modelId}
+                    className={
+                      isDisabled
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-muted"
+                    }
+                    disabled={isDisabled}
+                  >
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-xs">
+                          {appConfig.geminiNames[modelId] || modelId}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {appConfig.modelDescriptions[modelId] || ""}
+                        </span>
+                      </div>
+                      {showCrown && (
+                        <Crown className="size-3 text-yellow-500 shrink-0" />
+                      )}
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         ) : (
@@ -231,42 +230,38 @@ export function DefaultSidebarView({
               </p>
             </div>
             <div className="flex flex-col gap-2">
-              {[
-                {
-                  label: "Write a clear explanation",
-                  value: "Explain a complex concept to me in simple terms",
-                  icon: (
-                    <MessageSquare className="size-4 text-blue-500 shrink-0" />
-                  ),
-                },
-                {
-                  label: "Draw a diagram",
-                  value:
-                    "Create a Mermaid diagram that visualizes the relationship between these concepts",
-                  icon: (
-                    <GitBranch className="size-4 text-green-500 shrink-0" />
-                  ),
-                },
-                {
-                  label: "Generate code",
-                  value:
-                    "Write a code snippet that demonstrates this concept with comments",
-                  icon: (
-                    <FileCode className="size-4 text-orange-500 shrink-0" />
-                  ),
-                },
-              ].map((suggestion) => (
-                <button
-                  key={suggestion.value}
-                  onClick={() => setInput(suggestion.value)}
-                  className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3"
-                >
-                  {suggestion.icon}
-                  <p className="text-sm text-foreground/80">
-                    {suggestion.label}
-                  </p>
-                </button>
-              ))}
+              {SUGGESTIONS.map((suggestion) => {
+                const Icon =
+                  suggestion.iconName === "message"
+                    ? MessageSquare
+                    : suggestion.iconName === "diagram"
+                      ? GitBranch
+                      : suggestion.iconName === "code"
+                        ? FileCode
+                        : Sparkles;
+
+                const colorClass =
+                  suggestion.color === "blue"
+                    ? "text-blue-500"
+                    : suggestion.color === "green"
+                      ? "text-green-500"
+                      : suggestion.color === "orange"
+                        ? "text-orange-500"
+                        : "text-purple-500";
+
+                return (
+                  <button
+                    key={suggestion.value}
+                    onClick={() => setInput(suggestion.value)}
+                    className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3"
+                  >
+                    <Icon className={`size-4 ${colorClass} shrink-0`} />
+                    <p className="text-sm text-foreground/80">
+                      {suggestion.label}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

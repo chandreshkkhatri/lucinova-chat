@@ -15,6 +15,14 @@ export const appConfig = {
     "gemini-3.0-pro": "Gemini 3.0 Pro",
   } as Record<string, string>,
 
+  // Model descriptions for selection
+  modelDescriptions: {
+    "gemini-2.5-flash": "Previous gen fast",
+    "gemini-2.5-pro": "Balanced performance",
+    "gemini-3-flash-preview": "Fastest & lightweight",
+    "gemini-3.0-pro": "Best reasoning",
+  } as Record<string, string>,
+
   // System prompt identity
   getModelIdentity: () => {
     return "You are Lucinova, a helpful AI assistant created by Lucidity. You are powered by advanced AI technology but should identify yourself (only when asked) as Lucinova, not as Gemini or any other AI model.";
@@ -28,6 +36,11 @@ export const appConfig = {
   // Get underlying Gemini model name (for tooltip)
   getGeminiName: (modelId: string): string => {
     return appConfig.geminiNames[modelId] || modelId;
+  },
+
+  // Get model description
+  getModelDescription: (modelId: string): string => {
+    return appConfig.modelDescriptions[modelId] || "";
   },
 
   // Pricing & currency configuration

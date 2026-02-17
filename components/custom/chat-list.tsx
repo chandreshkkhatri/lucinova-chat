@@ -11,6 +11,8 @@ import {
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useRef } from "react";
 
+import { SUGGESTIONS } from "@/lib/constants";
+
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MultimodalInput } from "./multimodal-input";
 import { UsageLimitBanner } from "./usage-limit-banner";
@@ -98,51 +100,38 @@ export function ChatList({
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl mt-8">
-                {[
-                  {
-                    label: "Explain Quantum Computing",
-                    value:
-                      "Explain the key principles of quantum computing to a 5-year old",
-                    icon: (
-                      <MessageSquare className="size-4 text-blue-500 shrink-0" />
-                    ),
-                  },
-                  {
-                    label: "Design a Database Schema",
-                    value:
-                      "Create a Mermaid entity-relationship diagram for an e-commerce database",
-                    icon: (
-                      <GitBranch className="size-4 text-green-500 shrink-0" />
-                    ),
-                  },
-                  {
-                    label: "React Component",
-                    value:
-                      "Write a React component for a responsive navigation bar with Tailwind CSS",
-                    icon: (
-                      <FileCode className="size-4 text-orange-500 shrink-0" />
-                    ),
-                  },
-                  {
-                    label: "Summarize Article",
-                    value:
-                      "Summarize the key arguments from a provided text about climate change solutions",
-                    icon: (
-                      <Sparkles className="size-4 text-purple-500 shrink-0" />
-                    ),
-                  },
-                ].map((suggestion) => (
-                  <button
-                    key={suggestion.value}
-                    onClick={() => setInput(suggestion.value)}
-                    className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3 bg-card/50"
-                  >
-                    {suggestion.icon}
-                    <p className="text-sm text-foreground/80">
-                      {suggestion.label}
-                    </p>
-                  </button>
-                ))}
+                {SUGGESTIONS.map((suggestion) => {
+                  const Icon =
+                    suggestion.iconName === "message"
+                      ? MessageSquare
+                      : suggestion.iconName === "diagram"
+                        ? GitBranch
+                        : suggestion.iconName === "code"
+                          ? FileCode
+                          : Sparkles;
+
+                  const colorClass =
+                    suggestion.color === "blue"
+                      ? "text-blue-500"
+                      : suggestion.color === "green"
+                        ? "text-green-500"
+                        : suggestion.color === "orange"
+                          ? "text-orange-500"
+                          : "text-purple-500";
+
+                  return (
+                    <button
+                      key={suggestion.value}
+                      onClick={() => setInput(suggestion.value)}
+                      className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3 bg-card/50"
+                    >
+                      <Icon className={`size-4 ${colorClass} shrink-0`} />
+                      <p className="text-sm text-foreground/80">
+                        {suggestion.label}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : (
