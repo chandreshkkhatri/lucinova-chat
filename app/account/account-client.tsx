@@ -1181,7 +1181,10 @@ function BillingHistory({
                     {p.planName || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                    ₹{amount.toLocaleString("en-IN")}
+                    {p.currency === "USD" ? "$" : "₹"}
+                    {amount.toLocaleString(
+                      p.currency === "USD" ? "en-US" : "en-IN",
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs">
                     <span
@@ -1201,41 +1204,45 @@ function BillingHistory({
                     {p.environment || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                    {p.invoiceId ? (
+                    {p.invoiceId || p.paymentId ? (
                       <button
                         onClick={async () => {
-                          const btn = document.getElementById(
-                            `btn-inv-${p.invoiceId}`,
-                          );
+                          const id = p.invoiceId || p.paymentId;
+                          const btn = document.getElementById(`btn-inv-${id}`);
                           if (btn)
                             btn.innerHTML =
                               '<span class="animate-spin inline-block size-3 border-2 border-current border-t-transparent rounded-full mr-1"></span>';
                           try {
                             const res = await fetch(
-                              `/api/payment/invoice/${p.invoiceId}`,
+                              `/api/payment/invoice/${id}`,
                             );
-                            if (!res.ok) throw new Error();
                             const data = await res.json();
+                            if (!res.ok) throw new Error(data.error);
                             if (data.url) window.open(data.url, "_blank");
                             else toast.error("Invoice URL not available");
-                          } catch (e) {
-                            toast.error("Failed to load invoice");
+                          } catch (e: any) {
+                            toast.error(e.message || "Failed to load invoice");
                           } finally {
                             if (btn)
                               btn.innerHTML =
                                 '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt size-4 mr-1"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6"/><path d="M16 12H8"/><path d="M13 16H8"/></svg> Invoice';
                           }
                         }}
-                        id={`btn-inv-${p.invoiceId}`}
+                        id={`btn-inv-${p.invoiceId || p.paymentId}`}
                         className="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors"
                       >
                         <Receipt className="size-4 mr-1" />
                         Invoice
                       </button>
                     ) : (
-                      <span className="text-muted-foreground text-xs italic">
-                        Processing...
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs italic">
+                          Generating...
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          Usually takes 2-5 mins
+                        </span>
+                      </div>
                     )}
                   </td>
                 </tr>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { auth } from "@/app/(auth)/auth";
 import { ensureRazorpayClient } from "@/lib/razorpay";
-
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ invoiceId: string }> },
@@ -22,8 +22,27 @@ export async function GET(
   }
 
   try {
+    let targetInvoiceId = invoiceId;
+
+    // If it's a payment ID (pay_...), fetch the payment first to get the invoice_id
+    if (invoiceId.startsWith("pay_")) {
+      // @ts-ignore
+      const payment = await rz.client.payments.fetch(invoiceId);
+      if (payment.invoice_id) {
+        targetInvoiceId = payment.invoice_id;
+      } else {
+        return NextResponse.json(
+          {
+            error:
+              "Invoice not yet generated for this payment. Please try again in 2-5 minutes.",
+          },
+          { status: 404 },
+        );
+      }
+    }
+
     // @ts-ignore - SDK might not have perfect types for invoices
-    const invoice = await rz.client.invoices.fetch(invoiceId);
+    const invoice = await rz.client.invoices.fetch(targetInvoiceId);
 
     if (!invoice || (!invoice.public_url && !invoice.short_url)) {
       return NextResponse.json(

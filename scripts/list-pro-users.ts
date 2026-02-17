@@ -1,0 +1,1 @@
+import mongoose from "mongoose"; import dotenv from "dotenv"; import { User } from "../db/models"; dotenv.config(); async function run() { await mongoose.connect(process.env.MONGODB_URI!); const users = await User.find({ isPro: true }, { email: 1, name: 1, plan: 1 }); console.log(JSON.stringify(users, null, 2)); process.exit(0); } run();
