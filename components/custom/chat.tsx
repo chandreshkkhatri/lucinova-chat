@@ -39,7 +39,7 @@ export function Chat({
   isUserPro = false,
   isGuest = false,
   selectedText,
-  defaultModelId = "gemini-3.0-flash",
+  defaultModelId = "gemini-3-flash-preview",
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -63,7 +63,10 @@ export function Chat({
   const [isMounted, setIsMounted] = useState(false);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
   const [selectedNode, setSelectedNode] = useState<{
-    id: string; content: string; role: string; type: string;
+    id: string;
+    content: string;
+    role: string;
+    type: string;
   } | null>(null);
 
   // Desktop sidebar resize state
@@ -72,7 +75,8 @@ export function Chat({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Mobile bottom panel state
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(DEFAULT_BOTTOM_PANEL);
+  const [bottomPanelHeight, setBottomPanelHeight] =
+    useState(DEFAULT_BOTTOM_PANEL);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
   const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(false);
   const mobileContainerRef = useRef<HTMLDivElement>(null);
@@ -90,55 +94,59 @@ export function Chat({
     setIsMounted(true);
   }, []);
 
-  const { messages, sendMessage, status, stop, setMessages, regenerate } = useChat({
-    id: chatIdForSubmit,
-    transport: new TextStreamChatTransport({
-      api: isThread ? "/api/thread" : "/api/chat",
-    }),
-    messages: initialMessages,
-    onFinish: () => {
-      const url = `/chat/${chatIdForSubmit}`;
-      window.history.replaceState({}, "", url);
-      onFinish?.();
+  const { messages, sendMessage, status, stop, setMessages, regenerate } =
+    useChat({
+      id: chatIdForSubmit,
+      transport: new TextStreamChatTransport({
+        api: isThread ? "/api/thread" : "/api/chat",
+      }),
+      messages: initialMessages,
+      onFinish: () => {
+        const url = `/chat/${chatIdForSubmit}`;
+        window.history.replaceState({}, "", url);
+        onFinish?.();
 
-      // Revalidate history cache to pick up server-generated title
-      setTimeout(() => {
-        globalMutate("/api/history");
-      }, 3000);
-    },
-    onError: (error) => {
-      console.error("Chat error:", error);
-      try {
-        const errorText = error.message || "";
-        if (errorText.includes("usage_limit_exceeded") || errorText.includes("429")) {
-          fetch("/api/usage")
-            .then((res) => res.json())
-            .then((usageData) => {
-              if (usageData.current) {
+        // Revalidate history cache to pick up server-generated title
+        setTimeout(() => {
+          globalMutate("/api/history");
+        }, 3000);
+      },
+      onError: (error) => {
+        console.error("Chat error:", error);
+        try {
+          const errorText = error.message || "";
+          if (
+            errorText.includes("usage_limit_exceeded") ||
+            errorText.includes("429")
+          ) {
+            fetch("/api/usage")
+              .then((res) => res.json())
+              .then((usageData) => {
+                if (usageData.current) {
+                  setUsageLimitInfo({
+                    exceeded: true,
+                    isPro: usageData.isPro,
+                    currentUsage: usageData.current.unitsUsed,
+                    limit: usageData.current.limit,
+                    periodEnd: usageData.current.periodEnd,
+                  });
+                }
+              })
+              .catch(() => {
                 setUsageLimitInfo({
                   exceeded: true,
-                  isPro: usageData.isPro,
-                  currentUsage: usageData.current.unitsUsed,
-                  limit: usageData.current.limit,
-                  periodEnd: usageData.current.periodEnd,
+                  isPro: isUserPro,
+                  currentUsage: 0,
+                  limit: 0,
+                  periodEnd: new Date(),
                 });
-              }
-            })
-            .catch(() => {
-              setUsageLimitInfo({
-                exceeded: true,
-                isPro: isUserPro,
-                currentUsage: 0,
-                limit: 0,
-                periodEnd: new Date(),
               });
-            });
+          }
+        } catch {
+          // Ignore parsing errors
         }
-      } catch {
-        // Ignore parsing errors
-      }
-    },
-  });
+      },
+    });
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -165,12 +173,15 @@ export function Chat({
       }
     }
 
-    const fileParts: FileUIPart[] = attachments.map((a) => ({
-      type: "file",
-      mediaType: a.contentType ?? "",
-      filename: a.name ?? "attachment",
-      url: a.url,
-    } as unknown as FileUIPart));
+    const fileParts: FileUIPart[] = attachments.map(
+      (a) =>
+        ({
+          type: "file",
+          mediaType: a.contentType ?? "",
+          filename: a.name ?? "attachment",
+          url: a.url,
+        }) as unknown as FileUIPart,
+    );
 
     sendMessage(
       {
@@ -184,7 +195,7 @@ export function Chat({
           ...(selectedProjectId && { projectId: selectedProjectId }),
           ...(isThread && { parentMessageId, mainChatId, selectedText }),
         },
-      }
+      },
     );
 
     setInput("");
@@ -221,19 +232,22 @@ export function Chat({
   // Fetch annotations for this chat
   const { data: annotationsData, mutate: mutateAnnotations } = useSWR(
     !isThread ? `/api/annotations?chatId=${id}` : null,
-    fetcher
+    fetcher,
   );
 
   const annotations: SavedAnnotation[] = annotationsData?.annotations || [];
 
   // Group annotations by messageId
-  const annotationsByMessage = annotations.reduce((acc, ann) => {
-    if (!acc[ann.messageId]) {
-      acc[ann.messageId] = [];
-    }
-    acc[ann.messageId].push(ann);
-    return acc;
-  }, {} as Record<string, SavedAnnotation[]>);
+  const annotationsByMessage = annotations.reduce(
+    (acc, ann) => {
+      if (!acc[ann.messageId]) {
+        acc[ann.messageId] = [];
+      }
+      acc[ann.messageId].push(ann);
+      return acc;
+    },
+    {} as Record<string, SavedAnnotation[]>,
+  );
 
   const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
@@ -257,7 +271,7 @@ export function Chat({
       setActiveThread(null);
       setActiveAnnotation(null);
     },
-    []
+    [],
   );
 
   const handleOpenAnnotation = useCallback(
@@ -266,7 +280,7 @@ export function Chat({
       setActiveThread(null);
       setPendingAnnotation(null);
     },
-    []
+    [],
   );
 
   const handleCloseAnnotation = () => {
@@ -319,7 +333,7 @@ export function Chat({
       setPendingAnnotation(null);
       mutateAnnotations();
     },
-    [mutateAnnotations]
+    [mutateAnnotations],
   );
 
   // Edit last user message and regenerate
@@ -339,7 +353,7 @@ export function Chat({
 
       regenerate();
     },
-    [messages, setMessages, regenerate]
+    [messages, setMessages, regenerate],
   );
 
   const handleRegenerate = useCallback(() => {
@@ -356,7 +370,7 @@ export function Chat({
       const { width } = container.getBoundingClientRect();
       const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, width - MIN_MAIN_WIDTH);
       setSidebarWidth((prev) =>
-        Math.min(Math.max(prev, MIN_SIDEBAR_WIDTH), maxWidth)
+        Math.min(Math.max(prev, MIN_SIDEBAR_WIDTH), maxWidth),
       );
     };
 
@@ -373,10 +387,13 @@ export function Chat({
       if (!container) return;
       const bounds = container.getBoundingClientRect();
       const nextWidth = bounds.right - event.clientX;
-      const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, bounds.width - MIN_MAIN_WIDTH);
+      const maxWidth = Math.min(
+        MAX_SIDEBAR_WIDTH,
+        bounds.width - MIN_MAIN_WIDTH,
+      );
       const clampedWidth = Math.min(
         Math.max(nextWidth, MIN_SIDEBAR_WIDTH),
-        maxWidth
+        maxWidth,
       );
       setSidebarWidth(clampedWidth);
     };
@@ -410,7 +427,7 @@ export function Chat({
       const nextHeight = bounds.bottom - clientY;
       const clampedHeight = Math.min(
         Math.max(nextHeight, MIN_BOTTOM_PANEL),
-        maxHeight
+        maxHeight,
       );
       setBottomPanelHeight(clampedHeight);
       setIsBottomPanelCollapsed(clampedHeight <= MIN_BOTTOM_PANEL);
@@ -493,7 +510,8 @@ export function Chat({
     );
   }
 
-  const showMobileOverlay = activeThread || activeAnnotation || pendingAnnotation;
+  const showMobileOverlay =
+    activeThread || activeAnnotation || pendingAnnotation;
 
   // Shared RightSidebar props
   const rightSidebarProps = {
@@ -528,12 +546,12 @@ export function Chat({
 
   // Main chat layout
   return (
-    <div
-      ref={containerRef}
-      className={`flex h-full bg-paper ${className}`}
-    >
+    <div ref={containerRef} className={`flex h-full bg-paper ${className}`}>
       {/* Mobile: Vertical split (Canvas top + bottom panel) */}
-      <div ref={mobileContainerRef} className="flex flex-col flex-1 min-w-0 lg:hidden h-full">
+      <div
+        ref={mobileContainerRef}
+        className="flex flex-col flex-1 min-w-0 lg:hidden h-full"
+      >
         {/* Canvas fills remaining space */}
         <div className="flex-1 min-h-0">
           <Canvas {...canvasProps} isThread={false} />
@@ -557,8 +575,9 @@ export function Chat({
           aria-label="Resize chat panel"
         >
           <ChevronUp
-            className={`size-4 text-muted-foreground transition-transform duration-200 ${isBottomPanelCollapsed ? "rotate-180" : ""
-              }`}
+            className={`size-4 text-muted-foreground transition-transform duration-200 ${
+              isBottomPanelCollapsed ? "rotate-180" : ""
+            }`}
           />
         </div>
 

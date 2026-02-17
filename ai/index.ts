@@ -7,7 +7,7 @@ import { customMiddleware } from "./custom-middleware";
 const PRIMARY_MODEL_ID =
   process.env.GOOGLE_GEMINI_PRIMARY_MODEL || "gemini-3.0-pro";
 const FAST_MODEL_ID =
-  process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-3.0-flash";
+  process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-3-flash-preview";
 
 // Default model ID used when no specific model is requested
 export const DEFAULT_MODEL_ID = FAST_MODEL_ID;

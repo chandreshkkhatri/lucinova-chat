@@ -3,7 +3,7 @@ export const appConfig = {
   modelNames: {
     "gemini-2.5-flash": "Lucinova 2.5 Flash",
     "gemini-2.5-pro": "Lucinova 2.5 Pro",
-    "gemini-3.0-flash": "Lucinova 3 Flash",
+    "gemini-3-flash-preview": "Lucinova 3 Flash",
     "gemini-3.0-pro": "Lucinova 3 Pro",
   } as Record<string, string>,
 
@@ -11,7 +11,7 @@ export const appConfig = {
   geminiNames: {
     "gemini-2.5-flash": "Gemini 2.5 Flash",
     "gemini-2.5-pro": "Gemini 2.5 Pro",
-    "gemini-3.0-flash": "Gemini 3.0 Flash",
+    "gemini-3-flash-preview": "Gemini 3.0 Flash",
     "gemini-3.0-pro": "Gemini 3.0 Pro",
   } as Record<string, string>,
 
@@ -36,7 +36,7 @@ export const appConfig = {
     proMonthlyPrice: Number(
       process.env.NEXT_PUBLIC_PRO_MONTHLY_PRICE ||
         process.env.PRO_MONTHLY_PRICE ||
-        20
+        20,
     ),
     // Currency code and symbol
     currency: (process.env.NEXT_PUBLIC_CURRENCY || "USD").toUpperCase(),
