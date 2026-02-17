@@ -81,6 +81,12 @@ export async function POST(request: NextRequest) {
             "[Razorpay Webhook] subscription.activated handled successfully",
           );
           break;
+        case "subscription.authenticated":
+          await handleSubscriptionAuthenticated(event);
+          console.log(
+            "[Razorpay Webhook] subscription.authenticated handled successfully",
+          );
+          break;
         case "subscription.cancelled":
           await handleSubscriptionCancelled(event);
           break;
@@ -90,6 +96,12 @@ export async function POST(request: NextRequest) {
         case "subscription.halted":
         case "subscription.paused":
           await handleSubscriptionPaused(event);
+          break;
+        case "payment.captured":
+          await handlePaymentCaptured(event);
+          console.log(
+            "[Razorpay Webhook] payment.captured handled successfully",
+          );
           break;
         case "payment.failed":
           await handlePaymentFailed(event);
@@ -176,6 +188,7 @@ async function handleSubscriptionCharged(event: any) {
 
   const subscriptionId = subscription.id;
   const paymentId = payment.id;
+  const invoiceId = payment.invoice_id; // Added invoiceId
   const amount = payment.amount / 100; // Convert paise to rupees
   const currency = payment.currency || appConfig.pricing.currency;
   const customerEmail = subscription.notes?.customer_email;
@@ -335,6 +348,7 @@ async function handleSubscriptionCharged(event: any) {
     provider: "razorpay",
     subscriptionId,
     paymentId,
+    invoiceId,
     taxAmount: taxAmount > 0 ? taxAmount : undefined,
     taxRate: taxRate > 0 ? taxRate : undefined,
     taxJurisdiction: taxJurisdiction !== "None" ? taxJurisdiction : undefined,
@@ -345,7 +359,7 @@ async function handleSubscriptionCharged(event: any) {
   // Activate pro subscription for 30 days (monthly)
   await activateProSubscriptionByEmail(effectiveEmail, 30, "razorpay");
 
-  // Store subscriptionId on user record for future management (cancellation, etc.)
+  // Track subscriptionId on user record for future management (cancellation, etc.)
   await ensureConnection();
   await User.findOneAndUpdate(
     { email: effectiveEmail.toLowerCase() },
@@ -576,4 +590,138 @@ async function handlePaymentFailed(event: any) {
     paymentId,
     raw: event,
   });
+}
+
+async function handlePaymentCaptured(event: any) {
+  const payment = event.payload?.payment?.entity;
+
+  if (!payment) {
+    console.error("[Payment Captured] Missing payment data");
+    return;
+  }
+
+  const paymentId = payment.id;
+  const subscriptionId = payment.subscription_id;
+  const invoiceId = payment.invoice_id; // Capture invoice_id
+  const amount = payment.amount / 100;
+  const currency = payment.currency || appConfig.pricing.currency;
+
+  let customerEmail = payment.email || payment.notes?.customer_email;
+  let customerName = payment.notes?.customer_name;
+
+  // Fallback: try to get email from customer_id if missing from payment
+  if (!customerEmail && payment.customer_id) {
+    try {
+      const rz = ensureRazorpayClient();
+      if (!("error" in rz)) {
+        // @ts-ignore - razorpay client types
+        const cust = await rz.client.customers.fetch(payment.customer_id);
+        if (cust?.email) customerEmail = cust.email;
+        if (cust?.name && !customerName) customerName = cust.name;
+      }
+    } catch (err) {
+      console.error("[Payment Captured] Failed to fetch customer:", err);
+    }
+  }
+
+  console.log("[Payment Captured] Processing payment:", {
+    paymentId,
+    subscriptionId,
+    customer: customerEmail,
+  });
+
+  // Record the payment in the DB (Idempotent by paymentId as orderId)
+  await recordPaymentOnce({
+    orderId: paymentId,
+    status: "SUCCESS",
+    amount,
+    currency,
+    customerEmail,
+    customerName,
+    environment:
+      process.env.RAZORPAY_ENVIRONMENT === "production" ? "production" : "test",
+    planName:
+      payment.notes?.plan_name ||
+      (subscriptionId ? "Pro Monthly Subscription" : "Lucidity Order"),
+    provider: "razorpay",
+    subscriptionId,
+    paymentId,
+    invoiceId,
+    raw: event,
+  });
+
+  // If this is a subscription payment, ensure the user is activated
+  if (subscriptionId && customerEmail) {
+    await activateProSubscriptionByEmail(customerEmail, 30, "razorpay");
+
+    // Store subscriptionId on user record too
+    await ensureConnection();
+    await User.findOneAndUpdate(
+      { email: customerEmail.toLowerCase() },
+      {
+        subscriptionId,
+        razorpayCustomerId: payment.customer_id,
+      },
+    );
+  }
+}
+
+async function handleSubscriptionAuthenticated(event: any) {
+  const subscription = event.payload?.subscription?.entity;
+
+  if (!subscription) {
+    console.error("[Subscription Authenticated] Missing subscription data");
+    return;
+  }
+
+  const subscriptionId = subscription.id;
+  let customerEmail = subscription.notes?.customer_email;
+  let customerName = subscription.notes?.customer_name;
+
+  // Fallback: try to get email from customer_id
+  if (!customerEmail && subscription.customer_id) {
+    try {
+      const rz = ensureRazorpayClient();
+      if (!("error" in rz)) {
+        // @ts-ignore - razorpay client types
+        const cust = await rz.client.customers.fetch(subscription.customer_id);
+        if (cust?.email) customerEmail = cust.email;
+      }
+    } catch (err) {
+      console.error(
+        "[Subscription Authenticated] Failed to fetch customer:",
+        err,
+      );
+    }
+  }
+
+  console.log("[Subscription Authenticated] Subscription authenticated:", {
+    subscriptionId,
+    customer: customerEmail,
+  });
+
+  if (!customerEmail) {
+    console.error(
+      "[Subscription Authenticated] No customer email available for subscription:",
+      subscriptionId,
+    );
+    return;
+  }
+
+  // Update subscription status to active but DO NOT extend the date yet.
+  // The date will be extended when the first charge happens (at start_at).
+  await ensureConnection();
+  await User.findOneAndUpdate(
+    { email: customerEmail.toLowerCase() },
+    {
+      subscriptionId,
+      subscriptionStatus: "active",
+      razorpayCustomerId: subscription.customer_id,
+    },
+  );
+
+  console.log(
+    "[Subscription Authenticated] Subscription status updated to active for:",
+    customerEmail,
+  );
 }

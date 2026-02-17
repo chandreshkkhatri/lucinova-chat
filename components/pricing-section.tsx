@@ -16,6 +16,7 @@ import { appConfig } from "@/lib/config";
 interface PricingSectionProps {
   isUserPro?: boolean;
   isAuthenticated?: boolean;
+  subscriptionStatus?: string | null;
   userBadges?: Array<{
     badgeId: string;
     metadata?: {
@@ -27,6 +28,7 @@ interface PricingSectionProps {
 export function PricingSection({
   isUserPro = false,
   isAuthenticated = false,
+  subscriptionStatus = null,
   userBadges = [],
 }: PricingSectionProps) {
   const price = appConfig.pricing.proMonthlyPrice;
@@ -164,7 +166,7 @@ export function PricingSection({
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
-            {isUserPro ? (
+            {isUserPro && subscriptionStatus !== "canceled" ? (
               <Button
                 disabled
                 className="w-full bg-green-600 text-white opacity-80 cursor-not-allowed"
@@ -175,14 +177,23 @@ export function PricingSection({
               <PaymentButton
                 amount={discountedPriceInCents}
                 planName="Pro Monthly Subscription"
-                buttonText="Subscribe with Early Bird Discount"
+                buttonText={
+                  subscriptionStatus === "canceled"
+                    ? "Resubscribe with Early Bird Discount"
+                    : "Subscribe with Early Bird Discount"
+                }
               />
-            ) : isAuthenticated ? (
+            ) : (isUserPro && subscriptionStatus === "canceled") ||
+              isAuthenticated ? (
               <PaymentButton
                 amount={priceInCents}
                 planName="Lucidity Pro Monthly"
                 className="w-full"
-                buttonText="Subscribe Now"
+                buttonText={
+                  subscriptionStatus === "canceled"
+                    ? "Resubscribe Now"
+                    : "Subscribe Now"
+                }
               />
             ) : (
               <Button className="w-full" asChild>

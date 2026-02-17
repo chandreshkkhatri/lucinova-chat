@@ -1,6 +1,14 @@
 import "server-only";
 import { ensureConnection } from "./connection";
-import { User, Chat, Message, Payment, Annotation, Usage, Project } from "./models";
+import {
+  User,
+  Chat,
+  Message,
+  Payment,
+  Annotation,
+  Usage,
+  Project,
+} from "./models";
 
 // Re-export types for external use
 export { Chat } from "./models";
@@ -74,7 +82,7 @@ export async function createUser(
         },
       });
       console.log(
-        `[Badges] Awarded Early Bird badge to ${normalizedEmail} (rank #${userRank}/500)`
+        `[Badges] Awarded Early Bird badge to ${normalizedEmail} (rank #${userRank}/500)`,
       );
     }
   }
@@ -118,26 +126,26 @@ export async function getUserByEmail(email: string) {
 // Badge helpers
 export async function getUserBadges(userId: string) {
   await ensureConnection();
-  const user = await User.findById(userId).select("badges").lean() as any;
+  const user = (await User.findById(userId).select("badges").lean()) as any;
   return user?.badges || [];
 }
 
 export async function hasBadge(
   userId: string,
-  badgeId: string
+  badgeId: string,
 ): Promise<boolean> {
   await ensureConnection();
-  const user = await User.findById(userId).select("badges").lean() as any;
+  const user = (await User.findById(userId).select("badges").lean()) as any;
   return user?.badges?.some((b: any) => b.badgeId === badgeId) || false;
 }
 
 export async function hasActiveBadgeBenefit(
   userId: string,
   badgeId: string,
-  durationMonths: number = 3
+  durationMonths: number = 3,
 ): Promise<boolean> {
   await ensureConnection();
-  const user = await User.findById(userId).select("badges").lean() as any;
+  const user = (await User.findById(userId).select("badges").lean()) as any;
   const badge = user?.badges?.find((b: any) => b.badgeId === badgeId);
   if (!badge) return false;
   const benefitUsedMonths = badge.metadata?.benefitUsedMonths || 0;
@@ -146,13 +154,13 @@ export async function hasActiveBadgeBenefit(
 
 export async function incrementBadgeBenefitUsage(
   email: string,
-  badgeId: string
+  badgeId: string,
 ): Promise<void> {
   await ensureConnection();
   const normalizedEmail = String(email).trim().toLowerCase();
   await User.updateOne(
     { email: normalizedEmail, "badges.badgeId": badgeId },
-    { $inc: { "badges.$.metadata.benefitUsedMonths": 1 } }
+    { $inc: { "badges.$.metadata.benefitUsedMonths": 1 } },
   );
 }
 
@@ -228,6 +236,7 @@ export async function recordPaymentOnce({
   provider,
   subscriptionId,
   paymentId,
+  invoiceId,
   taxAmount,
   taxRate,
   taxJurisdiction,
@@ -245,6 +254,7 @@ export async function recordPaymentOnce({
   provider?: "razorpay";
   subscriptionId?: string;
   paymentId?: string;
+  invoiceId?: string;
   taxAmount?: number;
   taxRate?: number;
   taxJurisdiction?: string;
@@ -269,6 +279,7 @@ export async function recordPaymentOnce({
         provider,
         subscriptionId,
         paymentId,
+        invoiceId,
         taxAmount,
         taxRate,
         taxJurisdiction,
@@ -284,7 +295,11 @@ export async function recordPaymentOnce({
 
 export async function getPaymentsByEmail(email: string, limit = 50) {
   await ensureConnection();
-  return Payment.find({ customerEmail: email })
+  const normalizedEmail = String(email).trim();
+  // Case-insensitive search
+  return Payment.find({
+    customerEmail: { $regex: new RegExp(`^${normalizedEmail}$`, "i") },
+  })
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
@@ -512,7 +527,7 @@ export async function updatePassword(email: string, hashedPassword: string) {
 export async function getOrCreateCurrentUsage(
   userId: string,
   currentPeriodStart?: Date | null,
-  currentPeriodEnd?: Date | null
+  currentPeriodEnd?: Date | null,
 ) {
   await ensureConnection();
 
@@ -556,7 +571,7 @@ export async function getOrCreateCurrentUsage(
     {
       new: true,
       upsert: true,
-    }
+    },
   );
 
   return usage.toObject();
@@ -569,7 +584,7 @@ export async function incrementUsage(
   outputTokens: number,
   units: number,
   currentPeriodStart?: Date | null,
-  currentPeriodEnd?: Date | null
+  currentPeriodEnd?: Date | null,
 ) {
   await ensureConnection();
 
@@ -622,7 +637,7 @@ export async function incrementUsage(
     {
       upsert: true,
       new: true,
-    }
+    },
   );
 
   if (!updatedUsage) {
@@ -633,14 +648,14 @@ export async function incrementUsage(
 export async function getUserUsageStats(
   userId: string,
   currentPeriodStart?: Date | null,
-  currentPeriodEnd?: Date | null
+  currentPeriodEnd?: Date | null,
 ) {
   await ensureConnection();
 
   const usage = await getOrCreateCurrentUsage(
     userId,
     currentPeriodStart,
-    currentPeriodEnd
+    currentPeriodEnd,
   );
 
   return {
@@ -660,7 +675,7 @@ export async function getUsageHistory(userId: string, limit = 12) {
 export async function createProject(
   userId: string,
   name: string,
-  color?: string
+  color?: string,
 ) {
   await ensureConnection();
   const project = await Project.create({ userId, name, color });
@@ -686,7 +701,7 @@ export async function getProjectById(projectId: string) {
 
 export async function updateProject(
   projectId: string,
-  updates: { name?: string; color?: string }
+  updates: { name?: string; color?: string },
 ) {
   await ensureConnection();
   const project = await Project.findByIdAndUpdate(projectId, updates, {
@@ -701,22 +716,19 @@ export async function updateProject(
 export async function deleteProject(projectId: string) {
   await ensureConnection();
   // Unlink all chats from this project
-  await Chat.updateMany(
-    { projectId },
-    { $set: { projectId: null } }
-  );
+  await Chat.updateMany({ projectId }, { $set: { projectId: null } });
   return await Project.findByIdAndDelete(projectId);
 }
 
 export async function updateChatProject(
   chatId: string,
-  projectId: string | null
+  projectId: string | null,
 ) {
   await ensureConnection();
   const chat = await Chat.findByIdAndUpdate(
     chatId,
     { projectId },
-    { new: true }
+    { new: true },
   ).lean();
   if (!chat || Array.isArray(chat)) return null;
   return { ...chat, id: (chat as any)._id.toString() };
