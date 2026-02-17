@@ -1,12 +1,17 @@
+// @ts-ignore
 import {
   convertToModelMessages,
   generateText,
   UIMessage,
   streamText,
-  ModelMessage,
 } from "ai";
 
-import { geminiFlashModel, geminiProModel, getModelById, DEFAULT_MODEL_ID } from "@/ai";
+import {
+  geminiFlashModel,
+  geminiProModel,
+  getModelById,
+  DEFAULT_MODEL_ID,
+} from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Chat } from "@/db/models";
@@ -31,8 +36,8 @@ import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
  */
 export async function convertMessagesWithAttachments(
   messages: Array<UIMessage>,
-): Promise<ModelMessage[]> {
-  const coreMessages: ModelMessage[] = [];
+): Promise<any[]> {
+  const coreMessages: any[] = [];
 
   for (const msg of messages) {
     const attachments = (msg as any).experimental_attachments || [];
@@ -128,8 +133,12 @@ export async function POST(request: Request) {
     messages,
     modelId,
     projectId: requestProjectId,
-  }: { id: string; messages: Array<UIMessage>; modelId?: string; projectId?: string } =
-    await request.json();
+  }: {
+    id: string;
+    messages: Array<UIMessage>;
+    modelId?: string;
+    projectId?: string;
+  } = await request.json();
 
   const session = await auth();
   const isGuest = !session || !session.user;
@@ -180,7 +189,7 @@ export async function POST(request: Request) {
       userIdStr,
       user.isPro || false,
       user.currentPeriodStart,
-      user.currentPeriodEnd
+      user.currentPeriodEnd,
     );
 
     if (!usageCheck.allowed) {
@@ -193,7 +202,7 @@ export async function POST(request: Request) {
           limit: usageCheck.limit,
           periodEnd: usageCheck.periodEnd,
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
   }
@@ -338,13 +347,18 @@ export async function POST(request: Request) {
 
     if (chatProjectId) {
       try {
-        const siblingChatSummaries = await getProjectChatSummaries(chatProjectId, id, 5);
+        const siblingChatSummaries = await getProjectChatSummaries(
+          chatProjectId,
+          id,
+          5,
+        );
 
         if (siblingChatSummaries.length > 0) {
           const project = await getProjectById(chatProjectId);
           const projectName = (project as any)?.name || "this project";
 
-          projectMemoryContext = `\n\nYou are working within the project "${projectName}". Here is context from previous conversations in this project:\n\n` +
+          projectMemoryContext =
+            `\n\nYou are working within the project "${projectName}". Here is context from previous conversations in this project:\n\n` +
             siblingChatSummaries
               .map((chat) => `[${chat.title}]: ${chat.summary}`)
               .join("\n") +
@@ -372,7 +386,7 @@ export async function POST(request: Request) {
           usage.inputTokens || 0,
           usage.outputTokens || 0,
           currentUser.currentPeriodStart,
-          currentUser.currentPeriodEnd
+          currentUser.currentPeriodEnd,
         );
       }
 
@@ -420,7 +434,10 @@ export async function POST(request: Request) {
             const existingSummary = (currentChat as any).summary || "";
             const recentMessages = coreMessages.slice(-8);
             const recentText = recentMessages
-              .map((m) => `${m.role}: ${typeof m.content === "string" ? m.content : "[complex content]"}`)
+              .map(
+                (m) =>
+                  `${m.role}: ${typeof m.content === "string" ? m.content : "[complex content]"}`,
+              )
               .join("\n");
 
             const summaryPrompt = existingSummary

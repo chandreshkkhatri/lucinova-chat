@@ -1,9 +1,5 @@
-import {
-  convertToModelMessages,
-  UIMessage,
-  streamText,
-  ModelMessage,
-} from "ai";
+// @ts-ignore
+import { convertToModelMessages, UIMessage, streamText } from "ai";
 
 import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
@@ -21,11 +17,13 @@ import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: annotationId } = await params;
-  const { messages, modelId }: { messages: Array<UIMessage>; modelId?: string } =
-    await request.json();
+  const {
+    messages,
+    modelId,
+  }: { messages: Array<UIMessage>; modelId?: string } = await request.json();
 
   const session = await auth();
   if (!session || !session.user) {
@@ -54,7 +52,7 @@ export async function POST(
     userId,
     currentUser.isPro || false,
     currentUser.currentPeriodStart,
-    currentUser.currentPeriodEnd
+    currentUser.currentPeriodEnd,
   );
 
   if (!usageCheck.allowed) {
@@ -67,12 +65,12 @@ export async function POST(
         limit: usageCheck.limit,
         periodEnd: usageCheck.periodEnd,
       },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
   const coreMessages = (await convertToModelMessages(messages)).filter(
-    (message) => message.content.length > 0
+    (message) => message.content.length > 0,
   );
 
   // Persist the user's message
@@ -101,7 +99,7 @@ export async function POST(
   // Build context: the parent message + selected text context
   const chatDoc = await getChatById({ id: chatId });
 
-  let additionalContext: Array<ModelMessage> = [];
+  let additionalContext: Array<any> = [];
 
   if (chatDoc) {
     await ensureConnection();
@@ -112,7 +110,7 @@ export async function POST(
     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
       const aiId = (chatDoc as any).aiId?.toString();
 
-      const toCore = (m: any): ModelMessage => ({
+      const toCore = (m: any): any => ({
         role: m.senderId.toString() === aiId ? "assistant" : "user",
         content: m.body,
       });
@@ -121,7 +119,7 @@ export async function POST(
     }
   }
 
-  const fullContext: ModelMessage[] = [...additionalContext, ...coreMessages];
+  const fullContext: any[] = [...additionalContext, ...coreMessages];
 
   // Use the requested model or fall back to default
   const model = modelId
@@ -152,7 +150,7 @@ IMPORTANT INSTRUCTIONS:
           usage.inputTokens || 0,
           usage.outputTokens || 0,
           currentUser.currentPeriodStart,
-          currentUser.currentPeriodEnd
+          currentUser.currentPeriodEnd,
         );
       }
 

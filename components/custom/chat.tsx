@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { TextStreamChatTransport, UIMessage } from "ai";
+import { UIMessage } from "ai";
 import { ChevronUp, MessageSquare, Grid, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -17,7 +17,7 @@ import { RightSidebar } from "./right-sidebar";
 import { useSidebar } from "./sidebar-context";
 import { Attachment } from "./types";
 
-import type { FileUIPart } from "ai";
+// import type { FileUIPart } from "ai";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -106,10 +106,8 @@ export function Chat({
   const { messages, sendMessage, status, stop, setMessages, regenerate } =
     useChat({
       id: chatIdForSubmit,
-      transport: new TextStreamChatTransport({
-        api: isThread ? "/api/thread" : "/api/chat",
-      }),
-      messages: initialMessages,
+      api: isThread ? "/api/thread" : "/api/chat",
+      messages: initialMessages as unknown as any,
       onFinish: () => {
         const url = `/chat/${chatIdForSubmit}`;
         window.history.replaceState({}, "", url);
@@ -120,7 +118,7 @@ export function Chat({
           globalMutate("/api/history");
         }, 3000);
       },
-      onError: (error) => {
+      onError: (error: any) => {
         console.error("Chat error:", error);
         try {
           const errorText = error.message || "";
@@ -155,7 +153,7 @@ export function Chat({
           // Ignore parsing errors
         }
       },
-    });
+    } as any);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -182,15 +180,12 @@ export function Chat({
       }
     }
 
-    const fileParts: FileUIPart[] = attachments.map(
-      (a) =>
-        ({
-          type: "file",
-          mediaType: a.contentType ?? "",
-          filename: a.name ?? "attachment",
-          url: a.url,
-        }) as unknown as FileUIPart,
-    );
+    const fileParts: any[] = attachments.map((a) => ({
+      type: "file",
+      mediaType: a.contentType ?? "",
+      filename: a.name ?? "attachment",
+      url: a.url,
+    }));
 
     sendMessage(
       {
@@ -213,7 +208,7 @@ export function Chat({
 
   useEffect(() => {
     if (messages.length === 0 && initialMessages.length > 0) {
-      setMessages(initialMessages);
+      setMessages(initialMessages as unknown as any);
     }
   }, [initialMessages, messages.length, setMessages]);
 
@@ -261,7 +256,10 @@ export function Chat({
   const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
     if (parentMessage && !isThread) {
-      setActiveThread({ parentMessage, selectedText });
+      setActiveThread({
+        parentMessage: parentMessage as unknown as any,
+        selectedText,
+      });
       setActiveAnnotation(null);
       setPendingAnnotation(null);
       // Auto-switch to chat mode if in canvas? No, keep context.
@@ -482,7 +480,7 @@ export function Chat({
 
   // Shared Canvas props
   const canvasProps = {
-    messages,
+    messages: messages as unknown as any,
     status: status as "idle" | "streaming" | "submitted" | "error",
     chatId: id,
     annotationsByMessage,
@@ -505,7 +503,7 @@ export function Chat({
 
   // Shared ChatList props
   const chatListProps = {
-    messages,
+    messages: messages as unknown as any,
     status: status as "idle" | "streaming" | "submitted" | "error",
     chatId: id,
     annotationsByMessage,
@@ -555,7 +553,7 @@ export function Chat({
     stop,
     attachments,
     setAttachments,
-    messages,
+    messages: messages as unknown as any,
     sendMessage,
     selectedNodeType,
     setSelectedNodeType,

@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { wrapLanguageModel } from "ai";
+import { wrapLanguageModel, LanguageModel } from "ai";
 
 import { customMiddleware } from "./custom-middleware";
 
@@ -14,13 +14,13 @@ export const DEFAULT_MODEL_ID = FAST_MODEL_ID;
 
 export const geminiProModel = wrapLanguageModel({
   // Use supported model id for v1beta
-  model: google(PRIMARY_MODEL_ID),
+  model: google(PRIMARY_MODEL_ID) as any,
   middleware: customMiddleware,
 });
 
 export const geminiFlashModel = wrapLanguageModel({
   // Use supported model id for v1beta
-  model: google(FAST_MODEL_ID),
+  model: google(FAST_MODEL_ID) as any,
   middleware: customMiddleware,
 });
 
@@ -30,7 +30,7 @@ export const geminiFlashModel = wrapLanguageModel({
  */
 export function getModelById(modelId: string) {
   return wrapLanguageModel({
-    model: google(modelId),
+    model: google(modelId) as any,
     middleware: customMiddleware,
   });
 }

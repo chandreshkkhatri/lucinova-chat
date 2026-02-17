@@ -18,7 +18,6 @@ import {
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { MermaidRenderer } from "./mermaid-renderer";
 import { CodeBlock } from "./code-block";
-import type { CanvasNode as CanvasNodeType } from "@/lib/message-to-nodes";
 
 // Define the data structure we expect in the node
 export type CanvasNodeData = {
@@ -59,7 +58,7 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
     type,
     content,
     language,
-    role
+    role,
   } = data;
 
   const { threadCount } = useThreadCount(message.id, chatId);
@@ -81,14 +80,18 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
     }
     // Default: text node
     return (
-      <div className={`inline-block w-full ${role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3" : "bg-muted rounded-2xl rounded-tl-sm px-4 py-3"}`}>
+      <div
+        className={`inline-block w-full ${role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3" : "bg-muted rounded-2xl rounded-tl-sm px-4 py-3"}`}
+      >
         <div className="flex items-start gap-2">
           <div className="flex-1 break-words min-w-0">
             <EnhancedMessage
               message={message}
               chatId={chatId}
               annotations={annotations}
-              onAskLucinova={(selectedText) => onAskLucinova?.(message.id, selectedText)}
+              onAskLucinova={(selectedText) =>
+                onAskLucinova?.(message.id, selectedText)
+              }
               onOpenAnnotation={onOpenAnnotation}
             />
           </div>
@@ -106,16 +109,27 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
         className="!bg-muted-foreground/50 !w-3 !h-3 !-top-1.5"
       />
 
-      <div className={`flex gap-2 p-2 ${role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+      <div
+        className={`flex gap-2 p-2 ${role === "user" ? "flex-row-reverse" : "flex-row"}`}
+      >
         {role === "assistant" && (
           <Avatar className="size-8 shrink-0 mt-1">
             <AvatarFallback className="bg-transparent p-0.5">
-              <Image src="/images/lucidity-logo.svg" alt="Lucidity" width={28} height={28} quality={90} className="size-full object-contain" />
+              <Image
+                src="/images/lucidity-logo.svg"
+                alt="Lucidity"
+                width={28}
+                height={28}
+                quality={90}
+                className="size-full object-contain"
+              />
             </AvatarFallback>
           </Avatar>
         )}
 
-        <div className={`flex-1 overflow-hidden ${role === "user" ? "text-right" : "text-left"}`}>
+        <div
+          className={`flex-1 overflow-hidden ${role === "user" ? "text-right" : "text-left"}`}
+        >
           {/* Inline edit UI for user messages */}
           {isEditing && role === "user" ? (
             <div className="w-full text-left">
@@ -154,20 +168,24 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
           )}
 
           {/* Edit action for last user message */}
-          {showActions && !isThread && role === "user" && isLastUserMessage && !isEditing && (
-            <div className="flex items-center justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => {
-                  setEditText(getMessageText(message));
-                  setIsEditing(true);
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:bg-muted rounded-full transition-all duration-200"
-              >
-                <Pencil className="size-3" />
-                <span>Edit</span>
-              </button>
-            </div>
-          )}
+          {showActions &&
+            !isThread &&
+            role === "user" &&
+            isLastUserMessage &&
+            !isEditing && (
+              <div className="flex items-center justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button
+                  onClick={() => {
+                    setEditText(getMessageText(message));
+                    setIsEditing(true);
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-primary hover:bg-muted rounded-full transition-all duration-200"
+                >
+                  <Pencil className="size-3" />
+                  <span>Edit</span>
+                </button>
+              </div>
+            )}
 
           {/* Actions for assistant messages */}
           {showActions && !isThread && role === "assistant" && (
@@ -178,7 +196,9 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
                   className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-all duration-200"
                 >
                   <ChevronRight className="size-3" />
-                  <span>{threadCount} message{threadCount === 1 ? "" : "s"}</span>
+                  <span>
+                    {threadCount} message{threadCount === 1 ? "" : "s"}
+                  </span>
                 </button>
               )}
 
@@ -194,7 +214,8 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    Tip: Select text in a message to see &quot;Ask Lucinova&quot;.
+                    Tip: Select text in a message to see &quot;Ask
+                    Lucinova&quot;.
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -214,7 +235,9 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
 
         {role === "user" && (
           <Avatar className="size-8 shrink-0 mt-1">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">U</AvatarFallback>
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+              U
+            </AvatarFallback>
           </Avatar>
         )}
       </div>
@@ -230,4 +253,3 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
 });
 
 CanvasNodeComponent.displayName = "CanvasNodeComponent";
-
