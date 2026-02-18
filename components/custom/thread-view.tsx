@@ -1,14 +1,14 @@
-import { UIMessage } from "ai";
 import { X, MessageSquare, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
 import { mutate as revalidateSWR } from "swr";
 
 import { Button } from "@/components/ui/button";
+import { Message } from "@/lib/chat-utils";
 
 import { Chat } from "./chat";
 
 interface ThreadViewProps {
-  parentMessage: UIMessage;
+  parentMessage: Message;
   selectedText?: string;
   mainChatId: string;
   onClose: () => void;
@@ -24,7 +24,7 @@ export function ThreadView({
   className = "",
   modelId,
 }: ThreadViewProps) {
-  const [threadMessages, setThreadMessages] = useState<UIMessage[]>([]);
+  const [threadMessages, setThreadMessages] = useState<Message[]>([]);
 
   const handleNewReply = () => {
     revalidateSWR(

@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { Message } from "@/lib/chat-utils";
 
 export type NodeType = "text" | "mermaid" | "code";
 
@@ -12,18 +12,18 @@ export interface CanvasNode {
 }
 
 /**
- * Extract text content from a UIMessage, handling parts and fallback formats.
+ * Extract text content from a Message, handling parts and fallback formats.
  */
-function extractMessageContent(message: UIMessage): string {
-  if ((message as any).parts) {
-    const text = (message as any).parts
-      .filter((p: any) => p.type === "text")
+function extractMessageContent(message: Message): string {
+  if (message.parts) {
+    const text = message.parts
+      .filter((p: any) => p.type === "text" || (p.text && !p.type))
       .map((p: any) => p.text)
       .join("");
     if (text) return text;
   }
 
-  const rawContent = (message as any).content;
+  const rawContent = message.content;
   if (typeof rawContent === "string") {
     return rawContent.startsWith("[object Object]") ? "" : rawContent;
   }
@@ -115,13 +115,15 @@ function parseContentToNodes(
 }
 
 /**
- * Convert UIMessage[] to CanvasNode[].
+ * Convert Message[] to CanvasNode[].
  * Each message is parsed into one or more nodes based on content detection.
  */
-export function messagesToNodes(messages: UIMessage[]): CanvasNode[] {
+export function messagesToNodes(messages: Message[]): CanvasNode[] {
   const allNodes: CanvasNode[] = [];
 
   for (const message of messages) {
+    if (message.role === "system") continue;
+    
     const content = extractMessageContent(message);
     if (!content) continue;
 

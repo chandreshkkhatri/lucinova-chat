@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Message } from "@/lib/chat-utils";
 import {
   Sparkles,
   MessageSquare,
@@ -16,12 +16,13 @@ import { SUGGESTIONS } from "@/lib/constants";
 import { ChatInput } from "./chat-input";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
+import { useThreadCount } from "./use-thread-count";
 
 import type { Attachment } from "./types";
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface ChatListProps {
-  messages: UIMessage[];
+  messages: Message[];
   status: "idle" | "streaming" | "submitted" | "error";
   input: string;
   setInput: (value: string) => void;
@@ -47,6 +48,9 @@ interface ChatListProps {
   onStartThread: (messageId: string, selectedText?: string) => void;
   onAskLucinova: (messageId: string, selectedText: string) => void;
   onOpenAnnotation: (annotationId: string, selectedText: string) => void;
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  isUserPro?: boolean;
 }
 
 export function ChatList({
@@ -66,6 +70,9 @@ export function ChatList({
   onStartThread,
   onAskLucinova,
   onOpenAnnotation,
+  selectedModel,
+  setSelectedModel,
+  isUserPro,
 }: ChatListProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
@@ -191,22 +198,45 @@ export function ChatList({
 
                     {/* Action Bar (Simple version for Chat List) */}
                     {!isUser && (
-                      <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* Thread/Reply Button */}
-                        <button
-                          onClick={() => onStartThread(message.id)}
-                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          title="Reply in thread"
-                        >
-                          <MessageSquare className="size-4" />
-                        </button>
-                      </div>
+                      <ThreadReplyButton
+                        messageId={message.id}
+                        chatId={chatId}
+                        onStartThread={onStartThread}
+                      />
                     )}
                   </div>
                 </div>
               );
             })
           )}
+
+          {/* Streaming / Loading Indicator */}
+          {(status === "submitted" || status === "streaming") && (
+            <div className="group relative flex gap-4 pr-4">
+              <div className="shrink-0">
+                <div className="size-8 rounded-lg flex items-center justify-center shadow-sm border border-border bg-card">
+                  <Image
+                    src="/icon.svg"
+                    alt="AI"
+                    width={20}
+                    height={20}
+                    className="size-5"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-foreground">Lucinova</span>
+                </div>
+                <div className="flex items-center gap-1 py-2">
+                  <span className="size-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="size-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="size-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} className="h-px w-full" />
         </div>
       </div>
@@ -226,7 +256,44 @@ export function ChatList({
         setSelectedNodeType={setSelectedNodeType}
         usageLimitInfo={usageLimitInfo}
         variant="sticky"
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        isUserPro={isUserPro}
       />
+    </div>
+  );
+}
+
+/** Sub-component so we can call useThreadCount per-message */
+function ThreadReplyButton({
+  messageId,
+  chatId,
+  onStartThread,
+}: {
+  messageId: string;
+  chatId: string;
+  onStartThread: (messageId: string) => void;
+}) {
+  const { threadCount } = useThreadCount(messageId, chatId);
+
+  return (
+    <div className={`flex items-center gap-2 mt-2 ${
+      threadCount > 0
+        ? "opacity-100"
+        : "opacity-0 group-hover:opacity-100"
+    } transition-opacity`}>
+      <button
+        onClick={() => onStartThread(messageId)}
+        className="flex items-center gap-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+        title="Reply in thread"
+      >
+        <MessageSquare className="size-4" />
+        {threadCount > 0 && (
+          <span className="text-xs">
+            {threadCount} {threadCount === 1 ? "reply" : "replies"}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { UIMessage, generateId } from "ai";
+import { Message, generateId } from "@/lib/chat-utils";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/app/(auth)/auth";
@@ -58,7 +58,7 @@ export default async function ThreadPage({
   const threadData = threadChat as any;
 
   // Map DB messages to UI format
-  const uiMessages: UIMessage[] = (threadData.messages || []).map((msg: any) => {
+  const uiMessages: Message[] = (threadData.messages || []).map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId?.toString() === userId ? "user" : "assistant";
 
@@ -74,7 +74,7 @@ export default async function ThreadPage({
       content: msg.body || "",
       parts,
     };
-  }) as UIMessage[];
+  }) as Message[];
 
   return (
     <PreviewChat

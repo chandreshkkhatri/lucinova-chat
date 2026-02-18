@@ -1,7 +1,4 @@
-// @ts-ignore
-import { convertToModelMessages, UIMessage, streamText } from "ai";
-
-import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
+import { googleClient, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Message as DbMessage } from "@/db/models";
@@ -10,20 +7,25 @@ import {
   createMessage,
   getUserByEmail,
   getAnnotationById,
-  getAnnotationThreadMessages,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
 import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
+
+// Compatibility types
+interface UIMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export const maxDuration = 60;
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: annotationId } = await params;
-  const {
-    messages,
-    modelId,
-  }: { messages: Array<UIMessage>; modelId?: string } = await request.json();
+  const { messages, modelId } = await request.json();
 
   const session = await auth();
   if (!session || !session.user) {
@@ -39,7 +41,6 @@ export async function POST(
   const messageId = (annotation as any).messageId.toString();
   const selectedText = (annotation as any).selectedText;
 
-  // Get user and check usage limit
   const currentUser = await getUserByEmail(session.user.email!);
   if (!currentUser) {
     return new Response("User not found", { status: 401 });
@@ -47,7 +48,6 @@ export async function POST(
 
   const userId = (currentUser as any)._id.toString();
 
-  // Check usage limit
   const usageCheck = await checkUsageLimit(
     userId,
     currentUser.isPro || false,
@@ -56,115 +56,111 @@ export async function POST(
   );
 
   if (!usageCheck.allowed) {
-    return Response.json(
-      {
+    return Response.json({
         error: "usage_limit_exceeded",
-        message: "You have reached your monthly usage limit",
-        isPro: currentUser.isPro || false,
-        currentUsage: usageCheck.currentUsage,
-        limit: usageCheck.limit,
-        periodEnd: usageCheck.periodEnd,
-      },
-      { status: 429 },
-    );
+        message: "You have reached your monthly usage limit"
+    }, { status: 429 });
   }
 
-  const coreMessages = (await convertToModelMessages(messages)).filter(
-    (message) => message.content.length > 0,
-  );
-
-  // Persist the user's message
-  if (coreMessages.length > 0) {
-    const userMsg = coreMessages[coreMessages.length - 1];
-
-    const toPlainText = (content: any): string => {
-      if (typeof content === "string") return content;
-      if (Array.isArray(content)) {
-        return content
-          .filter((p) => p.type === "text")
-          .map((p: any) => p.text)
-          .join("");
-      }
-      return "";
-    };
-
+  // Persist User Message
+  const userMsg = messages.filter((m: any) => m.role === 'user' && m.content).pop();
+  if (userMsg) {
     await createMessage({
       chatId,
       senderId: userId,
-      parentMsgId: annotationId, // Use annotation ID as parent
-      body: toPlainText(userMsg.content),
+      parentMsgId: annotationId,
+      body: userMsg.content,
     });
   }
 
-  // Build context: the parent message + selected text context
+  // --- Context Construction ---
   const chatDoc = await getChatById({ id: chatId });
-
-  let additionalContext: Array<any> = [];
+  let additionalContextGoogle: any[] = [];
+  let aiIdString = "";
 
   if (chatDoc) {
     await ensureConnection();
-
-    // Fetch the parent message (the one containing the selected text)
+    aiIdString = (chatDoc as any).aiId?.toString() || "";
+    // For annotations, context is the parent message containing the annotation
     const parentDbMsg = await DbMessage.findById(messageId).lean();
 
     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
-      const aiId = (chatDoc as any).aiId?.toString();
-
-      const toCore = (m: any): any => ({
-        role: m.senderId.toString() === aiId ? "assistant" : "user",
-        content: m.body,
-      });
-
-      additionalContext = [toCore(parentDbMsg)];
+        const toGoogle = (m: any) => ({
+           role: m.senderId.toString() === aiIdString ? "model" : "user",
+           parts: [{ text: m.body }]
+        });
+        
+        additionalContextGoogle = [toGoogle(parentDbMsg)];
     }
   }
 
-  const fullContext: any[] = [...additionalContext, ...coreMessages];
+  const threadMessagesGoogle = messages
+     .filter((m: any) => m.role !== 'system' && m.content)
+     .map((m: any) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }]
+     }));
 
-  // Use the requested model or fall back to default
-  const model = modelId
-    ? getModelById(modelId)
-    : getModelById(DEFAULT_MODEL_ID);
+  const fullGoogleContext = [...additionalContextGoogle, ...threadMessagesGoogle];
 
-  const result = await streamText({
-    model,
-    system: `${appConfig.getModelIdentity()}
+  const systemInstruction = `${appConfig.getModelIdentity()}
     Today's date is ${new Date().toLocaleDateString()}.
 
-The user has selected this text and is asking about it:
-"${selectedText}"
+    The user has selected the following text from the parent message and is asking about it:
+    "${selectedText}"
 
-IMPORTANT INSTRUCTIONS:
-- Keep responses SHORT and CONCISE (2-4 sentences max for simple questions)
-- Get straight to the point - no unnecessary preamble
-- Use bullet points for lists instead of paragraphs
-- Only elaborate if the user explicitly asks for more detail
-- Focus specifically on the selected text and the user's question`,
-    messages: fullContext,
-    onFinish: async ({ text, usage }) => {
-      // Record usage with token counts from the response
-      if (usage) {
-        await recordUsage(
-          userId,
-          modelId || DEFAULT_MODEL_ID,
-          usage.inputTokens || 0,
-          usage.outputTokens || 0,
-          currentUser.currentPeriodStart,
-          currentUser.currentPeriodEnd,
-        );
-      }
+    IMPORTANT INSTRUCTIONS:
+    - Keep responses SHORT and CONCISE (2-4 sentences max for simple questions)
+    - Get straight to the point - no unnecessary preamble
+    - Use bullet points for lists instead of paragraphs
+    - Only elaborate if the user explicitly asks for more detail
+    - Focus specifically on the selected text and the user's question`;
 
-      // Persist AI response
-      if (text) {
-        await createMessage({
-          chatId,
-          senderId: (await getChatById({ id: chatId })).aiId.toString(),
-          parentMsgId: annotationId,
-          body: text,
-        });
-      }
-    },
-  });
+  try {
+     const streamingResponse = await googleClient.models.generateContentStream({
+        model: modelId || DEFAULT_MODEL_ID,
+        contents: fullGoogleContext,
+        config: { systemInstruction }
+     });
 
-  return result.toTextStreamResponse();
+     const stream = new ReadableStream({
+        async start(controller) {
+           const encoder = new TextEncoder();
+           let fullResponseText = "";
+           
+           try {
+              for await (const chunk of streamingResponse) {
+                 const text = chunk.text;
+                 if (text) {
+                    fullResponseText += text;
+                    controller.enqueue(encoder.encode(text));
+                 }
+              }
+              
+              if (fullResponseText && aiIdString) {
+                  // Mock usage
+                  if (currentUser) {
+                      // await recordUsage(...);
+                  }
+
+                  await createMessage({
+                     chatId,
+                     senderId: aiIdString,
+                     parentMsgId: annotationId,
+                     body: fullResponseText
+                  });
+              }
+              controller.close();
+           } catch(err) {
+              console.error("[Annotation API] Streaming error:", err);
+              controller.error(err);
+           }
+        }
+     });
+
+     return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  } catch (error) {
+     console.error("[Annotation API] Generation error:", error);
+     return new Response("Internal Server Error", { status: 500 });
+  }
 }

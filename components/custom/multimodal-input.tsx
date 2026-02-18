@@ -1,9 +1,31 @@
 "use client";
 
-import { UIMessage } from "ai";
-import { FileText, Mic, MicOff, Plus, Send, Square, Trash2, X, MessageSquare, GitBranch, FileCode, Check } from "lucide-react";
+import { Message } from "@/lib/chat-utils";
+import {
+  FileText,
+  Mic,
+  MicOff,
+  Plus,
+  Send,
+  Square,
+  Trash2,
+  X,
+  MessageSquare,
+  GitBranch,
+  FileCode,
+  Check,
+  Sparkles,
+  Crown,
+} from "lucide-react";
 import Image from "next/image";
-import { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,10 +34,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { appConfig } from "@/lib/config";
 
 import { Attachment } from "./types";
+
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface MultimodalInputProps {
@@ -25,21 +61,40 @@ interface MultimodalInputProps {
   stop: () => void;
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
-  messages: UIMessage[];
+  messages: Message[];
   sendMessage: (message: {
     text: string;
     files?: any[];
-    options?: { body?: any }
+    options?: { body?: any };
   }) => Promise<void>;
   handleSubmit: (e?: React.FormEvent) => void;
   selectedNodeType?: NodeType;
   setSelectedNodeType?: (type: NodeType) => void;
+  selectedModel?: string;
+  setSelectedModel?: (model: string) => void;
+  isUserPro?: boolean;
 }
 
-const nodeTypeOptions: { value: NodeType; label: string; icon: React.ReactNode }[] = [
-  { value: "text", label: "Write text", icon: <MessageSquare className="size-4" /> },
-  { value: "mermaid", label: "Draw a diagram", icon: <GitBranch className="size-4" /> },
-  { value: "code", label: "Generate code", icon: <FileCode className="size-4" /> },
+const nodeTypeOptions: {
+  value: NodeType;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    value: "text",
+    label: "Write text",
+    icon: <MessageSquare className="size-4" />,
+  },
+  {
+    value: "mermaid",
+    label: "Draw a diagram",
+    icon: <GitBranch className="size-4" />,
+  },
+  {
+    value: "code",
+    label: "Generate code",
+    icon: <FileCode className="size-4" />,
+  },
 ];
 
 // Maximum recording duration in milliseconds (60 seconds)
@@ -57,6 +112,9 @@ export function MultimodalInput({
   handleSubmit,
   selectedNodeType,
   setSelectedNodeType,
+  selectedModel,
+  setSelectedModel,
+  isUserPro = false,
 }: MultimodalInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +145,7 @@ export function MultimodalInput({
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(
         textareaRef.current.scrollHeight,
-        200
+        200,
       )}px`;
     }
   }, [input]);
@@ -117,42 +175,48 @@ export function MultimodalInput({
   };
 
   // Handle file selection with better error handling and async reading
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    const fileList = Array.from(files);
-    const newAttachments: Attachment[] = [];
+      const fileList = Array.from(files);
+      const newAttachments: Attachment[] = [];
 
-    try {
-      const readPromises = fileList.map(file => {
-        return new Promise<Attachment>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            resolve({
-              name: file.name,
-              contentType: file.type,
-              url: reader.result as string,
-            });
-          };
-          reader.onerror = () => {
-            console.error(`[FileRead] Error reading file ${file.name}:`, reader.error);
-            reject(reader.error);
-          };
-          reader.readAsDataURL(file);
+      try {
+        const readPromises = fileList.map((file) => {
+          return new Promise<Attachment>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                name: file.name,
+                contentType: file.type,
+                url: reader.result as string,
+              });
+            };
+            reader.onerror = () => {
+              console.error(
+                `[FileRead] Error reading file ${file.name}:`,
+                reader.error,
+              );
+              reject(reader.error);
+            };
+            reader.readAsDataURL(file);
+          });
         });
-      });
 
-      const results = await Promise.all(readPromises);
-      setAttachments(prev => [...prev, ...results]);
-    } catch (error) {
-      console.error("[FileRead] Failed to process one or more files:", error);
-      alert("Failed to attach one or more files. Please try again.");
-    } finally {
-      // Clear input value to allow selecting the same file again
-      e.target.value = "";
-    }
-  }, [setAttachments]);
+        const results = await Promise.all(readPromises);
+        setAttachments((prev) => [...prev, ...results]);
+      } catch (error) {
+        console.error("[FileRead] Failed to process one or more files:", error);
+        alert("Failed to attach one or more files. Please try again.");
+      } finally {
+        // Clear input value to allow selecting the same file again
+        e.target.value = "";
+      }
+    },
+    [setAttachments],
+  );
 
   // Handle paste events for images
   useEffect(() => {
@@ -160,17 +224,19 @@ export function MultimodalInput({
       const items = e.clipboardData?.items;
       if (!items) return;
 
-      const imageItems = Array.from(items).filter(item => item.type.startsWith("image/"));
+      const imageItems = Array.from(items).filter((item) =>
+        item.type.startsWith("image/"),
+      );
       if (imageItems.length === 0) return;
 
       const newFiles = imageItems
-        .map(item => item.getAsFile())
+        .map((item) => item.getAsFile())
         .filter((file): file is File => file !== null);
 
       if (newFiles.length === 0) return;
 
       try {
-        const readPromises = newFiles.map(file => {
+        const readPromises = newFiles.map((file) => {
           return new Promise<Attachment>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -186,7 +252,7 @@ export function MultimodalInput({
         });
 
         const results = await Promise.all(readPromises);
-        setAttachments(prev => [...prev, ...results]);
+        setAttachments((prev) => [...prev, ...results]);
       } catch (error) {
         console.error("[Paste] Failed to process pasted images:", error);
       }
@@ -297,7 +363,7 @@ export function MultimodalInput({
       // Handle permission denied or other errors
       if (error instanceof DOMException && error.name === "NotAllowedError") {
         alert(
-          "Microphone permission denied. Please allow microphone access to use voice input."
+          "Microphone permission denied. Please allow microphone access to use voice input.",
         );
       } else {
         alert("Failed to start recording. Please try again.");
@@ -334,7 +400,8 @@ export function MultimodalInput({
   };
 
   const hasInput = (input?.trim().length ?? 0) > 0 || attachments.length > 0;
-  const showMicButton = !hasInput && !isLoading && micSupported && !isRecording;
+  const showMicButton =
+    !hasInput && !isLoading && micSupported && !isRecording;
   const showStopRecordingButton = isRecording;
   const showSendButton = hasInput && !isLoading && !isRecording;
   const showStopGenerating = isLoading && !isRecording;
@@ -407,7 +474,7 @@ export function MultimodalInput({
 
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-2 mt-2">
-          {/* Left Side: Attachments & Node Type */}
+          {/* Left Side: Attachments, Model, & Node Type */}
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -428,6 +495,48 @@ export function MultimodalInput({
               onChange={handleFileSelect}
             />
 
+            {/* Model Selector integrated into toolbar */}
+            {selectedModel && setSelectedModel && (
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-auto h-8 bg-muted/50 border-0 text-xs gap-1.5 focus:ring-0">
+                  <Sparkles className="size-3 text-primary shrink-0" />
+                  <SelectValue placeholder="Model" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border min-w-[200px]">
+                  {Object.keys(appConfig.modelNames).map((modelId) => {
+                    const isDisabled =
+                      modelId === "gemini-3-pro-preview" && !isUserPro;
+                    const showCrown =
+                      modelId === "gemini-3-pro-preview" && !isUserPro;
+
+                    return (
+                      <SelectItem
+                        key={modelId}
+                        value={modelId}
+                        className={
+                          isDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-muted"
+                        }
+                        disabled={isDisabled}
+                      >
+                        <div className="flex items-center justify-between gap-2 w-full">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-xs">
+                              {appConfig.geminiNames[modelId] || modelId}
+                            </span>
+                          </div>
+                          {showCrown && (
+                            <Crown className="size-3 text-yellow-500 shrink-0" />
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            )}
+
             {selectedNodeType && setSelectedNodeType && (
               <DropdownMenu>
                 <TooltipProvider>
@@ -441,12 +550,22 @@ export function MultimodalInput({
                           className="shrink-0 size-8 rounded-lg hover:bg-muted text-muted-foreground"
                           disabled={isLoading || isRecording}
                         >
-                          {nodeTypeOptions.find((opt) => opt.value === selectedNodeType)?.icon}
+                          {
+                            nodeTypeOptions.find(
+                              (opt) => opt.value === selectedNodeType,
+                            )?.icon
+                          }
                         </Button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{nodeTypeOptions.find((opt) => opt.value === selectedNodeType)?.label}</p>
+                      <p>
+                        {
+                          nodeTypeOptions.find(
+                            (opt) => opt.value === selectedNodeType,
+                          )?.label
+                        }
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -457,11 +576,15 @@ export function MultimodalInput({
                       onClick={() => setSelectedNodeType(option.value)}
                       className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
                     >
-                      <div className={`p-1 rounded-md ${selectedNodeType === option.value ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+                      <div
+                        className={`p-1 rounded-md ${selectedNodeType === option.value ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}
+                      >
                         {option.icon}
                       </div>
                       <span className="flex-1">{option.label}</span>
-                      {selectedNodeType === option.value && <Check className="size-3.5 text-primary" />}
+                      {selectedNodeType === option.value && (
+                        <Check className="size-3.5 text-primary" />
+                      )}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

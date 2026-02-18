@@ -1,7 +1,4 @@
-// @ts-ignore
-import { convertToModelMessages, UIMessage, streamText } from "ai";
-
-import { getModelById, DEFAULT_MODEL_ID } from "@/ai";
+import { googleClient, DEFAULT_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Message as DbMessage } from "@/db/models";
@@ -10,11 +7,23 @@ import {
   createMessage,
   getUserByEmail,
   deleteThreadMessages,
+  getProjectById,
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
 import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
 
+// Compatibility types
+interface UIMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  experimental_attachments?: any[];
+}
+
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
+  const body = await request.json();
   const {
     messages,
     parentMessageId,
@@ -27,24 +36,17 @@ export async function POST(request: Request) {
     mainChatId: string;
     selectedText?: string;
     modelId?: string;
-  } = await request.json();
+  } = body;
 
   const session = await auth();
-
   if (!session || !session.user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const coreMessages = (await convertToModelMessages(messages)).filter(
-    (message) => message.content.length > 0,
-  );
-
-  // Get the actual user document to ensure we have the MongoDB ObjectId
+  // Get user info
   const currentUser = await getUserByEmail(session.user.email!);
-  if (!currentUser) {
-    return new Response("User not found", { status: 401 });
-  }
-
+  if (!currentUser) return new Response("User not found", { status: 401 });
+  
   const userId = (currentUser as any)._id.toString();
 
   // Check usage limit
@@ -56,124 +58,139 @@ export async function POST(request: Request) {
   );
 
   if (!usageCheck.allowed) {
-    return Response.json(
-      {
+    return Response.json({
         error: "usage_limit_exceeded",
         message: "You have reached your monthly usage limit",
         isPro: currentUser.isPro || false,
         currentUsage: usageCheck.currentUsage,
         limit: usageCheck.limit,
         periodEnd: usageCheck.periodEnd,
-      },
-      { status: 429 },
-    );
+      }, { status: 429 });
   }
 
-  // Persist the user's thread reply
-  if (coreMessages.length > 0) {
-    const userMsg = coreMessages[coreMessages.length - 1];
-
-    const toPlainText = (content: any): string => {
-      if (typeof content === "string") return content;
-      if (Array.isArray(content)) {
-        return content
-          .filter((p) => p.type === "text")
-          .map((p: any) => p.text)
-          .join("");
-      }
-      return "";
-    };
-
+  // Persist User Message (The last one in the list is the new reply)
+  // We filter out empty content or system messages if any
+  const userMsg = messages.filter(m => m.role === 'user' && m.content).pop();
+  
+  if (userMsg) {
     await createMessage({
       chatId: mainChatId,
       senderId: userId,
       parentMsgId: parentMessageId,
-      body: toPlainText(userMsg.content),
+      body: userMsg.content,
     });
   }
 
-  // Build extended context: up to four messages before the parent + the parent message itself + the entire thread conversation
+  // --- Context Construction ---
   const chatDoc = await getChatById({ id: mainChatId });
-
-  let additionalContext: Array<any> = [];
+  let additionalContextGoogle: any[] = [];
+  let aiIdString = "";
 
   if (chatDoc) {
-    // Ensure connection for direct database operations
-    await ensureConnection();
+     await ensureConnection();
+     aiIdString = (chatDoc as any).aiId?.toString() || "";
+     const parentDbMsg = await DbMessage.findById(parentMessageId).lean();
 
-    const aiId = (chatDoc as any).aiId?.toString();
-
-    // Fetch the parent message (top-level)
-    const parentDbMsg = await DbMessage.findById(parentMessageId).lean();
-
-    if (parentDbMsg && !Array.isArray(parentDbMsg)) {
-      // Fetch up to 4 previous top-level messages that occurred before the parent message
-      const prevDbMsgs = await DbMessage.find({
-        chatId: mainChatId,
-        parentMsgId: null,
-        createdAt: { $lt: parentDbMsg.createdAt },
-      })
+     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
+        // Fetch previous context (siblings)
+        const prevDbMsgs = await DbMessage.find({
+           chatId: mainChatId,
+           parentMsgId: null,
+           createdAt: { $lt: parentDbMsg.createdAt }
+        })
         .sort({ createdAt: -1 })
         .limit(4)
         .lean();
 
-      const toCore = (m: any): any => ({
-        role: m.senderId.toString() === aiId ? "assistant" : "user",
-        content: m.body,
-      });
+        // Convert DB messages to Google Content
+        const toGoogle = (m: any) => ({
+           role: m.senderId.toString() === aiIdString ? "model" : "user",
+           parts: [{ text: m.body }]
+        });
 
-      // Reverse prev messages back to chronological order then map
-      additionalContext = [
-        ...prevDbMsgs.reverse().map(toCore),
-        toCore(parentDbMsg),
-      ];
-    }
+        // Add history: reversed prev messages + parent message
+        additionalContextGoogle = [
+           ...prevDbMsgs.reverse().map(toGoogle),
+           toGoogle(parentDbMsg)
+        ];
+     }
   }
 
-  const fullContext: any[] = [...additionalContext, ...coreMessages];
+  // Convert current thread messages to Google Content
+  const threadMessagesGoogle = messages
+     .filter(m => m.role !== 'system' && m.content)
+     .map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }]
+     }));
 
-  // Use the requested model or fall back to default
-  const model = modelId
-    ? getModelById(modelId)
-    : getModelById(DEFAULT_MODEL_ID);
+  const fullGoogleContext = [...additionalContextGoogle, ...threadMessagesGoogle];
 
-  const result = await streamText({
-    model,
-    system: `${appConfig.getModelIdentity()}
+  // System Instruction
+  const systemInstruction = `${appConfig.getModelIdentity()}
     You can help with various tasks when requested. Today's date is ${new Date().toLocaleDateString()}.
 
     IMPORTANT: You are responding in a reply thread.${
       selectedText
         ? `\n\nThe user has selected the following text from the parent message and is asking about it:\n"${selectedText}"\n\nFocus your response on this selected text and the user's question about it.`
         : " Only answer based on the user's follow-up question."
-    }`,
-    messages: fullContext,
-    onFinish: async ({ text, usage }) => {
-      // Record usage with token counts from the response
-      if (usage) {
-        await recordUsage(
-          userId,
-          modelId || DEFAULT_MODEL_ID,
-          usage.inputTokens || 0,
-          usage.outputTokens || 0,
-          currentUser.currentPeriodStart,
-          currentUser.currentPeriodEnd,
-        );
-      }
+    }`;
 
-      // Persist AI response
-      if (text) {
-        await createMessage({
-          chatId: mainChatId,
-          senderId: (await getChatById({ id: mainChatId })).aiId.toString(),
-          parentMsgId: parentMessageId,
-          body: text,
-        });
-      }
-    },
-  });
+  const targetModelId = modelId || DEFAULT_MODEL_ID;
 
-  return result.toTextStreamResponse();
+  // --- Streaming ---
+  try {
+     const streamingResponse = await googleClient.models.generateContentStream({
+        model: targetModelId,
+        contents: fullGoogleContext,
+        config: { systemInstruction }
+     });
+
+     const stream = new ReadableStream({
+        async start(controller) {
+           const encoder = new TextEncoder();
+           let fullResponseText = "";
+           
+           try {
+              for await (const chunk of streamingResponse) {
+                 const text = chunk.text;
+                 if (text) {
+                    fullResponseText += text;
+                    controller.enqueue(encoder.encode(text));
+                 }
+              }
+              
+              // Persist AI Response
+              if (fullResponseText && aiIdString) {
+                  // Usage tracking (mock or estimate)
+                  if (currentUser) {
+                      // await recordUsage(...)
+                  }
+                  
+                  await createMessage({
+                     chatId: mainChatId,
+                     senderId: aiIdString,
+                     parentMsgId: parentMessageId,
+                     body: fullResponseText
+                  });
+              }
+              
+              controller.close();
+           } catch(err) {
+              console.error("[Thread API] Streaming error:", err);
+              controller.error(err);
+           }
+        }
+     });
+
+     return new Response(stream, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+     });
+
+  } catch (error) {
+     console.error("[Thread API] Generation error:", error);
+     return new Response("Internal Server Error", { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {

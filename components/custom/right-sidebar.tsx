@@ -1,17 +1,16 @@
 "use client";
 
-import { UIMessage } from "ai";
-import { MessageSquare, MessagesSquare, Sparkles, X } from "lucide-react";
+import { MessagesSquare, Sparkles, X } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-import type { NodeType } from "@/lib/message-to-nodes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Message } from "@/lib/chat-utils";
 
 import { AnnotationThreadView } from "./annotation-thread-view";
-import { DefaultSidebarView } from "./default-sidebar-view";
 import { PendingAnnotationView } from "./pending-annotation-view";
 import { ThreadView } from "./thread-view";
 import type { Attachment } from "./types";
+import type { NodeType } from "@/lib/message-to-nodes";
 
 interface RightSidebarProps {
   // Main chat input props
@@ -22,15 +21,11 @@ interface RightSidebarProps {
   stop: () => void;
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
-  messages: UIMessage[];
+  messages: Message[];
   sendMessage: (message: { text: string; files?: any[]; options?: { body?: any } }) => Promise<void>;
 
-  // Node type selection
-  selectedNodeType: NodeType;
-  setSelectedNodeType: (type: NodeType) => void;
-
   // Sidebar content state
-  activeThread: { parentMessage: UIMessage; selectedText?: string } | null;
+  activeThread: { parentMessage: Message; selectedText?: string } | null;
   activeAnnotation: { id: string; selectedText: string; initialMessage?: string } | null;
   pendingAnnotation: { messageId: string; selectedText: string } | null;
 
@@ -57,7 +52,6 @@ interface RightSidebarProps {
     limit: number;
     periodEnd: Date | string;
   } | null;
-  selectedNode: { id: string; content: string; role: string; type: string } | null;
 }
 
 export function RightSidebar({
@@ -70,8 +64,6 @@ export function RightSidebar({
   setAttachments,
   messages,
   sendMessage,
-  selectedNodeType,
-  setSelectedNodeType,
   activeThread,
   activeAnnotation,
   pendingAnnotation,
@@ -87,66 +79,40 @@ export function RightSidebar({
   isUserPro,
   isGuest,
   usageLimitInfo,
-  selectedNode,
 }: RightSidebarProps) {
   const hasThread = !!activeThread;
   const hasAnnotation = !!(activeAnnotation || pendingAnnotation);
   const hasMultipleTabs = hasThread || hasAnnotation;
 
   // Tab state: auto-switch when views open, allow manual switching
-  const [activeTab, setActiveTab] = useState("chat");
+  // Initialize with empty string to avoid "null" value warning in Tabs
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (activeAnnotation || pendingAnnotation) return "annotation";
+    if (activeThread) return "thread";
+    return "";
+  });
 
   useEffect(() => {
     if (activeAnnotation || pendingAnnotation) {
       setActiveTab("annotation");
     } else if (activeThread) {
       setActiveTab("thread");
+    } else {
+      setActiveTab("");
     }
   }, [activeAnnotation, pendingAnnotation, activeThread]);
 
-  // Reset to chat if the active tab's view was closed
-  useEffect(() => {
-    if (activeTab === "thread" && !hasThread) setActiveTab("chat");
-    if (activeTab === "annotation" && !hasAnnotation) setActiveTab("chat");
-  }, [activeTab, hasThread, hasAnnotation]);
-
-  // When only the chat tab exists, render without tab chrome
   if (!hasMultipleTabs) {
-    return (
-      <DefaultSidebarView
-        input={input}
-        setInput={setInput}
-        handleSubmit={handleSubmit}
-        status={status}
-        stop={stop}
-        attachments={attachments}
-        setAttachments={setAttachments}
-        messages={messages}
-        sendMessage={sendMessage}
-        isGuest={isGuest}
-        usageLimitInfo={usageLimitInfo}
-        selectedNodeType={selectedNodeType}
-        setSelectedNodeType={setSelectedNodeType}
-        selectedModel={selectedModel}
-        setSelectedModel={setSelectedModel}
-        isUserPro={isUserPro}
-        isMounted={isMounted}
-        selectedNode={selectedNode}
-      />
-    );
+    return null;
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col size-full">
+    <Tabs
+      value={activeTab || ""}
+      onValueChange={setActiveTab}
+      className="flex flex-col size-full"
+    >
       <TabsList className="w-full justify-start rounded-none border-b border-border bg-background h-9 p-0 shrink-0">
-        <TabsTrigger
-          value="chat"
-          className="flex-1 gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none h-full"
-        >
-          <MessageSquare className="size-3.5" />
-          <span className="text-xs">Chat</span>
-        </TabsTrigger>
-
         {hasThread && (
           <TabsTrigger
             value="thread"
@@ -205,29 +171,6 @@ export function RightSidebar({
           </TabsTrigger>
         )}
       </TabsList>
-
-      <TabsContent value="chat" className="flex-1 mt-0 overflow-hidden">
-        <DefaultSidebarView
-          input={input}
-          setInput={setInput}
-          handleSubmit={handleSubmit}
-          status={status}
-          stop={stop}
-          attachments={attachments}
-          setAttachments={setAttachments}
-          messages={messages}
-          sendMessage={sendMessage}
-          isGuest={isGuest}
-          usageLimitInfo={usageLimitInfo}
-          selectedNodeType={selectedNodeType}
-          setSelectedNodeType={setSelectedNodeType}
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
-          isUserPro={isUserPro}
-          isMounted={isMounted}
-          selectedNode={selectedNode}
-        />
-      </TabsContent>
 
       {hasThread && (
         <TabsContent value="thread" className="flex-1 mt-0 overflow-hidden">

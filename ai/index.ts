@@ -1,36 +1,29 @@
-import { google } from "@ai-sdk/google";
-import { wrapLanguageModel, LanguageModel } from "ai";
+import { GoogleGenAI } from "@google/genai";
 
-import { customMiddleware } from "./custom-middleware";
-
-// Allow overriding model IDs via environment variables, default to supported v1beta models
-const PRIMARY_MODEL_ID =
-  process.env.GOOGLE_GEMINI_PRIMARY_MODEL || "gemini-3.0-pro";
-const FAST_MODEL_ID =
+// Allow overriding model IDs via environment variables
+export const PRIMARY_MODEL_ID =
+  process.env.GOOGLE_GEMINI_PRIMARY_MODEL || "gemini-3-pro-preview";
+export const FAST_MODEL_ID =
   process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-3-flash-preview";
 
 // Default model ID used when no specific model is requested
 export const DEFAULT_MODEL_ID = FAST_MODEL_ID;
 
-export const geminiProModel = wrapLanguageModel({
-  // Use supported model id for v1beta
-  model: google(PRIMARY_MODEL_ID) as any,
-  middleware: customMiddleware,
-});
+const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-export const geminiFlashModel = wrapLanguageModel({
-  // Use supported model id for v1beta
-  model: google(FAST_MODEL_ID) as any,
-  middleware: customMiddleware,
-});
+if (!apiKey) {
+  console.warn("Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable. AI features will fail.");
+}
+
+// Initialize the Google GenAI client
+export const googleClient = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
 
 /**
- * Get a wrapped language model by ID.
- * This allows dynamic model selection based on user preference.
+ * Helper to maintain some compatibility or clean usage.
+ * Though redundant, it helps centralized model management.
  */
-export function getModelById(modelId: string) {
-  return wrapLanguageModel({
-    model: google(modelId) as any,
-    middleware: customMiddleware,
-  });
-}
+export const googleModels = {
+   primary: PRIMARY_MODEL_ID,
+   fast: FAST_MODEL_ID,
+   default: DEFAULT_MODEL_ID
+};

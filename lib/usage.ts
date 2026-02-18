@@ -8,7 +8,7 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   "gemini-2.5-flash": { input: 0.075, output: 0.3 },
   "gemini-2.5-pro": { input: 1.25, output: 10.0 },
   "gemini-3-flash-preview": { input: 0.075, output: 0.3 },
-  "gemini-3.0-pro": { input: 1.25, output: 10.0 },
+  "gemini-3-pro-preview": { input: 1.25, output: 10.0 },
 };
 
 // 1 unit = ~$0.0048 USD (400 INR / 1000 units, at ~83 INR/USD)
