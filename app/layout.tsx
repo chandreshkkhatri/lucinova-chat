@@ -1,10 +1,11 @@
+import { Analytics } from "@vercel/analytics/react";
 import { Metadata } from "next";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/react";
 
 import { GoogleTag } from "@/components/custom/google-tag";
 import { Navbar } from "@/components/custom/navbar";
 import { ProfileGate } from "@/components/custom/profile-gate";
+import { SidebarProvider } from "@/components/custom/sidebar-context";
 import { StructuredData } from "@/components/custom/structured-data";
 import { ThemeProvider } from "@/components/custom/theme-provider";
 
@@ -90,9 +91,11 @@ export default async function RootLayout({
           <StructuredData />
           <ProfileGate />
           <Toaster position="top-center" />
-          <Navbar />
-          {children}
-          <Analytics />
+          <SidebarProvider>
+            <Navbar />
+            {children}
+            <Analytics />
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
