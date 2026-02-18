@@ -124,7 +124,8 @@ export async function POST(request: NextRequest) {
     // Create subscription
     try {
       // Check if user has active Early Bird benefit
-      let offerId: string | undefined;
+      let useDiscountedPlan = false;
+      const earlyBirdDiscountPercent = 75; // 75% off
       try {
         const hasEarlyBirdBenefit = await hasActiveBadgeBenefit(
           (user as any)._id.toString(),
@@ -132,9 +133,9 @@ export async function POST(request: NextRequest) {
           3,
         );
         if (hasEarlyBirdBenefit) {
-          offerId = process.env.RAZORPAY_EARLY_BIRD_OFFER_ID;
+          useDiscountedPlan = true;
           console.log(
-            `[Subscription] Applying Early Bird discount for ${customerEmail}`,
+            `[Subscription] Applying Early Bird discount (${earlyBirdDiscountPercent}% off) for ${customerEmail}`,
           );
         }
       } catch (badgeCheckError) {
@@ -145,15 +146,77 @@ export async function POST(request: NextRequest) {
         // Continue without discount rather than fail
       }
 
+      // If early bird, create or use a discounted plan instead of using Razorpay offers
+      let effectivePlanId = planId;
+      if (useDiscountedPlan) {
+        const discountedPlanId = process.env.RAZORPAY_EARLY_BIRD_PLAN_ID;
+        if (discountedPlanId) {
+          // Verify the discounted plan exists
+          try {
+            await rz.client.plans.fetch(discountedPlanId);
+            effectivePlanId = discountedPlanId;
+            console.log(
+              `[Subscription] Using existing discounted plan: ${discountedPlanId}`,
+            );
+          } catch {
+            console.warn(
+              `[Subscription] Discounted plan ${discountedPlanId} not found, creating new one`,
+            );
+          }
+        }
+
+        // If no valid discounted plan, create one dynamically
+        if (effectivePlanId === planId) {
+          try {
+            const currency = (
+              process.env.CURRENCY ||
+              appConfig.pricing.currency ||
+              "USD"
+            ).toUpperCase();
+            const discountedAmount = Math.round(
+              appConfig.pricing.proMonthlyPrice *
+                100 *
+                ((100 - earlyBirdDiscountPercent) / 100),
+            );
+            const discountedPlan = await rz.client.plans.create({
+              period: "monthly",
+              interval: 1,
+              item: {
+                name: `Pro Monthly - Early Bird (${earlyBirdDiscountPercent}% off)`,
+                amount: discountedAmount,
+                currency,
+                description: `Early Bird discounted Pro Plan (${earlyBirdDiscountPercent}% off for first 3 months)`,
+              },
+            });
+            effectivePlanId = discountedPlan.id;
+            console.log(
+              `[Subscription] Created discounted plan: ${discountedPlan.id} at ${discountedAmount} ${currency}`,
+            );
+          } catch (planError: any) {
+            console.warn(
+              "[Subscription] Failed to create discounted plan, using regular plan:",
+              planError.error?.description || planError.message,
+            );
+            // Fall back to regular plan
+          }
+        }
+      }
+
       const subscriptionParams: any = {
-        plan_id: planId,
+        plan_id: effectivePlanId,
         customer_id: customerId,
         quantity: 1,
-        total_count: 12,
+        total_count: useDiscountedPlan ? 3 : 12, // Early bird: 3 months, then they renew at full price
         customer_notify: 1,
         notes: {
           customer_email: customerEmail,
           customer_name: customerName,
+          ...(useDiscountedPlan
+            ? {
+                plan_type: "early-bird",
+                discount_percent: String(earlyBirdDiscountPercent),
+              }
+            : {}),
         },
       };
 
@@ -179,20 +242,23 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Add offer if user has Early Bird badge benefit
-      if (offerId) {
-        subscriptionParams.offer_id = offerId;
-      }
-
       const subscription =
         await rz.client.subscriptions.create(subscriptionParams);
 
       // Return only what the client needs
+      const effectivePrice = useDiscountedPlan
+        ? Math.round(
+            appConfig.pricing.proMonthlyPrice *
+              ((100 - earlyBirdDiscountPercent) / 100) *
+              100,
+          )
+        : appConfig.pricing.proMonthlyPrice * 100;
+
       return NextResponse.json({
         success: true,
         subscriptionId: subscription.id,
         razorpayKeyId: process.env.RAZORPAY_KEY_ID,
-        amount: appConfig.pricing.proMonthlyPrice * 100,
+        amount: effectivePrice,
         currency: appConfig.pricing.currency,
       });
     } catch (error: any) {

@@ -44,7 +44,7 @@ export function PricingSection({
     earlyBirdBadge.metadata.benefitUsedMonths < 3;
 
   const discountedPriceInCents = hasActiveEarlyBirdDiscount
-    ? Math.round(price * 100 * 0.75) // 25% off means 75% of price
+    ? Math.round(price * 100 * 0.25) // 75% off means pay 25% of price
     : Math.round(price * 100);
 
   const discountedPrice = discountedPriceInCents / 100;
