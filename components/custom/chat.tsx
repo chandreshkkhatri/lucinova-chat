@@ -35,6 +35,7 @@ export function Chat({
   isGuest = false,
   selectedText,
   defaultModelId = "gemini-3-flash-preview",
+  api: apiOverride,
 }: {
   id: string;
   initialMessages: Array<Message>;
@@ -47,6 +48,7 @@ export function Chat({
   isGuest?: boolean;
   selectedText?: string;
   defaultModelId?: string;
+  api?: string;
 }) {
   const router = useRouter();
   // chatIdForSubmit = the real MongoDB chat ID, sent in the API body.
@@ -84,7 +86,7 @@ export function Chat({
   const { messages, sendMessage, status, stop, setMessages, regenerate } =
     useGoogleChat({
       id: chatSessionId,
-      api: isThread ? "/api/thread" : "/api/chat",
+      api: apiOverride || (isThread ? "/api/thread" : "/api/chat"),
       initialMessages: initialMessages,
       onFinish: (message) => {
         const url = `/chat/${chatIdForSubmit}`;
@@ -94,32 +96,35 @@ export function Chat({
         onFinish?.();
 
         // Refresh messages to sync real server IDs (replacing temp IDs)
-        const syncMessages = async () => {
-          try {
-            if (isThread) {
-              const res = await fetch(
-                `/api/threads?parentMessageId=${parentMessageId}&mainChatId=${mainChatId}`
-              );
-              if (res.ok) {
-                const data = await res.json();
-                if (data.threads) {
-                  setMessages(data.threads);
+        // Skip for guests — sync endpoints require auth and would return 401
+        if (!isGuest) {
+          const syncMessages = async () => {
+            try {
+              if (isThread) {
+                const res = await fetch(
+                  `/api/threads?parentMessageId=${parentMessageId}&mainChatId=${mainChatId}`
+                );
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.threads) {
+                    setMessages(data.threads);
+                  }
+                }
+              } else {
+                const res = await fetch(`/api/chat/${chatIdForSubmit}`);
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.messages) {
+                    setMessages(data.messages);
+                  }
                 }
               }
-            } else {
-              const res = await fetch(`/api/chat/${chatIdForSubmit}`);
-              if (res.ok) {
-                const data = await res.json();
-                if (data.messages) {
-                  setMessages(data.messages);
-                }
-              }
+            } catch (error) {
+              console.error("Failed to sync messages:", error);
             }
-          } catch (error) {
-            console.error("Failed to sync messages:", error);
-          }
-        };
-        syncMessages();
+          };
+          syncMessages();
+        }
 
         // Revalidate history cache to pick up server-generated title
         setTimeout(() => {

@@ -177,19 +177,20 @@ export function EnhancedMessage({
       {/* Selection Highlights and "Ask Lucinova" UI Overlay */}
       {hasSelection && selectionRects.length > 0 && firstRect && (
         <div
-          className="absolute inset-0 pointer-events-none z-20"
+          className="absolute inset-0 pointer-events-none z-20 group"
           data-selection-overlay="true"
         >
-          {/* Light Highlights */}
+          {/* Light Highlights — glow on hover */}
           {selectionRects.map((rect, i) => (
             <div
               key={i}
-              className="absolute bg-purple-100/40 dark:bg-purple-500/20 transition-colors duration-200 mix-blend-multiply dark:mix-blend-screen"
+              className="absolute bg-purple-200/50 dark:bg-purple-500/25 group-hover:bg-purple-300/70 dark:group-hover:bg-purple-400/50 transition-all duration-200 mix-blend-multiply dark:mix-blend-screen rounded-sm"
               style={{
                 left: rect.left,
                 top: rect.top,
                 width: rect.width,
                 height: rect.height,
+                boxShadow: "0 0 0 0 transparent",
               }}
             />
           ))}
@@ -205,9 +206,9 @@ export function EnhancedMessage({
           >
             <button
               onClick={handleAskLucinova}
-              className="pointer-events-auto flex items-center gap-1 px-2 py-0.5 mb-1 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-md hover:scale-105 transition-all whitespace-nowrap"
+              className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 mb-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow-lg hover:shadow-purple-500/40 hover:scale-105 transition-all whitespace-nowrap"
             >
-              <MessageSquareText className="size-3" />
+              <MessageSquareText className="size-4" />
               <span>Ask Lucinova</span>
             </button>
           </div>
@@ -232,11 +233,15 @@ function SavedAnnotationsOverlay({
       string,
       {
         rects: DOMRect[];
-        buttonX: number;
-        buttonY: number;
+        startX: number;
+        startY: number;
+        endY: number;
       }
     >
   >(new Map());
+
+  // Calculate container width to position icons at the right edge
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -245,43 +250,97 @@ function SavedAnnotationsOverlay({
     if (!containerRef.current) return;
 
     const container = containerRef.current;
-    const containerRect = container.getBoundingClientRect();
-    const newMap = new Map();
+    
+    const updatePositions = () => {
+      const containerRect = container.getBoundingClientRect();
+      setContainerWidth(containerRect.width);
+      const newMap = new Map();
 
-    annotations.forEach((ann) => {
-      const ranges = findTextRanges(container, ann.selectedText);
+      annotations.forEach((ann) => {
+        const ranges = findTextRanges(container, ann.selectedText);
 
-      if (ranges.length > 0) {
-        const range = ranges[0];
-        const clientRects = Array.from(range.getClientRects());
+        if (ranges.length > 0) {
+          const range = ranges[0];
+          const clientRects = Array.from(range.getClientRects());
 
-        const relativeRects = clientRects.map(
-          (r) =>
-            new DOMRect(
-              r.left - containerRect.left,
-              r.top - containerRect.top,
-              r.width,
-              r.height
-            )
-        );
+          const relativeRects = clientRects.map(
+            (r) =>
+              new DOMRect(
+                r.left - containerRect.left,
+                r.top - containerRect.top,
+                r.width,
+                r.height
+              )
+          );
 
-        if (relativeRects.length > 0) {
-          const lastRect = relativeRects[relativeRects.length - 1];
+          if (relativeRects.length > 0) {
+            const firstRect = relativeRects[0];
 
-          newMap.set(ann.id, {
-            rects: relativeRects,
-            buttonX: lastRect.right,
-            buttonY: lastRect.top + lastRect.height / 2,
-          });
+            newMap.set(ann.id, {
+              rects: relativeRects,
+              // Start of the wire at the end of the first line, slightly above center
+              // Using .top aligns it with the top edge (as requested "above the line")
+              startX: firstRect.right,
+              startY: firstRect.top, 
+              // End of the wire at the icon (pushed out to the right)
+              // Add offset to make room for the "bend up" (negative y)
+              endY: firstRect.top - 8, 
+            });
+          }
         }
-      }
-    });
+      });
 
-    setAnnotationRects(newMap);
+      setAnnotationRects(newMap);
+    };
+
+    updatePositions();
+    
+    // Update on resize
+    const observer = new ResizeObserver(updatePositions);
+    observer.observe(container);
+    
+    return () => observer.disconnect();
   }, [annotations, containerRef]);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
+      <svg className="absolute inset-0 size-full overflow-visible pointer-events-none z-0">
+        {annotations.map((ann) => {
+          const data = annotationRects.get(ann.id);
+          if (!data) return null;
+          const isHovered = hoveredId === ann.id;
+          
+          // Bezier curve from text end to icon
+          // Control points create a smooth "wire" shape with a "vertical start, then horizontal" bend
+          const startX = data.startX;
+          const startY = data.startY;
+          const endX = containerWidth + 16;
+          const endY = data.endY; // Derived from state (includes offset)
+          
+          // CP1: Vertical descent (x matches start, y goes down)
+          const controlPoint1X = startX; 
+          const controlPoint1Y = endY; 
+          // Actually to get a nice curve, CP1 should be partway. 
+          // If CP1.x = startX, it starts vertical.
+          
+          // CP2: Horizontal approach (y matches endY, x is shifted right)
+          const controlPoint2X = startX + 16; // Turn corner within 16px
+          const controlPoint2Y = endY;
+
+          return (
+            <path
+              key={`wire-${ann.id}`}
+              d={`M ${startX} ${startY} C ${controlPoint1X} ${controlPoint1Y}, ${controlPoint2X} ${controlPoint2Y}, ${endX} ${endY}`}
+              fill="none"
+              stroke={isHovered ? "rgb(217 119 6)" : "rgb(251 191 36)"} // Amber-600 / Amber-400
+              strokeWidth={isHovered ? 2.5 : 1.5}
+              className="transition-all duration-300 pointer-events-none"
+              style={{ opacity: isHovered ? 1 : 0.6 }}
+            />
+          );
+        })}
+      </svg>
+
       {annotations.map((ann) => {
         const data = annotationRects.get(ann.id);
         if (!data) return null;
@@ -289,15 +348,21 @@ function SavedAnnotationsOverlay({
         const isHovered = hoveredId === ann.id;
 
         return (
-          <div key={ann.id}>
-            {/* Highlights */}
+          <div key={ann.id} className="group">
+            {/* Highlights - interactive now */}
             {data.rects.map((rect, i) => (
               <div
                 key={i}
-                className={`absolute transition-colors duration-200 ${
+                onMouseEnter={() => setHoveredId(ann.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenAnnotation?.(ann.id, ann.selectedText);
+                }}
+                className={`absolute transition-all duration-200 rounded-sm cursor-pointer pointer-events-auto ${
                   isHovered
-                    ? "bg-amber-200/60 dark:bg-amber-500/40 mix-blend-multiply dark:mix-blend-screen"
-                    : "bg-amber-100/40 dark:bg-amber-500/20 mix-blend-multiply dark:mix-blend-screen"
+                    ? "bg-amber-300/50 dark:bg-amber-500/40 mix-blend-multiply dark:mix-blend-screen shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                    : "bg-amber-200/30 dark:bg-amber-500/20 mix-blend-multiply dark:mix-blend-screen"
                 }`}
                 style={{
                   left: rect.left,
@@ -308,13 +373,13 @@ function SavedAnnotationsOverlay({
               />
             ))}
 
-            {/* Superscript footnote icon at end of highlighted text */}
+            {/* Icon at the right edge connected by wire */}
             <div
-              className="absolute"
+              className="absolute pointer-events-auto z-10"
               style={{
-                left: data.buttonX,
-                top: data.buttonY,
-                transform: "translate(1px, -100%)",
+                right: -16, // Align with wire end (pushed out)
+                top: data.endY,
+                transform: "translate(0, -50%)", // Center vertically on the line
               }}
               onMouseEnter={() => setHoveredId(ann.id)}
               onMouseLeave={() => setHoveredId(null)}
@@ -324,20 +389,16 @@ function SavedAnnotationsOverlay({
                   e.stopPropagation();
                   onOpenAnnotation?.(ann.id, ann.selectedText);
                 }}
-                className={`pointer-events-auto inline-flex items-center justify-center rounded-sm transition-all ${
+                className={`flex items-center justify-center rounded-full p-1 shadow-sm border transition-all ${
                   isHovered
-                    ? "text-amber-600 dark:text-amber-400 scale-125"
-                    : "text-amber-400 dark:text-amber-500/70 scale-100"
+                    ? "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 scale-110 shadow-md ring-2 ring-amber-200 dark:ring-amber-800"
+                    : "bg-card/90 border-border text-muted-foreground/60 scale-100 hover:bg-amber-50 dark:hover:bg-amber-900/50"
                 }`}
                 title="View thread"
               >
-                <MessageSquareText className="size-3" />
+                <MessageSquareText className="size-3.5" />
                 {ann.messageCount !== undefined && ann.messageCount > 0 && (
-                  <span className={`text-[8px] font-bold leading-none -ml-0.5 ${
-                    isHovered
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-amber-400 dark:text-amber-500/70"
-                  }`}>
+                  <span className="ml-1 text-[9px] font-bold leading-none">
                     {ann.messageCount}
                   </span>
                 )}

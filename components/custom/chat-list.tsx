@@ -16,6 +16,7 @@ import { SUGGESTIONS } from "@/lib/constants";
 import { ChatInput } from "./chat-input";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
+import { useThreadCount } from "./use-thread-count";
 
 import type { Attachment } from "./types";
 import type { NodeType } from "@/lib/message-to-nodes";
@@ -197,16 +198,11 @@ export function ChatList({
 
                     {/* Action Bar (Simple version for Chat List) */}
                     {!isUser && (
-                      <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* Thread/Reply Button */}
-                        <button
-                          onClick={() => onStartThread(message.id)}
-                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          title="Reply in thread"
-                        >
-                          <MessageSquare className="size-4" />
-                        </button>
-                      </div>
+                      <ThreadReplyButton
+                        messageId={message.id}
+                        chatId={chatId}
+                        onStartThread={onStartThread}
+                      />
                     )}
                   </div>
                 </div>
@@ -264,6 +260,40 @@ export function ChatList({
         setSelectedModel={setSelectedModel}
         isUserPro={isUserPro}
       />
+    </div>
+  );
+}
+
+/** Sub-component so we can call useThreadCount per-message */
+function ThreadReplyButton({
+  messageId,
+  chatId,
+  onStartThread,
+}: {
+  messageId: string;
+  chatId: string;
+  onStartThread: (messageId: string) => void;
+}) {
+  const { threadCount } = useThreadCount(messageId, chatId);
+
+  return (
+    <div className={`flex items-center gap-2 mt-2 ${
+      threadCount > 0
+        ? "opacity-100"
+        : "opacity-0 group-hover:opacity-100"
+    } transition-opacity`}>
+      <button
+        onClick={() => onStartThread(messageId)}
+        className="flex items-center gap-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+        title="Reply in thread"
+      >
+        <MessageSquare className="size-4" />
+        {threadCount > 0 && (
+          <span className="text-xs">
+            {threadCount} {threadCount === 1 ? "reply" : "replies"}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

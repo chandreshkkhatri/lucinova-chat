@@ -93,7 +93,11 @@ export function RightSidebar({
   const hasMultipleTabs = hasThread || hasAnnotation;
 
   // Tab state: auto-switch when views open, allow manual switching
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string | null>(() => {
+    if (activeAnnotation || pendingAnnotation) return "annotation";
+    if (activeThread) return "thread";
+    return null;
+  });
 
   useEffect(() => {
     if (activeAnnotation || pendingAnnotation) {
