@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Message } from "@/lib/chat-utils";
 import Image from "next/image";
 import { useState, memo } from "react";
 import { Reply, ChevronRight, Pencil, RefreshCw } from "lucide-react";
@@ -21,7 +21,7 @@ import { CodeBlock } from "./code-block";
 
 // Define the data structure we expect in the node
 export type CanvasNodeData = {
-  message: UIMessage;
+  message: Message;
   chatId: string;
   annotations?: SavedAnnotation[];
   onAskLucinova?: (messageId: string, selectedText: string) => void;
@@ -65,8 +65,8 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
 
-  const getMessageText = (msg: UIMessage): string => {
-    const textPart = msg.parts?.find((p) => p.type === "text");
+  const getMessageText = (msg: Message): string => {
+    const textPart = msg.parts?.find((p: any) => p.type === "text");
     return textPart && "text" in textPart ? textPart.text : "";
   };
 

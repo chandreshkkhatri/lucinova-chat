@@ -4,7 +4,7 @@ export const appConfig = {
     "gemini-2.5-flash": "Lucinova 2.5 Flash",
     "gemini-2.5-pro": "Lucinova 2.5 Pro",
     "gemini-3-flash-preview": "Lucinova 3 Flash",
-    "gemini-3.0-pro": "Lucinova 3 Pro",
+    "gemini-3-pro-preview": "Lucinova 3 Pro",
   } as Record<string, string>,
 
   // Underlying Gemini model IDs for tooltip display
@@ -12,7 +12,7 @@ export const appConfig = {
     "gemini-2.5-flash": "Gemini 2.5 Flash",
     "gemini-2.5-pro": "Gemini 2.5 Pro",
     "gemini-3-flash-preview": "Gemini 3.0 Flash",
-    "gemini-3.0-pro": "Gemini 3.0 Pro",
+    "gemini-3-pro-preview": "Gemini 3.0 Pro",
   } as Record<string, string>,
 
   // Model descriptions for selection
@@ -20,7 +20,7 @@ export const appConfig = {
     "gemini-2.5-flash": "Previous gen fast",
     "gemini-2.5-pro": "Balanced performance",
     "gemini-3-flash-preview": "Fastest & lightweight",
-    "gemini-3.0-pro": "Best reasoning",
+    "gemini-3-pro-preview": "Best reasoning",
   } as Record<string, string>,
 
   // System prompt identity

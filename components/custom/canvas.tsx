@@ -13,10 +13,10 @@ import {
   ReactFlowProvider,
   useReactFlow,
 } from "@xyflow/react";
-import { UIMessage } from "ai";
+import { Message } from "@/lib/chat-utils";
 import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useCallback, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useCallback, useState, useRef } from "react";
 import "@xyflow/react/dist/style.css";
 
 import { messagesToNodes } from "@/lib/message-to-nodes";
@@ -30,7 +30,7 @@ import { useAutoLayout } from "./use-auto-layout";
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface CanvasProps {
-  messages: UIMessage[];
+  messages: Message[];
   status: "idle" | "streaming" | "submitted" | "error";
   isThread: boolean;
   chatId: string;
@@ -61,6 +61,9 @@ interface CanvasProps {
   } | null;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  isUserPro?: boolean;
 }
 
 const nodeTypes = {
@@ -81,6 +84,11 @@ function CanvasGraph({
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   // fitView removed as unused
 
+  const nodesRef = useRef(nodes);
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
   // Auto layout hook
   useAutoLayout("TB");
 
@@ -89,7 +97,7 @@ function CanvasGraph({
     // 1. Transform messages to nodes
     const newNodes: Node<CanvasNodeData>[] = messages.map((msg, index) => {
       // Find existing node to preserve position if it exists
-      const existingNode = nodes.find((n) => n.id === msg.id);
+      const existingNode = nodesRef.current.find((n) => n.id === msg.id);
 
       const role =
         msg.role === "system"
@@ -98,10 +106,10 @@ function CanvasGraph({
             ? "user"
             : "assistant";
 
-      const textPart = msg.parts?.find((p) => p.type === "text");
+      const textPart = msg.parts?.find((p: any) => p.type === "text");
       const content = textPart && "text" in textPart ? textPart.text : "";
 
-      // Determine type based on content (naive check for now, can be improved)
+      // Determine type based on content
       const type = content.startsWith("```mermaid")
         ? "mermaid"
         : content.startsWith("```")
@@ -117,7 +125,7 @@ function CanvasGraph({
       return {
         id: msg.id,
         type: "canvas-node",
-        position: existingNode?.position || { x: 0, y: index * 200 }, // Default fallback position logic handled by dagre mostly
+        position: existingNode?.position || { x: 0, y: index * 200 },
         data: {
           message: msg,
           chatId,
@@ -139,13 +147,13 @@ function CanvasGraph({
       };
     });
 
-    // 2. Create Edges (Linear for now, threaded later)
+    // 2. Create Edges
     const newEdges: Edge[] = [];
     for (let i = 0; i < messages.length - 1; i++) {
       const source = messages[i].id;
       const target = messages[i + 1].id;
       newEdges.push({
-        id: `${source}-${target}`, // Correctly quoted string
+        id: `${source}-${target}`,
         source,
         target,
         type: "default",
@@ -160,9 +168,12 @@ function CanvasGraph({
     messages,
     chatId,
     isThread,
-    nodes,
-    props,
     annotationsByMessage,
+    props.onAskLucinova,
+    props.onOpenAnnotation,
+    props.onStartThread,
+    props.onEditMessage,
+    props.onRegenerate,
     setEdges,
     setNodes,
   ]);
@@ -236,6 +247,9 @@ export function Canvas(props: CanvasProps) {
           setSelectedNodeType={setSelectedNodeType}
           usageLimitInfo={props.usageLimitInfo}
           variant="floating"
+          selectedModel={props.selectedModel}
+          setSelectedModel={props.setSelectedModel}
+          isUserPro={props.isUserPro}
         />
       </div>
     </ReactFlowProvider>

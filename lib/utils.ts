@@ -1,4 +1,4 @@
-import { generateId } from "ai";
+import { generateId } from "@/lib/chat-utils";
 import { clsx, type ClassValue } from "clsx";
 import mongoose from "mongoose";
 import { twMerge } from "tailwind-merge";

@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Message } from "@/lib/chat-utils";
 import { MessageSquareText } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -15,7 +15,7 @@ export interface SavedAnnotation {
 }
 
 interface EnhancedMessageProps {
-  message: UIMessage;
+  message: Message;
   chatId: string;
   annotations?: SavedAnnotation[];
   onAskLucinova?: (selectedText: string) => void;

@@ -1,20 +1,20 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { UIMessage } from "ai";
 import { MessageSquare, Grid, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGoogleChat } from "@/hooks/use-google-chat";
+import { Message } from "@/lib/chat-utils";
 
 import { Canvas } from "./canvas";
 import { ChatList } from "./chat-list";
 import { SavedAnnotation } from "./enhanced-message";
+import { RightSidebar } from "./right-sidebar";
 import { useSidebar } from "./sidebar-context";
 import { Attachment } from "./types";
-
 import type { NodeType } from "@/lib/message-to-nodes";
 
 // Fetcher for SWR
@@ -37,7 +37,7 @@ export function Chat({
   defaultModelId = "gemini-3-flash-preview",
 }: {
   id: string;
-  initialMessages: Array<UIMessage>;
+  initialMessages: Array<Message>;
   isThread?: boolean;
   parentMessageId?: string;
   mainChatId?: string;
@@ -49,12 +49,20 @@ export function Chat({
   defaultModelId?: string;
 }) {
   const router = useRouter();
+  // chatIdForSubmit = the real MongoDB chat ID, sent in the API body.
   const chatIdForSubmit = isThread ? mainChatId! : id;
+  // chatSessionId = unique ID for the useChat hook's internal state.
+  // Threads MUST have a different ID than the main chat to prevent
+  // message state from leaking between them (useChat shares state by id).
+  const chatSessionId = isThread ? `thread-${parentMessageId}` : id;
+
   const { selectedProjectId } = useSidebar();
 
   // Model selection state
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
+  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+  const [selectedNode, setSelectedNode] = useState<{ id: string; content: string; role: string; type: string } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,21 +76,50 @@ export function Chat({
   } | null>(null);
 
   // Feature Flag & View Mode Check
-  // Default to true if flag is missing/true, false if explicitly "false"
   const isToggleEnabled =
     process.env.NEXT_PUBLIC_FEATURE_FLAG_CANVAS_CHAT_TOGGLE !== "false";
 
   const [viewMode, setViewMode] = useState<"chat" | "canvas">("chat");
 
   const { messages, sendMessage, status, stop, setMessages, regenerate } =
-    useChat({
-      id: chatIdForSubmit,
+    useGoogleChat({
+      id: chatSessionId,
       api: isThread ? "/api/thread" : "/api/chat",
-      messages: initialMessages as unknown as any,
-      onFinish: () => {
+      initialMessages: initialMessages,
+      onFinish: (message) => {
         const url = `/chat/${chatIdForSubmit}`;
-        window.history.replaceState({}, "", url);
+        if (!isThread) {
+          window.history.replaceState({}, "", url);
+        }
         onFinish?.();
+
+        // Refresh messages to sync real server IDs (replacing temp IDs)
+        const syncMessages = async () => {
+          try {
+            if (isThread) {
+              const res = await fetch(
+                `/api/threads?parentMessageId=${parentMessageId}&mainChatId=${mainChatId}`
+              );
+              if (res.ok) {
+                const data = await res.json();
+                if (data.threads) {
+                  setMessages(data.threads);
+                }
+              }
+            } else {
+              const res = await fetch(`/api/chat/${chatIdForSubmit}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.messages) {
+                  setMessages(data.messages);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Failed to sync messages:", error);
+          }
+        };
+        syncMessages();
 
         // Revalidate history cache to pick up server-generated title
         setTimeout(() => {
@@ -124,7 +161,7 @@ export function Chat({
           // Ignore parsing errors
         }
       },
-    } as any);
+    });
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -151,10 +188,10 @@ export function Chat({
       }
     }
 
+    // Attachments are passed directly; useGoogleChat handles them
     const fileParts: any[] = attachments.map((a) => ({
-      type: "file",
-      mediaType: a.contentType ?? "",
-      filename: a.name ?? "attachment",
+      name: a.name,
+      contentType: a.contentType,
       url: a.url,
     }));
 
@@ -179,7 +216,7 @@ export function Chat({
 
   useEffect(() => {
     if (messages.length === 0 && initialMessages.length > 0) {
-      setMessages(initialMessages as unknown as any);
+      setMessages(initialMessages);
     }
   }, [initialMessages, messages.length, setMessages]);
 
@@ -187,9 +224,33 @@ export function Chat({
 
   // Reply thread state
   const [activeThread, setActiveThread] = useState<{
-    parentMessage: UIMessage;
+    parentMessage: Message;
     selectedText?: string;
   } | null>(null);
+
+  // Update activeThread message when messages change (e.g. after sync)
+  useEffect(() => {
+    if (activeThread) {
+      const updatedMessage = messages.find(
+        (m: any) =>
+          m.id === activeThread.parentMessage.id ||
+          (m.content === (activeThread.parentMessage as any).content &&
+            m.role === (activeThread.parentMessage as any).role &&
+            Math.abs(
+              new Date(m.createdAt || 0).getTime() -
+                new Date((activeThread.parentMessage as any).createdAt || 0).getTime()
+            ) < 5000)
+      );
+      if (
+        updatedMessage &&
+        updatedMessage.id !== activeThread.parentMessage.id
+      ) {
+        setActiveThread((prev) =>
+          prev ? { ...prev, parentMessage: updatedMessage } : null
+        );
+      }
+    }
+  }, [messages, activeThread]);
 
   // Annotation (Ask Lucinova) thread state
   const [activeAnnotation, setActiveAnnotation] = useState<{
@@ -198,10 +259,11 @@ export function Chat({
     initialMessage?: string;
   } | null>(null);
 
-  // Pending annotation (before first message is sent)
+  // Pending annotation
   const [pendingAnnotation, setPendingAnnotation] = useState<{
     messageId: string;
     selectedText: string;
+    initialMessage?: string;
   } | null>(null);
 
   // Fetch annotations for this chat
@@ -212,7 +274,6 @@ export function Chat({
 
   const annotations: SavedAnnotation[] = annotationsData?.annotations || [];
 
-  // Group annotations by messageId
   const annotationsByMessage = annotations.reduce(
     (acc, ann) => {
       if (!acc[ann.messageId]) {
@@ -228,13 +289,11 @@ export function Chat({
     const parentMessage = messages.find((msg) => msg.id === messageId);
     if (parentMessage && !isThread) {
       setActiveThread({
-        parentMessage: parentMessage as unknown as any,
+        parentMessage: parentMessage,
         selectedText,
       });
       setActiveAnnotation(null);
       setPendingAnnotation(null);
-      // Auto-switch to chat mode if in canvas? No, keep context.
-      // But if user wants to see thread sidebar in Chat mode, it should be visible.
     }
   };
 
@@ -316,18 +375,19 @@ export function Chat({
     [mutateAnnotations],
   );
 
-  // Edit last user message and regenerate
   const handleEditMessage = useCallback(
     (messageId: string, newText: string) => {
       const msgIndex = messages.findIndex((m) => m.id === messageId);
       if (msgIndex === -1) return;
 
+      // Optimistic update
       setMessages((prev) => {
         const updated = [...prev];
         updated[msgIndex] = {
-          ...updated[msgIndex],
-          parts: [{ type: "text" as const, text: newText }],
-        };
+            ...updated[msgIndex],
+            content: newText,
+            parts: [{ type: "text" as const, text: newText }]
+        } as any;
         return updated.slice(0, msgIndex + 1);
       });
 
@@ -340,10 +400,9 @@ export function Chat({
     regenerate();
   }, [regenerate]);
 
-
-  // Shared Canvas props
-  const canvasProps = {
-    messages: messages as unknown as any,
+  // Shared props
+  const sharedProps = {
+    messages: messages,
     status: status as "idle" | "streaming" | "submitted" | "error",
     chatId: id,
     annotationsByMessage,
@@ -360,29 +419,13 @@ export function Chat({
     isGuest,
     usageLimitInfo,
     onRegenerate: handleRegenerate,
+    selectedNodeType,
+    setSelectedNodeType,
+    selectedModel,
+    setSelectedModel,
+    isUserPro,
   };
 
-  // Shared ChatList props
-  const chatListProps = {
-    messages: messages as unknown as any,
-    status: status as "idle" | "streaming" | "submitted" | "error",
-    chatId: id,
-    annotationsByMessage,
-    onStartThread: handleStartThread,
-    onAskLucinova: handleAskLucinova,
-    onOpenAnnotation: handleOpenAnnotation,
-    setInput,
-    input,
-    handleSubmit,
-    stop,
-    attachments,
-    setAttachments,
-    sendMessage,
-    isGuest,
-    usageLimitInfo,
-  };
-
-  // For threads, render compact layout with Canvas + inline input (no right sidebar)
   if (isThread) {
     return (
       <div
@@ -390,11 +433,7 @@ export function Chat({
         className={`flex h-full bg-paper ${className} max-h-full overflow-hidden`}
       >
         <div className="flex-1 flex flex-col min-w-0 h-full max-h-full overflow-hidden">
-          <Canvas
-            {...canvasProps}
-            isThread={true}
-            selectedText={selectedText}
-          />
+          <ChatList {...sharedProps} />
         </div>
       </div>
     );
@@ -405,7 +444,7 @@ export function Chat({
 
   return (
     <div ref={containerRef} className={`flex h-full bg-paper ${className}`}>
-      {/* View Toggle (Top Center) */}
+      {/* View Toggle */}
       {isToggleEnabled && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm p-1">
           <Tabs
@@ -428,14 +467,54 @@ export function Chat({
       )}
 
       {/* Main Content Area */}
-      <div className="flex flex-col flex-1 min-w-0 h-full relative z-0">
-        <div className="flex-1 h-full">
-          {isToggleEnabled && viewMode === "canvas" ? (
-            <Canvas {...canvasProps} isThread={false} />
-          ) : (
-            <ChatList {...chatListProps} />
-          )}
+      <div className="flex flex-1 min-w-0 h-full relative z-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full">
+          <div className="flex-1 h-full">
+            {isToggleEnabled && viewMode === "canvas" ? (
+              <Canvas {...sharedProps} isThread={false} />
+            ) : (
+              <ChatList {...sharedProps} />
+            )}
+          </div>
         </div>
+
+        {/* Right Sidebar - Thread/Annotation View */}
+        {(activeThread || activeAnnotation || pendingAnnotation) && (
+          <div className="w-[450px] border-l border-border bg-card/30 backdrop-blur-md shrink-0 hidden md:block">
+            <RightSidebar
+              {...sharedProps}
+              activeThread={activeThread}
+              activeAnnotation={activeAnnotation}
+              pendingAnnotation={pendingAnnotation}
+              onCloseThread={handleCloseThread}
+              onCloseAnnotation={handleCloseAnnotation}
+              onCreateAnnotation={handleCreateAnnotation}
+              onAnnotationCreated={handleAnnotationCreated}
+              onAnnotationDeleted={handleAnnotationDeleted}
+              isMounted={true}
+              selectedNode={selectedNode}
+            />
+          </div>
+        )}
+
+        {/* Mobile Sidebar Overlay */}
+        {showMobileOverlay && (
+          <div className="absolute inset-0 z-50 bg-background md:hidden">
+            <RightSidebar
+              {...sharedProps}
+              activeThread={activeThread}
+              activeAnnotation={activeAnnotation}
+              pendingAnnotation={pendingAnnotation}
+              onCloseThread={handleCloseThread}
+              onCloseAnnotation={handleCloseAnnotation}
+              onCreateAnnotation={handleCreateAnnotation}
+              onAnnotationCreated={handleAnnotationCreated}
+              onAnnotationDeleted={handleAnnotationDeleted}
+              isMounted={true}
+              selectedNode={selectedNode}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

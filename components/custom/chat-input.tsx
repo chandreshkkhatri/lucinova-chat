@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Message } from "@/lib/chat-utils";
 import { Dispatch, SetStateAction } from "react";
 
 import { MultimodalInput } from "./multimodal-input";
@@ -16,7 +16,7 @@ interface ChatInputProps {
   stop: () => void;
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
-  messages: UIMessage[];
+  messages: Message[];
   sendMessage: (message: {
     text: string;
     files?: any[];
@@ -33,6 +33,9 @@ interface ChatInputProps {
     periodEnd: Date | string;
   } | null;
   variant?: "sticky" | "floating";
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  isUserPro?: boolean;
 }
 
 export function ChatInput({
@@ -49,6 +52,9 @@ export function ChatInput({
   setSelectedNodeType,
   usageLimitInfo,
   variant = "sticky",
+  selectedModel,
+  setSelectedModel,
+  isUserPro = false,
 }: ChatInputProps) {
   const isFloating = variant === "floating";
 
@@ -87,6 +93,9 @@ export function ChatInput({
             handleSubmit={handleSubmit}
             selectedNodeType={selectedNodeType}
             setSelectedNodeType={setSelectedNodeType}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            isUserPro={isUserPro}
           />
         )}
       </div>

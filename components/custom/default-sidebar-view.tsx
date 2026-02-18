@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Message } from "@/lib/chat-utils";
 import {
   MessageSquare,
   Sparkles,
@@ -44,7 +44,7 @@ interface DefaultSidebarViewProps {
   stop: () => void;
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
-  messages: UIMessage[];
+  messages: Message[];
   sendMessage: (message: {
     text: string;
     files?: any[];
@@ -120,8 +120,8 @@ export function DefaultSidebarView({
                 // The original code was:
                 // 3.0-pro: disabled={!isUserPro}
 
-                const isDisabled = modelId === "gemini-3.0-pro" && !isUserPro;
-                const showCrown = modelId === "gemini-3.0-pro" && !isUserPro;
+                const isDisabled = modelId === "gemini-3-pro-preview" && !isUserPro;
+                const showCrown = modelId === "gemini-3-pro-preview" && !isUserPro;
 
                 return (
                   <SelectItem

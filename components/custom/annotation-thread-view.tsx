@@ -1,7 +1,7 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { UIMessage } from "ai";
+import { useGoogleChat } from "@/hooks/use-google-chat";
+import { Message } from "@/lib/chat-utils";
 import { X, MessageSquareText, Trash2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -33,18 +33,18 @@ export function AnnotationThreadView({
   className = "",
   modelId,
 }: AnnotationThreadViewProps) {
-  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
+  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialMessageSentRef = useRef(false);
 
   const [input, setInput] = useState("");
 
-  const { messages, sendMessage, status, stop, setMessages } = useChat({
+  const { messages, sendMessage, status, stop, setMessages } = useGoogleChat({
     id: annotationId,
     api: `/api/annotations/${annotationId}/chat`,
-    messages: initialMessages as unknown as any,
-  } as any);
+    initialMessages: initialMessages,
+  });
 
   // Load existing messages for this annotation and hydrate the chat state
   useEffect(() => {
@@ -54,10 +54,11 @@ export function AnnotationThreadView({
         if (!res.ok) return;
         const data = await res.json();
         const loaded = data.messages || [];
-        setInitialMessages(loaded as unknown as UIMessage[]);
-        // Seed the AI SDK chat state so history and user messages render
-        const validMessages = loaded as unknown as any;
-        setMessages((prev) => (prev.length > 0 ? prev : validMessages));
+        setInitialMessages(loaded);
+        // Seed the chat state
+        if (loaded.length > 0) {
+            setMessages((prev) => (prev.length > 0 ? prev : loaded));
+        }
       } catch {
         // ignore errors
       } finally {
@@ -67,7 +68,7 @@ export function AnnotationThreadView({
     loadMessages();
   }, [annotationId, setMessages]);
 
-  // Auto-send the initial message (from PendingAnnotationView) on first load
+  // Auto-send the initial message
   useEffect(() => {
     if (!isLoading && initialMessage && !initialMessageSentRef.current) {
       initialMessageSentRef.current = true;
@@ -321,7 +322,7 @@ export function AnnotationThreadView({
           stop={stop}
           attachments={[]}
           setAttachments={() => {}}
-          messages={messages as unknown as any}
+          messages={messages}
           sendMessage={sendMessage}
           handleSubmit={handleSubmit}
         />

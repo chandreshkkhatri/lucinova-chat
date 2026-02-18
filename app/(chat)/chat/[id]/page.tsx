@@ -1,4 +1,4 @@
-import { generateId, UIMessage } from "ai";
+import { Message, generateId } from "@/lib/chat-utils";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -60,10 +60,6 @@ export async function generateMetadata({
     return {
       title: "Chat Conversation",
       description: "Continue your conversation with our AI assistant.",
-      robots: {
-        index: false,
-        follow: false,
-      },
     };
   }
 }
@@ -105,7 +101,7 @@ export default async function Page({
 
   // fetch top-level messages from DB and map to UI-friendly format
   const rawMessages = await getCachedMessages(id);
-  const uiMessages: UIMessage[] = rawMessages.map((msg: any) => {
+  const uiMessages: Message[] = rawMessages.map((msg: any) => {
     const role: "user" | "assistant" =
       msg.senderId.toString() === userId ? "user" : "assistant";
 
@@ -138,7 +134,7 @@ export default async function Page({
       parts,
       ...(attachments.length > 0 && { experimental_attachments: attachments }),
     };
-  }) as UIMessage[];
+  }) as Message[];
   const isThread = false;
 
   return (
