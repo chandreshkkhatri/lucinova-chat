@@ -9,13 +9,12 @@ import {
   FileCode,
 } from "lucide-react";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 import { SUGGESTIONS } from "@/lib/constants";
 
+import { ChatInput } from "./chat-input";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
-import { MultimodalInput } from "./multimodal-input";
-import { UsageLimitBanner } from "./usage-limit-banner";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
 
 import type { Attachment } from "./types";
@@ -43,8 +42,6 @@ interface ChatListProps {
     limit: number;
     periodEnd: Date | string;
   } | null;
-  selectedNodeType: NodeType;
-  setSelectedNodeType: (type: NodeType) => void;
   chatId: string;
   annotationsByMessage: Record<string, SavedAnnotation[]>;
   onStartThread: (messageId: string, selectedText?: string) => void;
@@ -64,8 +61,6 @@ export function ChatList({
   sendMessage,
   isGuest,
   usageLimitInfo,
-  selectedNodeType,
-  setSelectedNodeType,
   chatId,
   annotationsByMessage,
   onStartThread,
@@ -74,6 +69,7 @@ export function ChatList({
 }: ChatListProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
+  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
 
   return (
     <div className="flex flex-col size-full bg-paper relative">
@@ -81,7 +77,13 @@ export function ChatList({
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto w-full">
         <div className="flex flex-col gap-6 md:gap-8 max-w-3xl mx-auto py-8 px-4">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
+            <div
+              className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]"
+              style={{
+                animation: "canvas-fade-in-up 600ms ease-out 100ms forwards",
+                opacity: 0,
+              }}
+            >
               <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
                 <Image
                   src="/images/lucidity-logo.svg"
@@ -100,7 +102,7 @@ export function ChatList({
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl mt-8">
-                {SUGGESTIONS.map((suggestion) => {
+                {SUGGESTIONS.map((suggestion, i) => {
                   const Icon =
                     suggestion.iconName === "message"
                       ? MessageSquare
@@ -124,6 +126,10 @@ export function ChatList({
                       key={suggestion.value}
                       onClick={() => setInput(suggestion.value)}
                       className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3 bg-card/50"
+                      style={{
+                        animation: `canvas-fade-in-up 500ms ease-out ${300 + i * 80}ms forwards`,
+                        opacity: 0,
+                      }}
                     >
                       <Icon className={`size-4 ${colorClass} shrink-0`} />
                       <p className="text-sm text-foreground/80">
@@ -206,32 +212,21 @@ export function ChatList({
       </div>
 
       {/* Input Area (Sticky Bottom) */}
-      <div className="shrink-0 p-4 border-t border-border bg-card/80 backdrop-blur-sm relative z-20">
-        <div className="max-w-3xl mx-auto">
-          {usageLimitInfo?.exceeded ? (
-            <UsageLimitBanner
-              isPro={usageLimitInfo.isPro}
-              currentUsage={usageLimitInfo.currentUsage}
-              limit={usageLimitInfo.limit}
-              periodEnd={usageLimitInfo.periodEnd}
-            />
-          ) : (
-            <MultimodalInput
-              input={input}
-              setInput={setInput}
-              isLoading={status === "streaming" || status === "submitted"}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              sendMessage={sendMessage}
-              handleSubmit={handleSubmit}
-              selectedNodeType={selectedNodeType}
-              setSelectedNodeType={setSelectedNodeType}
-            />
-          )}
-        </div>
-      </div>
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        isLoading={status === "streaming" || status === "submitted"}
+        stop={stop}
+        attachments={attachments}
+        setAttachments={setAttachments}
+        messages={messages}
+        sendMessage={sendMessage}
+        handleSubmit={handleSubmit}
+        selectedNodeType={selectedNodeType}
+        setSelectedNodeType={setSelectedNodeType}
+        usageLimitInfo={usageLimitInfo}
+        variant="sticky"
+      />
     </div>
   );
 }

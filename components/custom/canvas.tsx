@@ -1,9 +1,5 @@
 "use client";
 
-import { UIMessage } from "ai";
-import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
-import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useCallback } from "react";
 import {
   ReactFlow,
   Background,
@@ -17,18 +13,21 @@ import {
   ReactFlowProvider,
   useReactFlow,
 } from "@xyflow/react";
+import { UIMessage } from "ai";
+import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
+import Image from "next/image";
+import { Dispatch, SetStateAction, useEffect, useCallback, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
-import { messagesToNodes } from "@/lib/message-to-nodes"; // Keep if used or remove if truly unused. Copilot said it is unused. Checking usage... It IS used in useEffect logic transformation? No, useEffect maps manually.
-// Actually, looking at the code `messagesToNodes` IS NOT used in the `CanvasGraph` component.
-// `fitView` is destructured but not used in the effect or render? It is passed to ReactFlow? No.
+import { messagesToNodes } from "@/lib/message-to-nodes";
 
 import { CanvasNodeComponent, CanvasNodeData } from "./canvas-node";
-import { MultimodalInput } from "./multimodal-input";
+import { ChatInput } from "./chat-input";
+import { SavedAnnotation } from "./enhanced-message";
+import { Attachment } from "./types";
 import { useAutoLayout } from "./use-auto-layout";
 
-import type { SavedAnnotation } from "./enhanced-message";
-import type { Attachment } from "./types";
+import type { NodeType } from "@/lib/message-to-nodes";
 
 interface CanvasProps {
   messages: UIMessage[];
@@ -62,14 +61,6 @@ interface CanvasProps {
   } | null;
   onEditMessage?: (messageId: string, newText: string) => void;
   onRegenerate?: () => void;
-  onNodeSelect?: (
-    nodeData: {
-      id: string;
-      content: string;
-      role: string;
-      type: string;
-    } | null,
-  ) => void;
 }
 
 const nodeTypes = {
@@ -165,7 +156,16 @@ function CanvasGraph({
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [messages, chatId, isThread]); // Copilot suggested adding nodes, but that causes infinite loops. We rely on message changes.
+  }, [
+    messages,
+    chatId,
+    isThread,
+    nodes,
+    props,
+    annotationsByMessage,
+    setEdges,
+    setNodes,
+  ]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -173,7 +173,7 @@ function CanvasGraph({
   );
 
   return (
-    <div className="w-full h-full bg-background/50">
+    <div className="size-full bg-background/50">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -187,16 +187,10 @@ function CanvasGraph({
         defaultEdgeOptions={{ type: "smoothstep" }}
         proOptions={{ hideAttribution: true }}
         onNodeClick={(_event, node) => {
-          const data = node.data as CanvasNodeData;
-          props.onNodeSelect?.({
-            id: node.id,
-            content: data.content,
-            role: data.role,
-            type: data.type,
-          });
+          // Selection handled by ReactFlow UI, sidebar details removed
         }}
         onPaneClick={() => {
-          props.onNodeSelect?.(null);
+          // Deselection handled by ReactFlow UI, sidebar details removed
         }}
       >
         <Background
@@ -207,47 +201,42 @@ function CanvasGraph({
         />
         <Controls className="bg-background border-border text-foreground fill-foreground" />
       </ReactFlow>
-
-      {/* Floating Input for Thread Mode */}
-      {isThread &&
-        // TODO: Add usage limit check back? Copilot: "This removes the previous UI gating..."
-        // The original code had checks. Accessing `usageLimitInfo` prop.
-        (props.usageLimitInfo?.exceeded ? (
-          <div className="absolute bottom-4 left-0 right-0 z-50 p-4 pointer-events-none flex justify-center">
-            <div className="bg-destructive/10 text-destructive border border-destructive/20 px-4 py-2 rounded-lg backdrop-blur-md">
-              Usage limit exceeded. Please upgrade to continue.
-            </div>
-          </div>
-        ) : (
-          <div className="absolute bottom-0 left-0 right-0 z-50 p-4 pointer-events-none">
-            <div className="max-w-4xl mx-auto pointer-events-auto bg-background/80 backdrop-blur-sm rounded-xl border border-border shadow-lg p-1">
-              <MultimodalInput
-                input={props.input}
-                setInput={props.setInput}
-                isLoading={status === "streaming" || status === "submitted"}
-                stop={props.stop}
-                attachments={props.attachments}
-                setAttachments={props.setAttachments}
-                messages={messages}
-                sendMessage={props.sendMessage}
-                handleSubmit={props.handleSubmit}
-              />
-            </div>
-          </div>
-        ))}
     </div>
   );
 }
 
 export function Canvas(props: CanvasProps) {
+  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+
   return (
     <ReactFlowProvider>
-      <div className="w-full h-full flex flex-col">
-        {props.messages.length === 0 ? (
-          <EmptyState {...props} />
-        ) : (
-          <CanvasGraph {...props} />
-        )}
+      <div className="size-full flex flex-col relative">
+        <div className="flex-1 overflow-hidden">
+          {props.messages.length === 0 ? (
+            <EmptyState {...props} />
+          ) : (
+            <CanvasGraph {...props} />
+          )}
+        </div>
+
+        {/* Floating Input Area */}
+        <ChatInput
+          input={props.input}
+          setInput={props.setInput}
+          isLoading={
+            props.status === "streaming" || props.status === "submitted"
+          }
+          stop={props.stop}
+          attachments={props.attachments}
+          setAttachments={props.setAttachments}
+          messages={props.messages}
+          sendMessage={props.sendMessage}
+          handleSubmit={props.handleSubmit}
+          selectedNodeType={selectedNodeType}
+          setSelectedNodeType={setSelectedNodeType}
+          usageLimitInfo={props.usageLimitInfo}
+          variant="floating"
+        />
       </div>
     </ReactFlowProvider>
   );
@@ -307,33 +296,8 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
   }
 
   return (
-    <div className="relative flex items-center justify-center h-full p-8 overflow-hidden">
-      {/* Layer 0: Dot placement hints */}
-      <div
-        className="absolute inset-0 pointer-events-none hidden md:block"
-        aria-hidden="true"
-      >
-        {[
-          { top: "12%", left: "15%" },
-          { top: "22%", right: "18%" },
-          { bottom: "28%", left: "22%" },
-          { bottom: "15%", right: "12%" },
-          { top: "45%", left: "8%" },
-          { top: "35%", right: "8%" },
-        ].map((pos, i) => (
-          <div
-            key={i}
-            className="absolute size-2 rounded-full bg-primary/15 dark:bg-primary/10"
-            style={{
-              ...pos,
-              animation: `canvas-fade-in-up 600ms ease-out ${800 + i * 100}ms forwards`,
-              opacity: 0,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Layer 1: Floating pin cards + connector lines */}
+    <div className="relative flex flex-col items-center justify-start h-full overflow-hidden">
+      {/* Decorative floating cards - hidden on mobile */}
       <div
         className="absolute inset-0 pointer-events-none hidden md:block"
         aria-hidden="true"
@@ -342,7 +306,7 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
           {
             label: "Ideas",
             icon: <Sparkles className="size-4" />,
-            position: { top: "14%", left: "12%" },
+            position: { top: "14%", left: "8%" },
             rotation: "-3deg",
             floatDuration: "6s",
             animDelay: "0s",
@@ -350,7 +314,7 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
           {
             label: "Threads",
             icon: <Reply className="size-4" />,
-            position: { top: "18%", right: "14%" },
+            position: { top: "18%", right: "8%" },
             rotation: "2deg",
             floatDuration: "7s",
             animDelay: "1.5s",
@@ -358,7 +322,7 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
           {
             label: "Notes",
             icon: <MessageSquare className="size-4" />,
-            position: { bottom: "22%", left: "16%" },
+            position: { bottom: "35%", left: "8%" },
             rotation: "2.5deg",
             floatDuration: "8s",
             animDelay: "0.8s",
@@ -366,7 +330,7 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
           {
             label: "Code",
             icon: <FileCode className="size-4" />,
-            position: { bottom: "16%", right: "10%" },
+            position: { bottom: "30%", right: "8%" },
             rotation: "-2deg",
             floatDuration: "6.5s",
             animDelay: "2s",
@@ -386,49 +350,14 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
             <span className="text-xs font-medium">{card.label}</span>
           </div>
         ))}
-
-        {/* Dashed connector lines */}
-        <svg
-          className="absolute inset-0 size-full"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          fill="none"
-        >
-          <path
-            d="M 18 20 Q 35 35 50 50"
-            stroke="hsl(var(--primary))"
-            strokeWidth="0.15"
-            strokeDasharray="2 2"
-            strokeLinecap="round"
-            opacity="0.25"
-            style={{
-              strokeDashoffset: 200,
-              animation: "canvas-draw-line 800ms ease-in-out 1s forwards",
-            }}
-          />
-          <path
-            d="M 82 22 Q 70 40 55 48"
-            stroke="hsl(var(--primary))"
-            strokeWidth="0.15"
-            strokeDasharray="2 2"
-            strokeLinecap="round"
-            opacity="0.2"
-            style={{
-              strokeDashoffset: 200,
-              animation: "canvas-draw-line 800ms ease-in-out 1.3s forwards",
-            }}
-          />
-        </svg>
       </div>
 
-      {/* Layer 2: Center content */}
+      {/* Center content — matches Chat empty state structure */}
       <div
-        className="relative z-20 text-center max-w-md px-8 py-10 rounded-2xl"
+        className="relative z-20 flex flex-col items-center text-center p-8 pt-16 max-w-md w-full"
         style={{
           animation: "canvas-fade-in-up 600ms ease-out 100ms forwards",
           opacity: 0,
-          background:
-            "radial-gradient(ellipse at center, hsl(var(--card)) 40%, transparent 70%)",
         }}
       >
         <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
@@ -443,12 +372,9 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
         <h2 className="text-2xl font-bold text-foreground mb-2">
           Lucidity Canvas
         </h2>
-        <p className="text-muted-foreground mb-2">
-          Your thinking space. Ask questions, explore ideas, branch into
+        <p className="text-muted-foreground max-w-md">
+          Your thinking space. Ask questions, explore ideas, and branch into
           threads.
-        </p>
-        <p className="text-sm text-muted-foreground/60">
-          Use the sidebar to get started →
         </p>
       </div>
     </div>
