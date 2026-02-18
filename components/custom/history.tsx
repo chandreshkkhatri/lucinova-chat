@@ -6,8 +6,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
 import { useEffect, useState, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+
 import { toast } from "sonner";
 import useSWR from "swr";
 
@@ -145,9 +144,7 @@ export const History = ({
       <div className={containerClasses}>
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <h1 className="text-lg font-semibold text-foreground">
-            Chats
-          </h1>
+          <h1 className="text-lg font-semibold text-foreground">Chats</h1>
           <p className="text-sm text-muted-foreground">
             {history === undefined
               ? "Loading chats..."
@@ -205,8 +202,7 @@ export const History = ({
                   className={cx(
                     "group flex items-center justify-between p-3 rounded-lg hover:bg-card transition-colors",
                     {
-                      "bg-card shadow-sm":
-                        (chat as any)._id.toString() === id,
+                      "bg-card shadow-sm": (chat as any)._id.toString() === id,
                     },
                   )}
                 >

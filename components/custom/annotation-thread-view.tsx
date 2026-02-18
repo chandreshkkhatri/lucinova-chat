@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { UIMessage, TextStreamChatTransport } from "ai";
+import { UIMessage } from "ai";
 import { X, MessageSquareText, Trash2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -42,11 +42,9 @@ export function AnnotationThreadView({
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     id: annotationId,
-    transport: new TextStreamChatTransport({
-      api: `/api/annotations/${annotationId}/chat`,
-    }),
-    messages: initialMessages,
-  });
+    api: `/api/annotations/${annotationId}/chat`,
+    messages: initialMessages as unknown as any,
+  } as any);
 
   // Load existing messages for this annotation and hydrate the chat state
   useEffect(() => {
@@ -56,9 +54,10 @@ export function AnnotationThreadView({
         if (!res.ok) return;
         const data = await res.json();
         const loaded = data.messages || [];
-        setInitialMessages(loaded);
+        setInitialMessages(loaded as unknown as UIMessage[]);
         // Seed the AI SDK chat state so history and user messages render
-        setMessages((prev) => (prev.length > 0 ? prev : loaded));
+        const validMessages = loaded as unknown as any;
+        setMessages((prev) => (prev.length > 0 ? prev : validMessages));
       } catch {
         // ignore errors
       } finally {
@@ -81,11 +80,14 @@ export function AnnotationThreadView({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
-    sendMessage({ text: input }, {
-      body: {
-        modelId,
-      }
-    });
+    sendMessage(
+      { text: input },
+      {
+        body: {
+          modelId,
+        },
+      },
+    );
     setInput("");
   };
 
@@ -97,7 +99,7 @@ export function AnnotationThreadView({
   const handleDelete = async () => {
     if (
       confirm(
-        "Are you sure you want to delete this annotation? All messages will be removed."
+        "Are you sure you want to delete this annotation? All messages will be removed.",
       )
     ) {
       try {
@@ -125,12 +127,8 @@ export function AnnotationThreadView({
             <MessageSquareText className="size-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">
-              Ask Lucinova
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              About selected text
-            </p>
+            <h2 className="font-semibold text-foreground">Ask Lucinova</h2>
+            <p className="text-xs text-muted-foreground">About selected text</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -158,7 +156,9 @@ export function AnnotationThreadView({
       <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="flex items-start gap-2">
           <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-            {'"'}{selectedText}{'"'}
+            {'"'}
+            {selectedText}
+            {'"'}
           </div>
         </div>
       </div>
@@ -220,8 +220,9 @@ export function AnnotationThreadView({
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-2 p-2 sm:p-3 ${message.role === "user" ? "justify-end" : ""
-                  }`}
+                className={`flex gap-2 p-2 sm:p-3 ${
+                  message.role === "user" ? "justify-end" : ""
+                }`}
               >
                 {message.role === "assistant" && (
                   <Avatar className="size-8 shrink-0">
@@ -239,22 +240,24 @@ export function AnnotationThreadView({
                 )}
 
                 <div
-                  className={`flex-1 max-w-[90%] sm:max-w-[85%] ${message.role === "user" ? "text-right" : ""
-                    }`}
+                  className={`flex-1 max-w-[90%] sm:max-w-[85%] ${
+                    message.role === "user" ? "text-right" : ""
+                  }`}
                 >
                   <div
-                    className={`inline-block ${message.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2"
-                      : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"
-                      }`}
+                    className={`inline-block ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-3 py-2"
+                        : "bg-muted rounded-2xl rounded-tl-sm px-3 py-2"
+                    }`}
                   >
                     <div className="prose prose-sm dark:prose-invert max-w-none">
                       <Markdown>
                         {(message as any).parts
                           ? (message as any).parts
-                            .filter((p: any) => p.type === "text")
-                            .map((p: any) => p.text)
-                            .join("")
+                              .filter((p: any) => p.type === "text")
+                              .map((p: any) => p.text)
+                              .join("")
                           : (message as any).content || ""}
                       </Markdown>
                     </div>
@@ -317,8 +320,8 @@ export function AnnotationThreadView({
           isLoading={isChatLoading}
           stop={stop}
           attachments={[]}
-          setAttachments={() => { }}
-          messages={messages}
+          setAttachments={() => {}}
+          messages={messages as unknown as any}
           sendMessage={sendMessage}
           handleSubmit={handleSubmit}
         />

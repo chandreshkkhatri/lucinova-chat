@@ -8,6 +8,7 @@ export default async function PricingPage() {
   const session = await auth();
   let isUserPro = false;
   let userBadges: any[] = [];
+  let subscriptionStatus: string | null = null;
 
   // Fetch user's Pro status and badges from database
   if (session?.user?.email) {
@@ -16,6 +17,7 @@ export default async function PricingPage() {
       if (dbUser && !Array.isArray(dbUser)) {
         isUserPro = !!dbUser.isPro;
         userBadges = dbUser.badges || [];
+        subscriptionStatus = dbUser.subscriptionStatus || null;
       }
     } catch (err) {
       console.error("[Pricing Page] Error fetching user from DB:", err);
@@ -30,6 +32,7 @@ export default async function PricingPage() {
         isUserPro={isUserPro}
         isAuthenticated={isAuthenticated}
         userBadges={userBadges}
+        subscriptionStatus={subscriptionStatus}
       />
       <footer className="w-full max-w-4xl mx-auto mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
         <div className="text-center text-sm text-gray-600 dark:text-gray-400">

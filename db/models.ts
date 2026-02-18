@@ -109,7 +109,7 @@ const userSchema = new Schema<IUser>(
     resetTokenExpiry: { type: Date },
     termsAcceptedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 userSchema.index({ displayName: 1 });
 userSchema.index({ oauthProvider: 1, oauthProviderId: 1 });
@@ -131,7 +131,7 @@ const projectSchema = new Schema<IProject>(
     name: { type: String, required: true },
     color: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 projectSchema.index({ userId: 1, createdAt: -1 });
 export const Project =
@@ -162,7 +162,7 @@ const chatSchema = new Schema<IChat>(
     category: { type: String },
     lastMsgAt: { type: Date, default: Date.now, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 chatSchema.index({ userId: 1, lastMsgAt: -1 });
 chatSchema.index({ lastMsgAt: -1 });
@@ -195,7 +195,7 @@ const messageSchema = new Schema<IMessage>(
       },
     ],
   },
-  { timestamps: { createdAt: true, updatedAt: "editedAt" } }
+  { timestamps: { createdAt: true, updatedAt: "editedAt" } },
 );
 messageSchema.index({ chatId: 1, createdAt: 1 });
 messageSchema.index({ parentMsgId: 1, createdAt: 1 });
@@ -223,7 +223,7 @@ const annotationSchema = new Schema<IAnnotation>(
     startOffset: { type: Number },
     endOffset: { type: Number },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 annotationSchema.index({ messageId: 1, createdAt: 1 });
 annotationSchema.index({ chatId: 1 });
@@ -244,6 +244,7 @@ export interface IPayment extends Document {
   provider?: "razorpay"; // payment gateway used
   subscriptionId?: string; // Razorpay subscription_id
   paymentId?: string; // Razorpay payment_id
+  invoiceId?: string; // Razorpay invoice_id
   // Tax fields
   taxAmount?: number; // Tax collected (in cents)
   taxRate?: number; // Tax rate applied (e.g., 0.0875 for 8.75%)
@@ -275,6 +276,7 @@ const paymentSchema = new Schema<IPayment>(
     provider: { type: String, enum: ["razorpay"] },
     subscriptionId: { type: String },
     paymentId: { type: String },
+    invoiceId: { type: String },
     taxAmount: { type: Number },
     taxRate: { type: Number },
     taxJurisdiction: { type: String },
@@ -289,7 +291,7 @@ const paymentSchema = new Schema<IPayment>(
     },
     raw: { type: Schema.Types.Mixed },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 export const Payment =
   mongoose.models.Payment || mongoose.model<IPayment>("Payment", paymentSchema);
@@ -331,7 +333,7 @@ const usageSchema = new Schema<IUsage>(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 usageSchema.index({ userId: 1, periodStart: -1 });

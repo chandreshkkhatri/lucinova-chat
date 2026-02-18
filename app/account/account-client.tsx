@@ -1,6 +1,21 @@
 "use client";
 
-import { User, CreditCard, Trash2, Receipt, Lock, BarChart3, Crown, Pencil, Loader2, X, Check, Award, Copy, Link2 } from "lucide-react";
+import {
+  User,
+  CreditCard,
+  Trash2,
+  Receipt,
+  Lock,
+  BarChart3,
+  Crown,
+  Pencil,
+  Loader2,
+  X,
+  Check,
+  Award,
+  Copy,
+  Link2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -8,7 +23,11 @@ import { toast } from "sonner";
 
 import { BadgeCard } from "@/components/custom/badge-card";
 import { CountryCodeSelect } from "@/components/custom/country-code-select";
-import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/country-codes";
+import {
+  DEFAULT_COUNTRY_CODE,
+  getCountryByCode,
+  validatePhone,
+} from "@/lib/country-codes";
 
 interface AccountClientProps {
   user: {
@@ -42,10 +61,14 @@ export default function AccountClient({ user }: AccountClientProps) {
   // Phone editing state
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [editPhone, setEditPhone] = useState(user.phone || "");
-  const [editCountryCode, setEditCountryCode] = useState(user.countryCode || DEFAULT_COUNTRY_CODE);
+  const [editCountryCode, setEditCountryCode] = useState(
+    user.countryCode || DEFAULT_COUNTRY_CODE,
+  );
   const [savingPhone, setSavingPhone] = useState(false);
   const [currentPhone, setCurrentPhone] = useState(user.phone || "");
-  const [currentCountryCode, setCurrentCountryCode] = useState(user.countryCode || DEFAULT_COUNTRY_CODE);
+  const [currentCountryCode, setCurrentCountryCode] = useState(
+    user.countryCode || DEFAULT_COUNTRY_CODE,
+  );
 
   // Name editing state
   const [isEditingName, setIsEditingName] = useState(false);
@@ -55,7 +78,7 @@ export default function AccountClient({ user }: AccountClientProps) {
 
   const formatPhoneNumber = (
     value?: string | null,
-    isoCountryCode?: string | null
+    isoCountryCode?: string | null,
   ) => {
     if (!value) return null;
     const digits = value.replace(/\D/g, "");
@@ -69,7 +92,9 @@ export default function AccountClient({ user }: AccountClientProps) {
     const selectedCountry = getCountryByCode(editCountryCode);
 
     if (!validatePhone(digits, editCountryCode)) {
-      toast.error(`Enter a valid phone number for ${selectedCountry?.name || "your country"}`);
+      toast.error(
+        `Enter a valid phone number for ${selectedCountry?.name || "your country"}`,
+      );
       return;
     }
 
@@ -81,7 +106,7 @@ export default function AccountClient({ user }: AccountClientProps) {
         body: JSON.stringify({
           name: currentName,
           phone: digits,
-          countryCode: editCountryCode
+          countryCode: editCountryCode,
         }),
       });
       if (!res.ok) {
@@ -120,7 +145,7 @@ export default function AccountClient({ user }: AccountClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: currentName,
-          deletePhone: true
+          deletePhone: true,
         }),
       });
       if (!res.ok) {
@@ -151,7 +176,11 @@ export default function AccountClient({ user }: AccountClientProps) {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmedName, phone: currentPhone, countryCode: currentCountryCode }),
+        body: JSON.stringify({
+          name: trimmedName,
+          phone: currentPhone,
+          countryCode: currentCountryCode,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -217,7 +246,7 @@ export default function AccountClient({ user }: AccountClientProps) {
   const handleCancelSubscription = async () => {
     if (
       !confirm(
-        "Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period."
+        "Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period.",
       )
     ) {
       return;
@@ -236,7 +265,9 @@ export default function AccountClient({ user }: AccountClientProps) {
         throw new Error(err.error || "Failed to cancel subscription");
       }
 
-      toast.success("Subscription canceled. You will retain access until the end of your billing period.");
+      toast.success(
+        "Subscription canceled. You will retain access until the end of your billing period.",
+      );
       // Refresh to show updated status
       setTimeout(() => router.refresh(), 1500);
     } catch (e: any) {
@@ -378,7 +409,10 @@ export default function AccountClient({ user }: AccountClientProps) {
                           const v = e.target.value.replace(/\D/g, "");
                           if (v.length <= 15) setEditPhone(v);
                         }}
-                        placeholder={getCountryByCode(editCountryCode)?.placeholder || "Phone number"}
+                        placeholder={
+                          getCountryByCode(editCountryCode)?.placeholder ||
+                          "Phone number"
+                        }
                         className="w-32 px-2 py-1 text-sm border border-border rounded bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                         disabled={savingPhone}
                         autoFocus
@@ -446,15 +480,13 @@ export default function AccountClient({ user }: AccountClientProps) {
                         <p className="text-xs text-muted-foreground mt-1">
                           Plan expires{" "}
                           {new Date(user.currentPeriodEnd).toLocaleDateString(
-                            "en-US"
+                            "en-US",
                           )}
                         </p>
                       )}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">
-                      Free Plan
-                    </p>
+                    <p className="text-muted-foreground">Free Plan</p>
                   )}
                 </div>
               </div>
@@ -479,10 +511,11 @@ export default function AccountClient({ user }: AccountClientProps) {
                   </p>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${user.isPro
-                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                    }`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    user.isPro
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                  }`}
                 >
                   {user.isPro ? "Pro" : "Free"}
                 </span>
@@ -498,11 +531,14 @@ export default function AccountClient({ user }: AccountClientProps) {
                           : "Next billing date"}
                       </p>
                       <p className="text-foreground font-medium">
-                        {new Date(user.currentPeriodEnd).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        {new Date(user.currentPeriodEnd).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
                       </p>
                     </div>
                     {user.subscriptionStatus === "canceled" && (
@@ -514,39 +550,42 @@ export default function AccountClient({ user }: AccountClientProps) {
                 </div>
               )}
 
-              {user.isPro && user.subscriptionStatus !== "canceled" && user.subscriptionId && (
-                <div className="border-t border-border pt-6">
-                  <h4 className="text-sm font-medium text-foreground mb-2">
-                    Cancel Subscription
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    If you cancel, you will still have access to Pro features until the
-                    end of your current billing period.
-                  </p>
-                  <button
-                    onClick={handleCancelSubscription}
-                    disabled={isCancelling}
-                    className="bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    {isCancelling ? (
-                      <>
-                        <Loader2 className="inline mr-2 size-4 animate-spin" />
-                        Canceling...
-                      </>
-                    ) : (
-                      "Cancel Subscription"
-                    )}
-                  </button>
-                </div>
-              )}
+              {user.isPro &&
+                user.subscriptionStatus !== "canceled" &&
+                user.subscriptionId && (
+                  <div className="border-t border-border pt-6">
+                    <h4 className="text-sm font-medium text-foreground mb-2">
+                      Cancel Subscription
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      If you cancel, you will still have access to Pro features
+                      until the end of your current billing period.
+                    </p>
+                    <button
+                      onClick={handleCancelSubscription}
+                      disabled={isCancelling}
+                      className="bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      {isCancelling ? (
+                        <>
+                          <Loader2 className="inline mr-2 size-4 animate-spin" />
+                          Canceling...
+                        </>
+                      ) : (
+                        "Cancel Subscription"
+                      )}
+                    </button>
+                  </div>
+                )}
 
               {!user.isPro && (
                 <div className="border-t border-border pt-6">
                   <p className="text-muted-foreground mb-4">
-                    Upgrade to Pro for 5,000 units per month and premium features.
+                    Upgrade to Pro for 5,000 units per month and premium
+                    features.
                   </p>
                   <button
-                    onClick={() => router.push("/beta/pricing")}
+                    onClick={() => router.push("/pricing")}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium transition-colors"
                   >
                     Upgrade to Pro
@@ -557,10 +596,11 @@ export default function AccountClient({ user }: AccountClientProps) {
               {user.isPro && user.subscriptionStatus === "canceled" && (
                 <div className="border-t border-border pt-6">
                   <p className="text-muted-foreground mb-4">
-                    Your subscription has been canceled. Resubscribe to continue with Pro after your current period ends.
+                    Your subscription has been canceled. Resubscribe to continue
+                    with Pro after your current period ends.
                   </p>
                   <button
-                    onClick={() => router.push("/beta/pricing")}
+                    onClick={() => router.push("/pricing")}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium transition-colors"
                   >
                     Resubscribe
@@ -587,7 +627,8 @@ export default function AccountClient({ user }: AccountClientProps) {
                   No Badges Yet
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  Keep using Lucidity to earn badges and unlock special benefits!
+                  Keep using Lucidity to earn badges and unlock special
+                  benefits!
                 </p>
               </div>
             ) : (
@@ -682,12 +723,13 @@ export default function AccountClient({ user }: AccountClientProps) {
                             !item.disabled && setActiveSection(item.id)
                           }
                           disabled={item.disabled}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${activeSection === item.id
-                            ? "bg-primary/10 text-primary"
-                            : item.disabled
-                              ? "text-muted-foreground/50 cursor-not-allowed"
-                              : "text-foreground hover:bg-muted"
-                            }`}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                            activeSection === item.id
+                              ? "bg-primary/10 text-primary"
+                              : item.disabled
+                                ? "text-muted-foreground/50 cursor-not-allowed"
+                                : "text-foreground hover:bg-muted"
+                          }`}
                         >
                           <Icon className="size-5" />
                           <span className="text-sm font-medium">
@@ -797,9 +839,7 @@ function SecuritySection() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-foreground mb-6">
-        Security
-      </h2>
+      <h2 className="text-2xl font-semibold text-foreground mb-6">Security</h2>
       <div className="bg-muted rounded-lg p-6">
         <h3 className="text-lg font-medium text-foreground mb-4">
           Change Password
@@ -964,10 +1004,11 @@ function UsageSection({ isPro }: { isPro: boolean }) {
             </p>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${isPro
-              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-              : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-              }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              isPro
+                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+            }`}
           >
             {isPro ? "Pro" : "Free"} Plan
           </span>
@@ -985,12 +1026,13 @@ function UsageSection({ isPro }: { isPro: boolean }) {
           </div>
           <div className="h-3 bg-card rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${current.percentUsed >= 100
-                ? "bg-red-500"
-                : current.percentUsed >= 80
-                  ? "bg-amber-500"
-                  : "bg-primary"
-                }`}
+              className={`h-full rounded-full transition-all ${
+                current.percentUsed >= 100
+                  ? "bg-red-500"
+                  : current.percentUsed >= 80
+                    ? "bg-amber-500"
+                    : "bg-primary"
+              }`}
               style={{ width: `${Math.min(100, current.percentUsed)}%` }}
             />
           </div>
@@ -1010,8 +1052,8 @@ function UsageSection({ isPro }: { isPro: boolean }) {
                 0,
                 Math.ceil(
                   (new Date(current.periodEnd).getTime() - Date.now()) /
-                  (1000 * 60 * 60 * 24)
-                )
+                    (1000 * 60 * 60 * 24),
+                ),
               )}{" "}
               days
             </p>
@@ -1089,9 +1131,7 @@ function BillingHistory({
   if (!payments || payments.length === 0) {
     return (
       <div className="bg-muted rounded-lg p-6">
-        <p className="text-muted-foreground">
-          No billing history yet.
-        </p>
+        <p className="text-muted-foreground">No billing history yet.</p>
       </div>
     );
   }
@@ -1120,6 +1160,9 @@ function BillingHistory({
               <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Environment
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Invoice
+              </th>
             </tr>
           </thead>
           <tbody className="bg-card divide-y divide-border">
@@ -1127,10 +1170,7 @@ function BillingHistory({
               const date = p.createdAt ? new Date(p.createdAt) : null;
               const amount = Number(p.amount ?? 0);
               return (
-                <tr
-                  key={p.orderId}
-                  className="hover:bg-muted"
-                >
+                <tr key={p.orderId} className="hover:bg-muted">
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                     {date ? date.toLocaleString("en-IN") : "-"}
                   </td>
@@ -1141,23 +1181,69 @@ function BillingHistory({
                     {p.planName || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                    ₹{amount.toLocaleString("en-IN")}
+                    {p.currency === "USD" ? "$" : "₹"}
+                    {amount.toLocaleString(
+                      p.currency === "USD" ? "en-US" : "en-IN",
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-xs">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${String(p.status).toUpperCase().includes("SUCCESS") ||
+                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium ${
+                        String(p.status).toUpperCase().includes("SUCCESS") ||
                         String(p.status).toUpperCase().includes("PAID")
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                        : String(p.status).toUpperCase().includes("FAILED")
-                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                          : "bg-muted text-muted-foreground"
-                        }`}
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          : String(p.status).toUpperCase().includes("FAILED")
+                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                            : "bg-muted text-muted-foreground"
+                      }`}
                     >
                       {String(p.status).replaceAll("_", " ")}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                     {p.environment || "-"}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                    {p.invoiceId || p.paymentId ? (
+                      <button
+                        onClick={async () => {
+                          const id = p.invoiceId || p.paymentId;
+                          const btn = document.getElementById(`btn-inv-${id}`);
+                          if (btn)
+                            btn.innerHTML =
+                              '<span class="animate-spin inline-block size-3 border-2 border-current border-t-transparent rounded-full mr-1"></span>';
+                          try {
+                            const res = await fetch(
+                              `/api/payment/invoice/${id}`,
+                            );
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error);
+                            if (data.url) window.open(data.url, "_blank");
+                            else toast.error("Invoice URL not available");
+                          } catch (e: any) {
+                            toast.error(e.message || "Failed to load invoice");
+                          } finally {
+                            if (btn)
+                              btn.innerHTML =
+                                '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt size-4 mr-1"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6"/><path d="M16 12H8"/><path d="M13 16H8"/></svg> Invoice';
+                          }
+                        }}
+                        id={`btn-inv-${p.invoiceId || p.paymentId}`}
+                        className="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors"
+                      >
+                        <Receipt className="size-4 mr-1" />
+                        Invoice
+                      </button>
+                    ) : (
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs italic">
+                          Generating...
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          Usually takes 2-5 mins
+                        </span>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
@@ -1224,8 +1310,8 @@ function ReferralSection() {
 
   const progressPercent = stats.nextBadge
     ? ((stats.nextBadge.referralsNeeded - stats.nextBadge.referralsRemaining) /
-      stats.nextBadge.referralsNeeded) *
-    100
+        stats.nextBadge.referralsNeeded) *
+      100
     : 100;
 
   return (
@@ -1236,8 +1322,8 @@ function ReferralSection() {
       </h3>
       <div className="bg-muted rounded-lg p-6 space-y-4">
         <p className="text-sm text-muted-foreground">
-          Share your referral link with friends. They get 50% off their first Pro
-          month, and you earn badges with free Pro months!
+          Share your referral link with friends. They get 50% off their first
+          Pro month, and you earn badges with free Pro months!
         </p>
 
         {/* Referral Link */}
@@ -1252,7 +1338,11 @@ function ReferralSection() {
             onClick={handleCopy}
             className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors shrink-0"
           >
-            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+            {copied ? (
+              <Check className="size-4" />
+            ) : (
+              <Copy className="size-4" />
+            )}
             {copied ? "Copied" : "Copy"}
           </button>
         </div>

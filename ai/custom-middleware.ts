@@ -1,5 +1,5 @@
 import { LanguageModelMiddleware } from "ai";
 
 export const customMiddleware: LanguageModelMiddleware = {
-      specificationVersion: "v3",
+  specificationVersion: "v3",
 };

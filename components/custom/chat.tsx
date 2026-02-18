@@ -1,21 +1,23 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { TextStreamChatTransport, UIMessage } from "ai";
-import { ChevronUp } from "lucide-react";
+import { UIMessage } from "ai";
+import { ChevronUp, MessageSquare, Grid, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
 import type { NodeType } from "@/lib/message-to-nodes";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Canvas } from "./canvas";
+import { ChatList } from "./chat-list";
 import type { SavedAnnotation } from "./enhanced-message";
 import { RightSidebar } from "./right-sidebar";
 import { useSidebar } from "./sidebar-context";
 import { Attachment } from "./types";
 
-import type { FileUIPart } from "ai";
+// import type { FileUIPart } from "ai";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -39,7 +41,7 @@ export function Chat({
   isUserPro = false,
   isGuest = false,
   selectedText,
-  defaultModelId = "gemini-3.0-flash",
+  defaultModelId = "gemini-3-flash-preview",
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -63,7 +65,10 @@ export function Chat({
   const [isMounted, setIsMounted] = useState(false);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
   const [selectedNode, setSelectedNode] = useState<{
-    id: string; content: string; role: string; type: string;
+    id: string;
+    content: string;
+    role: string;
+    type: string;
   } | null>(null);
 
   // Desktop sidebar resize state
@@ -72,7 +77,8 @@ export function Chat({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Mobile bottom panel state
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(DEFAULT_BOTTOM_PANEL);
+  const [bottomPanelHeight, setBottomPanelHeight] =
+    useState(DEFAULT_BOTTOM_PANEL);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
   const [isBottomPanelCollapsed, setIsBottomPanelCollapsed] = useState(false);
   const mobileContainerRef = useRef<HTMLDivElement>(null);
@@ -86,59 +92,68 @@ export function Chat({
     periodEnd: Date | string;
   } | null>(null);
 
+  // Feature Flag & View Mode Check
+  // Default to true if flag is missing/true, false if explicitly "false"
+  const isToggleEnabled =
+    process.env.NEXT_PUBLIC_FEATURE_FLAG_CANVAS_CHAT_TOGGLE !== "false";
+
+  const [viewMode, setViewMode] = useState<"chat" | "canvas">("chat");
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const { messages, sendMessage, status, stop, setMessages, regenerate } = useChat({
-    id: chatIdForSubmit,
-    transport: new TextStreamChatTransport({
+  const { messages, sendMessage, status, stop, setMessages, regenerate } =
+    useChat({
+      id: chatIdForSubmit,
       api: isThread ? "/api/thread" : "/api/chat",
-    }),
-    messages: initialMessages,
-    onFinish: () => {
-      const url = `/chat/${chatIdForSubmit}`;
-      window.history.replaceState({}, "", url);
-      onFinish?.();
+      messages: initialMessages as unknown as any,
+      onFinish: () => {
+        const url = `/chat/${chatIdForSubmit}`;
+        window.history.replaceState({}, "", url);
+        onFinish?.();
 
-      // Revalidate history cache to pick up server-generated title
-      setTimeout(() => {
-        globalMutate("/api/history");
-      }, 3000);
-    },
-    onError: (error) => {
-      console.error("Chat error:", error);
-      try {
-        const errorText = error.message || "";
-        if (errorText.includes("usage_limit_exceeded") || errorText.includes("429")) {
-          fetch("/api/usage")
-            .then((res) => res.json())
-            .then((usageData) => {
-              if (usageData.current) {
+        // Revalidate history cache to pick up server-generated title
+        setTimeout(() => {
+          globalMutate("/api/history");
+        }, 3000);
+      },
+      onError: (error: any) => {
+        console.error("Chat error:", error);
+        try {
+          const errorText = error.message || "";
+          if (
+            errorText.includes("usage_limit_exceeded") ||
+            errorText.includes("429")
+          ) {
+            fetch("/api/usage")
+              .then((res) => res.json())
+              .then((usageData) => {
+                if (usageData.current) {
+                  setUsageLimitInfo({
+                    exceeded: true,
+                    isPro: usageData.isPro,
+                    currentUsage: usageData.current.unitsUsed,
+                    limit: usageData.current.limit,
+                    periodEnd: usageData.current.periodEnd,
+                  });
+                }
+              })
+              .catch(() => {
                 setUsageLimitInfo({
                   exceeded: true,
-                  isPro: usageData.isPro,
-                  currentUsage: usageData.current.unitsUsed,
-                  limit: usageData.current.limit,
-                  periodEnd: usageData.current.periodEnd,
+                  isPro: isUserPro,
+                  currentUsage: 0,
+                  limit: 0,
+                  periodEnd: new Date(),
                 });
-              }
-            })
-            .catch(() => {
-              setUsageLimitInfo({
-                exceeded: true,
-                isPro: isUserPro,
-                currentUsage: 0,
-                limit: 0,
-                periodEnd: new Date(),
               });
-            });
+          }
+        } catch {
+          // Ignore parsing errors
         }
-      } catch {
-        // Ignore parsing errors
-      }
-    },
-  });
+      },
+    } as any);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -165,12 +180,12 @@ export function Chat({
       }
     }
 
-    const fileParts: FileUIPart[] = attachments.map((a) => ({
+    const fileParts: any[] = attachments.map((a) => ({
       type: "file",
       mediaType: a.contentType ?? "",
       filename: a.name ?? "attachment",
       url: a.url,
-    } as unknown as FileUIPart));
+    }));
 
     sendMessage(
       {
@@ -184,7 +199,7 @@ export function Chat({
           ...(selectedProjectId && { projectId: selectedProjectId }),
           ...(isThread && { parentMessageId, mainChatId, selectedText }),
         },
-      }
+      },
     );
 
     setInput("");
@@ -193,7 +208,7 @@ export function Chat({
 
   useEffect(() => {
     if (messages.length === 0 && initialMessages.length > 0) {
-      setMessages(initialMessages);
+      setMessages(initialMessages as unknown as any);
     }
   }, [initialMessages, messages.length, setMessages]);
 
@@ -221,26 +236,34 @@ export function Chat({
   // Fetch annotations for this chat
   const { data: annotationsData, mutate: mutateAnnotations } = useSWR(
     !isThread ? `/api/annotations?chatId=${id}` : null,
-    fetcher
+    fetcher,
   );
 
   const annotations: SavedAnnotation[] = annotationsData?.annotations || [];
 
   // Group annotations by messageId
-  const annotationsByMessage = annotations.reduce((acc, ann) => {
-    if (!acc[ann.messageId]) {
-      acc[ann.messageId] = [];
-    }
-    acc[ann.messageId].push(ann);
-    return acc;
-  }, {} as Record<string, SavedAnnotation[]>);
+  const annotationsByMessage = annotations.reduce(
+    (acc, ann) => {
+      if (!acc[ann.messageId]) {
+        acc[ann.messageId] = [];
+      }
+      acc[ann.messageId].push(ann);
+      return acc;
+    },
+    {} as Record<string, SavedAnnotation[]>,
+  );
 
   const handleStartThread = (messageId: string, selectedText?: string) => {
     const parentMessage = messages.find((msg) => msg.id === messageId);
     if (parentMessage && !isThread) {
-      setActiveThread({ parentMessage, selectedText });
+      setActiveThread({
+        parentMessage: parentMessage as unknown as any,
+        selectedText,
+      });
       setActiveAnnotation(null);
       setPendingAnnotation(null);
+      // Auto-switch to chat mode if in canvas? No, keep context.
+      // But if user wants to see thread sidebar in Chat mode, it should be visible.
     }
   };
 
@@ -257,7 +280,7 @@ export function Chat({
       setActiveThread(null);
       setActiveAnnotation(null);
     },
-    []
+    [],
   );
 
   const handleOpenAnnotation = useCallback(
@@ -266,7 +289,7 @@ export function Chat({
       setActiveThread(null);
       setPendingAnnotation(null);
     },
-    []
+    [],
   );
 
   const handleCloseAnnotation = () => {
@@ -319,7 +342,7 @@ export function Chat({
       setPendingAnnotation(null);
       mutateAnnotations();
     },
-    [mutateAnnotations]
+    [mutateAnnotations],
   );
 
   // Edit last user message and regenerate
@@ -339,7 +362,7 @@ export function Chat({
 
       regenerate();
     },
-    [messages, setMessages, regenerate]
+    [messages, setMessages, regenerate],
   );
 
   const handleRegenerate = useCallback(() => {
@@ -356,7 +379,7 @@ export function Chat({
       const { width } = container.getBoundingClientRect();
       const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, width - MIN_MAIN_WIDTH);
       setSidebarWidth((prev) =>
-        Math.min(Math.max(prev, MIN_SIDEBAR_WIDTH), maxWidth)
+        Math.min(Math.max(prev, MIN_SIDEBAR_WIDTH), maxWidth),
       );
     };
 
@@ -373,10 +396,13 @@ export function Chat({
       if (!container) return;
       const bounds = container.getBoundingClientRect();
       const nextWidth = bounds.right - event.clientX;
-      const maxWidth = Math.min(MAX_SIDEBAR_WIDTH, bounds.width - MIN_MAIN_WIDTH);
+      const maxWidth = Math.min(
+        MAX_SIDEBAR_WIDTH,
+        bounds.width - MIN_MAIN_WIDTH,
+      );
       const clampedWidth = Math.min(
         Math.max(nextWidth, MIN_SIDEBAR_WIDTH),
-        maxWidth
+        maxWidth,
       );
       setSidebarWidth(clampedWidth);
     };
@@ -410,7 +436,7 @@ export function Chat({
       const nextHeight = bounds.bottom - clientY;
       const clampedHeight = Math.min(
         Math.max(nextHeight, MIN_BOTTOM_PANEL),
-        maxHeight
+        maxHeight,
       );
       setBottomPanelHeight(clampedHeight);
       setIsBottomPanelCollapsed(clampedHeight <= MIN_BOTTOM_PANEL);
@@ -454,7 +480,7 @@ export function Chat({
 
   // Shared Canvas props
   const canvasProps = {
-    messages,
+    messages: messages as unknown as any,
     status: status as "idle" | "streaming" | "submitted" | "error",
     chatId: id,
     annotationsByMessage,
@@ -475,6 +501,28 @@ export function Chat({
     onNodeSelect: setSelectedNode,
   };
 
+  // Shared ChatList props
+  const chatListProps = {
+    messages: messages as unknown as any,
+    status: status as "idle" | "streaming" | "submitted" | "error",
+    chatId: id,
+    annotationsByMessage,
+    onStartThread: handleStartThread,
+    onAskLucinova: handleAskLucinova,
+    onOpenAnnotation: handleOpenAnnotation,
+    setInput,
+    input,
+    handleSubmit,
+    stop,
+    attachments,
+    setAttachments,
+    sendMessage,
+    isGuest,
+    usageLimitInfo,
+    selectedNodeType,
+    setSelectedNodeType,
+  };
+
   // For threads, render compact layout with Canvas + inline input (no right sidebar)
   if (isThread) {
     return (
@@ -493,7 +541,8 @@ export function Chat({
     );
   }
 
-  const showMobileOverlay = activeThread || activeAnnotation || pendingAnnotation;
+  const showMobileOverlay =
+    activeThread || activeAnnotation || pendingAnnotation;
 
   // Shared RightSidebar props
   const rightSidebarProps = {
@@ -504,7 +553,7 @@ export function Chat({
     stop,
     attachments,
     setAttachments,
-    messages,
+    messages: messages as unknown as any,
     sendMessage,
     selectedNodeType,
     setSelectedNodeType,
@@ -526,80 +575,121 @@ export function Chat({
     selectedNode,
   };
 
-  // Main chat layout
+  // Determine if Right Sidebar should be visible in Chat Mode
+  // We only show it if there's an active context (thread/annotation)
+  const isRightSidebarVisible =
+    viewMode === "canvas" ||
+    !!activeThread ||
+    !!activeAnnotation ||
+    !!pendingAnnotation;
+
   return (
-    <div
-      ref={containerRef}
-      className={`flex h-full bg-paper ${className}`}
-    >
-      {/* Mobile: Vertical split (Canvas top + bottom panel) */}
-      <div ref={mobileContainerRef} className="flex flex-col flex-1 min-w-0 lg:hidden h-full">
-        {/* Canvas fills remaining space */}
-        <div className="flex-1 min-h-0">
-          <Canvas {...canvasProps} isThread={false} />
+    <div ref={containerRef} className={`flex h-full bg-paper ${className}`}>
+      {/* View Toggle (Top Center) */}
+      {isToggleEnabled && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm p-1">
+          <Tabs
+            value={viewMode}
+            onValueChange={(v) => setViewMode(v as any)}
+            className="w-[180px]"
+          >
+            <TabsList className="grid w-full grid-cols-2 h-8">
+              <TabsTrigger value="chat" className="text-xs">
+                <MessageSquare className="size-3.5 mr-1.5" />
+                Chat
+              </TabsTrigger>
+              <TabsTrigger value="canvas" className="text-xs">
+                <Grid className="size-3.5 mr-1.5" />
+                Canvas
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
+      )}
 
-        {/* Drag handle */}
-        <div
-          className="shrink-0 flex items-center justify-center border-t border-border bg-muted/50 cursor-row-resize touch-none"
-          style={{ height: 24 }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            setIsBottomResizing(true);
-          }}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            setIsBottomResizing(true);
-          }}
-          onClick={toggleBottomPanel}
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize chat panel"
-        >
-          <ChevronUp
-            className={`size-4 text-muted-foreground transition-transform duration-200 ${isBottomPanelCollapsed ? "rotate-180" : ""
-              }`}
-          />
-        </div>
-
-        {/* Bottom panel — RightSidebar */}
-        <div
-          className="shrink-0 overflow-hidden border-t border-border"
-          style={{ height: bottomPanelHeight }}
-        >
-          <RightSidebar {...rightSidebarProps} />
+      {/* Main Content Area */}
+      <div
+        className={`flex flex-col flex-1 min-w-0 h-full relative z-0 ${viewMode === "chat" ? "lg:flex" : ""}`}
+      >
+        <div className="flex-1 h-full">
+          {/* If toggle is enabled AND mode is canvas, show Canvas. Otherwise (flag off or mode chat), show ChatList. */}
+          {isToggleEnabled && viewMode === "canvas" ? (
+            <Canvas {...canvasProps} isThread={false} />
+          ) : (
+            <ChatList {...chatListProps} />
+          )}
         </div>
       </div>
 
-      {/* Desktop: Horizontal layout (Canvas + resize + right sidebar) */}
-      <div className="hidden lg:flex flex-1 min-w-0 h-full">
-        {/* Canvas */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <Canvas {...canvasProps} isThread={false} />
-        </div>
+      {/* Desktop Right Sidebar */}
+      {/* In Chat Mode, only show if thread/annotation active */}
+      <div
+        className={`hidden lg:flex transition-all duration-300 ${!isRightSidebarVisible ? "w-0 border-none" : ""}`}
+        style={
+          isRightSidebarVisible ? { display: "flex" } : { display: "none" }
+        }
+      >
+        {isRightSidebarVisible && (
+          <>
+            <div
+              className="w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70 relative z-10"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                setIsResizing(true);
+              }}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+            >
+              <div className="w-px bg-border" />
+              <div className="flex-1 hover:bg-muted/60 transition-colors" />
+            </div>
+            <div
+              className="h-full min-w-0 overflow-hidden border-l border-border relative z-0"
+              style={{ width: sidebarWidth }}
+            >
+              <RightSidebar {...rightSidebarProps} />
+            </div>
+          </>
+        )}
+      </div>
 
-        {/* Resize handle */}
-        <div
-          className="flex w-3 shrink-0 items-stretch cursor-col-resize bg-muted/70"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            setIsResizing(true);
-          }}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize sidebar"
-        >
-          <div className="w-px bg-border" />
-          <div className="flex-1 hover:bg-muted/60 transition-colors" />
-        </div>
+      {/* Mobile Layout (simplified for now, mostly matching desktop logic but stacked/overlay) */}
+      {/* If toggle disabled: Chat only mode. Left sidebar (Canvas) logic not needed. */}
+      {/* If toggle enabled: */}
+      {/*   If Canvas mode: Show bottom panel (Right Sidebar) */}
+      {/*   If Chat mode: No bottom panel needed (ChatList has input) */}
 
-        {/* Right Sidebar */}
-        <div
-          className="h-full min-w-0 overflow-hidden border-l border-border"
-          style={{ width: sidebarWidth }}
-        >
-          <RightSidebar {...rightSidebarProps} />
-        </div>
+      <div className="lg:hidden fixed inset-0 pointer-events-none z-50">
+        {/* The bottom panel for Canvas on Mobile needs to be rendered if in Canvas mode */}
+        {isToggleEnabled && viewMode === "canvas" && (
+          <div
+            className="pointer-events-auto absolute inset-x-0 bottom-0 bg-background border-t border-border shadow-lg flex flex-col"
+            style={{ height: bottomPanelHeight }}
+          >
+            <div
+              className="shrink-0 flex items-center justify-center border-b border-border bg-muted/50 cursor-row-resize touch-none h-6"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsBottomResizing(true);
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                setIsBottomResizing(true);
+              }}
+              onClick={toggleBottomPanel}
+            >
+              <ChevronUp
+                className={`size-4 text-muted-foreground transition-transform duration-200 ${isBottomPanelCollapsed ? "rotate-180" : ""}`}
+              />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <RightSidebar {...rightSidebarProps} />
+            </div>
+          </div>
+        )}
+
+        {/* If Chat mode, Right Sidebar should only show as overlay if thread active */}
       </div>
 
       {/* Mobile: Full screen overlay for thread/annotation */}
