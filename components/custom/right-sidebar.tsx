@@ -24,10 +24,6 @@ interface RightSidebarProps {
   messages: Message[];
   sendMessage: (message: { text: string; files?: any[]; options?: { body?: any } }) => Promise<void>;
 
-  // Node type selection
-  selectedNodeType: NodeType;
-  setSelectedNodeType: (type: NodeType) => void;
-
   // Sidebar content state
   activeThread: { parentMessage: Message; selectedText?: string } | null;
   activeAnnotation: { id: string; selectedText: string; initialMessage?: string } | null;
@@ -56,7 +52,6 @@ interface RightSidebarProps {
     limit: number;
     periodEnd: Date | string;
   } | null;
-  selectedNode: { id: string; content: string; role: string; type: string } | null;
 }
 
 export function RightSidebar({
@@ -69,8 +64,6 @@ export function RightSidebar({
   setAttachments,
   messages,
   sendMessage,
-  selectedNodeType,
-  setSelectedNodeType,
   activeThread,
   activeAnnotation,
   pendingAnnotation,
@@ -86,17 +79,17 @@ export function RightSidebar({
   isUserPro,
   isGuest,
   usageLimitInfo,
-  selectedNode,
 }: RightSidebarProps) {
   const hasThread = !!activeThread;
   const hasAnnotation = !!(activeAnnotation || pendingAnnotation);
   const hasMultipleTabs = hasThread || hasAnnotation;
 
   // Tab state: auto-switch when views open, allow manual switching
-  const [activeTab, setActiveTab] = useState<string | null>(() => {
+  // Initialize with empty string to avoid "null" value warning in Tabs
+  const [activeTab, setActiveTab] = useState<string>(() => {
     if (activeAnnotation || pendingAnnotation) return "annotation";
     if (activeThread) return "thread";
-    return null;
+    return "";
   });
 
   useEffect(() => {
@@ -105,7 +98,7 @@ export function RightSidebar({
     } else if (activeThread) {
       setActiveTab("thread");
     } else {
-      setActiveTab(null);
+      setActiveTab("");
     }
   }, [activeAnnotation, pendingAnnotation, activeThread]);
 

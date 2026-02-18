@@ -63,8 +63,6 @@ export function Chat({
   // Model selection state
   const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
   const [input, setInput] = useState("");
-  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
-  const [selectedNode, setSelectedNode] = useState<{ id: string; content: string; role: string; type: string } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -424,8 +422,6 @@ export function Chat({
     isGuest,
     usageLimitInfo,
     onRegenerate: handleRegenerate,
-    selectedNodeType,
-    setSelectedNodeType,
     selectedModel,
     setSelectedModel,
     isUserPro,
@@ -497,7 +493,6 @@ export function Chat({
               onAnnotationCreated={handleAnnotationCreated}
               onAnnotationDeleted={handleAnnotationDeleted}
               isMounted={true}
-              selectedNode={selectedNode}
             />
           </div>
         )}
@@ -516,7 +511,6 @@ export function Chat({
               onAnnotationCreated={handleAnnotationCreated}
               onAnnotationDeleted={handleAnnotationDeleted}
               isMounted={true}
-              selectedNode={selectedNode}
             />
           </div>
         )}
