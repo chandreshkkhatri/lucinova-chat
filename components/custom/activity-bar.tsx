@@ -1,6 +1,6 @@
 "use client";
 
-import cx from "classnames";
+import cx from 'clsx';
 import { FolderKanban, Route, Search, Settings } from "lucide-react";
 import Link from "next/link";
 

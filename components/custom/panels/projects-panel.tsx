@@ -1,7 +1,7 @@
 "use client";
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import cx from "classnames";
+import cx from 'clsx';
 import { FolderKanban, Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";

@@ -1,6 +1,6 @@
 "use client";
 
-import cx from "classnames";
+import cx from 'clsx';
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { User } from "next-auth";

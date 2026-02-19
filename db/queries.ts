@@ -16,8 +16,24 @@ export { Chat } from "./models";
 /**
  * Check if user's subscription has expired and update their status if so.
  * Returns true if the user was updated.
+ *
+ * Uses a module-level TTL cache so the check (and potential DB write) runs
+ * at most once per SUBSCRIPTION_CHECK_INTERVAL_MS per user, rather than on
+ * every authenticated API request.
  */
+const SUBSCRIPTION_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const subscriptionCheckCache = new Map<string, number>(); // userId -> lastCheckedAt (ms)
+
 async function checkAndExpireSubscription(userDoc: any): Promise<boolean> {
+  const userId = userDoc._id?.toString();
+  if (userId) {
+    const lastChecked = subscriptionCheckCache.get(userId) ?? 0;
+    if (Date.now() - lastChecked < SUBSCRIPTION_CHECK_INTERVAL_MS) {
+      return false; // Skip: checked recently
+    }
+    subscriptionCheckCache.set(userId, Date.now());
+  }
+
   const now = new Date();
   const currentPeriodEnd = userDoc.currentPeriodEnd;
 
