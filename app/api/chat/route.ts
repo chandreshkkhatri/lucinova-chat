@@ -1,6 +1,6 @@
-import { googleClient, DEFAULT_MODEL_ID, googleModels } from "@/ai";
 import { type NextRequest } from "next/server";
-import { appConfig } from "@/lib/config";
+
+import { googleClient, DEFAULT_MODEL_ID, googleModels } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Chat } from "@/db/models";
@@ -15,7 +15,8 @@ import {
   getUserByEmail,
   updateChatProject,
 } from "@/db/queries";
-import { checkUsageLimit, recordUsage } from "@/lib/usage-service";
+import { appConfig } from "@/lib/config";
+import { checkUsageLimit } from "@/lib/usage-service";
 
 // Local compatibility types
 interface UIMessage {
@@ -31,6 +32,19 @@ interface UIMessage {
 
 // Configure runtime
 export const maxDuration = 60; // 60 seconds
+
+// Module-level cache for the AI bot user ID — fetched once, reused across requests
+let cachedAiBotId: string | null = null;
+async function getAiBotId(): Promise<string> {
+  if (cachedAiBotId) return cachedAiBotId;
+  let aiUser = await getUserByEmail("ai@assistant.local");
+  if (!aiUser) {
+    aiUser = await createUser("ai@assistant.local", undefined, "AI Assistant", undefined, true);
+  }
+  const id = (aiUser as any)._id.toString() as string;
+  cachedAiBotId = id;
+  return id;
+}
 
 /**
  * Convert messages to Google GenAI Content format.
@@ -173,13 +187,10 @@ export async function POST(req: NextRequest) {
     // Ensure Chat Persistence
     chat = await getChatById({ id });
     if (!chat) {
-      let aiUser = await getUserByEmail("ai@assistant.local");
-      if (!aiUser) {
-        aiUser = await createUser("ai@assistant.local", undefined, "AI Assistant", undefined, true);
-      }
+      const aiBotId = await getAiBotId();
       chat = await createChat(
         userId,
-        (aiUser as any)._id.toString(),
+        aiBotId,
         "New Chat",
         id,
         validatedProjectId
@@ -250,43 +261,21 @@ export async function POST(req: NextRequest) {
         }
         
         // --- Post-Generation Logic (Persistence & background tasks) ---
-        if (!isGuest && userId && fullResponseText) {
-          // Record Usage (Approximate for now, or usage metadata from chunk?)
-          // Google Stream chunks might contain usageMetadata.
-          // Note: usageMetadata is typically in the final chunk or aggregated result. 
-          // For now, we'll estimate or check if we can access it from response object or final chunk.
-          // @google/genai stream iterator might yield objects with usageMetadata.
-          // Let's defer exact usage for now or implement estimation later.
-          
-          if (currentUser) {
-             // Mock usage for now or implement token counting logic if critical
-             // await recordUsage(...) 
-          }
-
+        if (!isGuest && userId && fullResponseText && chat) {
           // Persist AI Message
-          const currentChat = await getChatById({ id });
-          if (currentChat) {
-             await createMessage({
-                chatId: id,
-                senderId: (currentChat as any).aiId,
-                body: fullResponseText
-             });
-             
-             // Title Generation
-             if (messages.length === 1) { // First exchange
-                 const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
-                 const title = await generateSimpleText(googleModels.fast, 
-                   `Summarize into title (<5 words), no markdown:\nUser: ${lastUserText}\nAI: ${fullResponseText}`
-                 );
-                 if (title) await Chat.findByIdAndUpdate(id, { title: title.trim() });
-             }
-             
-             // Summary Generation (logic simplified)
-             const chatProjectId = (currentChat as any).projectId?.toString();
-             if (chatProjectId && (messages.length + 1) >= 4) {
-                 // Implement summary logic if needed, reuse existing logic adapted
-                 // For brevity in this refactor, omitting complex summary logic unless critical
-             }
+          await createMessage({
+            chatId: id,
+            senderId: (chat as any).aiId,
+            body: fullResponseText
+          });
+
+          // Title Generation (first exchange only)
+          if (messages.length === 1) {
+            const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
+            const title = await generateSimpleText(googleModels.fast,
+              `Summarize into title (<5 words), no markdown:\nUser: ${lastUserText}\nAI: ${fullResponseText}`
+            );
+            if (title) await Chat.findByIdAndUpdate(id, { title: title.trim() });
           }
         }
 

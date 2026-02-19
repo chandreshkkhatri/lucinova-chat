@@ -1,9 +1,16 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import React, { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { MermaidRenderer } from "./mermaid-renderer";
+const MermaidRenderer = dynamic(
+  () => import("./mermaid-renderer").then((mod) => mod.MermaidRenderer),
+  {
+    loading: () => <div className="p-4 bg-muted rounded-lg animate-pulse h-32" />,
+    ssr: false,
+  }
+);
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const components = {

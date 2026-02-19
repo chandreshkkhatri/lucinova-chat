@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquareText } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState, RefObject } from "react";
 
 import { Message } from "@/lib/chat-utils";
 
@@ -23,7 +23,7 @@ interface EnhancedMessageProps {
   onOpenAnnotation?: (annotationId: string, selectedText: string) => void;
 }
 
-export function EnhancedMessage({
+export const EnhancedMessage = memo(function EnhancedMessage({
   message,
   annotations = [],
   onAskLucinova,
@@ -217,7 +217,7 @@ export function EnhancedMessage({
       )}
     </div>
   );
-}
+});
 
 // Sub-component to handle rendering of saved annotations
 function SavedAnnotationsOverlay({
@@ -226,7 +226,7 @@ function SavedAnnotationsOverlay({
   onOpenAnnotation,
 }: {
   annotations: SavedAnnotation[];
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement>;
   onOpenAnnotation?: (id: string, text: string) => void;
 }) {
   const [annotationRects, setAnnotationRects] = useState<

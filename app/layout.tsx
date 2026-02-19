@@ -1,5 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Metadata } from "next";
+import localFont from "next/font/local";
 import { Toaster } from "sonner";
 
 import { GoogleTag } from "@/components/custom/google-tag";
@@ -10,6 +11,17 @@ import { StructuredData } from "@/components/custom/structured-data";
 import { ThemeProvider } from "@/components/custom/theme-provider";
 
 import "./globals.css";
+
+const geistSans = localFont({
+  src: "./fonts/geist.woff2",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+});
+const geistMono = localFont({
+  src: "./fonts/geist-mono.woff2",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lucidity.chat"),
@@ -81,7 +93,9 @@ export default async function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <GoogleTag />
       </head>
-      <body className="subpixel-antialiased" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-purple-100 selection:text-purple-900 dark:selection:bg-purple-900/30 dark:selection:text-purple-100`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -90,13 +104,15 @@ export default async function RootLayout({
         >
           <StructuredData />
           <ProfileGate />
-          <Toaster position="top-center" />
           <SidebarProvider>
-            <Navbar />
-            {children}
-            <Analytics />
+            <div className="flex flex-col h-screen overflow-hidden">
+              <Navbar />
+              {children}
+            </div>
+            <Toaster position="top-center" />
           </SidebarProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -17,7 +17,7 @@ import { SUGGESTIONS } from "@/lib/constants";
 import { ChatInput } from "./chat-input";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
-import { useThreadCount } from "./use-thread-count";
+import { useThreadCounts } from "./use-thread-counts";
 
 import type { Attachment } from "./types";
 import type { NodeType } from "@/lib/message-to-nodes";
@@ -78,6 +78,7 @@ export function ChatList({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
+  const { threadCounts, refresh: refreshThreadCounts } = useThreadCounts(chatId);
 
   return (
     <div className="flex flex-col size-full bg-paper relative">
@@ -201,7 +202,7 @@ export function ChatList({
                     {!isUser && (
                       <ThreadReplyButton
                         messageId={message.id}
-                        chatId={chatId}
+                        threadCount={threadCounts[message.id] ?? 0}
                         onStartThread={onStartThread}
                       />
                     )}
@@ -265,18 +266,16 @@ export function ChatList({
   );
 }
 
-/** Sub-component so we can call useThreadCount per-message */
+/** Sub-component: receives count as prop instead of fetching it independently */
 function ThreadReplyButton({
   messageId,
-  chatId,
+  threadCount,
   onStartThread,
 }: {
   messageId: string;
-  chatId: string;
+  threadCount: number;
   onStartThread: (messageId: string) => void;
 }) {
-  const { threadCount } = useThreadCount(messageId, chatId);
-
   return (
     <div className="flex items-center gap-2 mt-2 opacity-100">
       <button

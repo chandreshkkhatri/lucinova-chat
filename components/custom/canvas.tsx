@@ -13,12 +13,12 @@ import {
   ReactFlowProvider,
   useReactFlow,
 } from "@xyflow/react";
-import { Message } from "@/lib/chat-utils";
+import "@xyflow/react/dist/style.css";
 import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useCallback, useState, useRef } from "react";
-import "@xyflow/react/dist/style.css";
 
+import { Message } from "@/lib/chat-utils";
 import { messagesToNodes } from "@/lib/message-to-nodes";
 
 import { CanvasNodeComponent, CanvasNodeData } from "./canvas-node";
@@ -26,7 +26,6 @@ import { ChatInput } from "./chat-input";
 import { SavedAnnotation } from "./enhanced-message";
 import { Attachment } from "./types";
 import { useAutoLayout } from "./use-auto-layout";
-
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface CanvasProps {
@@ -221,7 +220,7 @@ export function Canvas(props: CanvasProps) {
 
   return (
     <ReactFlowProvider>
-      <div className="size-full flex flex-col relative">
+      <div className="size-full flex flex-col relative pt-10">
         <div className="flex-1 overflow-hidden">
           {props.messages.length === 0 ? (
             <EmptyState {...props} />

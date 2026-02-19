@@ -27,9 +27,12 @@ export function ThreadView({
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
 
   const handleNewReply = () => {
+    // Revalidate the single thread count (for this specific message)
     revalidateSWR(
       `/api/threads/count?parentMessageId=${parentMessage.id}&mainChatId=${mainChatId}`
     );
+    // Revalidate the batch thread counts (for the main chat list)
+    revalidateSWR(`/api/threads/counts?chatId=${mainChatId}`);
   };
 
   const handleDeleteThread = async () => {
