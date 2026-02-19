@@ -1,4 +1,6 @@
 import "server-only";
+import mongoose from "mongoose";
+
 import { ensureConnection } from "./connection";
 import {
   User,
@@ -118,6 +120,10 @@ export async function createUser(
 
 export async function getUserById(id: string) {
   await ensureConnection();
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    console.error(`[getUserById] Invalid ID format: ${id}`);
+    return null;
+  }
   const userDoc = await User.findById(id);
   if (!userDoc) {
     return null;
@@ -356,6 +362,10 @@ export async function createChat(
 }
 export async function getChatsByUserId(userId: string) {
   await ensureConnection();
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    console.error(`[getChatsByUserId] Invalid userId format: ${userId}`);
+    return [];
+  }
   const chats = await Chat.find({ userId })
     .sort({ lastMsgAt: -1 })
     .limit(100) // Limit to 100 recent chats for performance

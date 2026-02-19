@@ -92,18 +92,23 @@ const nextAuthConfig = {
       }
       return true;
     },
-    async jwt({ token, user, account }: any) {
+    async jwt({ token, user }: any) {
       if (user) {
-        token.id = (user as any)._id?.toString() || user.id;
-        token.email = user.email;
-      }
-      
-      // Fetch user from database to get the MongoDB _id
-      if (token.email && !token.id) {
-        const dbUser = await getUserByEmail(token.email as string);
-        if (dbUser && !Array.isArray(dbUser)) {
-          token.id = (dbUser as any)._id?.toString();
+        // If we have a user object (sign in), try to get the _id
+        const dbId = (user as any)._id?.toString();
+        if (dbId) {
+          token.id = dbId;
+        } else if (user.email) {
+          // Fallback: fetch from DB if _id is missing but email is present
+          const dbUser = await getUserByEmail(user.email);
+          if (dbUser && !Array.isArray(dbUser)) {
+            token.id = (dbUser as any)._id?.toString();
+          }
         }
+        
+        // If still no hex ID (24 chars), it might be a provider UUID we should avoid
+        // but for now we've done our best to get the DB ID.
+        token.email = user.email;
       }
       
       return token;

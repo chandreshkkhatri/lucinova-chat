@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Message, Chat } from "@/db/models";
@@ -23,6 +25,11 @@ export async function GET(request: Request) {
   await ensureConnection();
 
   // Verify chat ownership
+  if (!mongoose.Types.ObjectId.isValid(session.user.id)) {
+    console.error(`[ThreadsCounts API] Invalid userId in session: ${session.user.id}`);
+    return Response.json({ error: "Invalid user session" }, { status: 401 });
+  }
+
   const chat = await Chat.findOne({
     _id: chatId,
     userId: session.user.id,
