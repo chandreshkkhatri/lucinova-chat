@@ -221,7 +221,7 @@ export function Canvas(props: CanvasProps) {
 
   return (
     <ReactFlowProvider>
-      <div className="size-full flex flex-col relative">
+      <div className="size-full flex flex-col relative pt-10">
         <div className="flex-1 overflow-hidden">
           {props.messages.length === 0 ? (
             <EmptyState {...props} />

@@ -10,7 +10,6 @@ export const config = {
     // IMPORTANT: Exclude all `/api/auth/*` so that NextAuth's own API routes (sign-in, callback, etc.) work correctly.
     "/((?!api/auth/|api/payment|api/chat|_next/static|_next/image|favicon.ico|manifest.json|fonts/|images/|.well-known/).*)",
     "/",
-    "/:id",
     "/login",
     "/register"
   ],
