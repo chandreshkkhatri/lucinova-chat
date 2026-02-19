@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+
 import { Message, generateId } from "@/lib/chat-utils";
 
 export type { Message };
@@ -83,13 +84,18 @@ export function useGoogleChat({
 
       abortControllerRef.current = new AbortController();
 
+      // Keep context window bounded: send only the last N messages
+      const MAX_CONTEXT_MESSAGES = 20;
+
       try {
+        const allMessages = [...messages, userMessage];
+        const contextMessages = allMessages.slice(-MAX_CONTEXT_MESSAGES);
+
         const response = await fetch(api, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-             // We send full message history for simplicity, unless server handles it statefully (not typical)
-            messages: [...messages, userMessage], // Include updated history
+            messages: contextMessages,
             ...(options?.body || body || {}),
           }),
           signal: abortControllerRef.current.signal,
