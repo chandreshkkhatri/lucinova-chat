@@ -1,8 +1,9 @@
 "use client";
 
-import { Message } from "@/lib/chat-utils";
 import { MessageSquareText } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { Message } from "@/lib/chat-utils";
 
 import { Markdown } from "./markdown";
 
@@ -311,21 +312,19 @@ function SavedAnnotationsOverlay({
           const isHovered = hoveredId === ann.id;
           
           // Bezier curve from text end to icon
-          // Control points create a smooth "wire" shape with a "vertical start, then horizontal" bend
+          // Control points create a smooth "wire" shape with a "vertical start, upward rise, then curve down"
           const startX = data.startX;
           const startY = data.startY;
-          const endX = containerWidth + 16;
-          const endY = data.endY; // Derived from state (includes offset)
+          const endX = containerWidth + 48; // Pushed out further
+          const endY = data.endY + 8; 
           
-          // CP1: Vertical descent (x matches start, y goes down)
+          // CP1: Go UP from the start point (subtle rise now)
           const controlPoint1X = startX; 
-          const controlPoint1Y = endY; 
-          // Actually to get a nice curve, CP1 should be partway. 
-          // If CP1.x = startX, it starts vertical.
+          const controlPoint1Y = startY - 8; // Small rise (user said "barely needs to be curved down")
           
-          // CP2: Horizontal approach (y matches endY, x is shifted right)
-          const controlPoint2X = startX + 16; // Turn corner within 16px
-          const controlPoint2Y = endY;
+          // CP2: Approach the end point from above/left (subtle)
+          const controlPoint2X = endX - 24; 
+          const controlPoint2Y = endY - 4; // Come from slightly above
 
           return (
             <path
@@ -346,6 +345,8 @@ function SavedAnnotationsOverlay({
         if (!data) return null;
 
         const isHovered = hoveredId === ann.id;
+        // Match the wire's endY logic
+        const iconTop = data.endY + 8;
 
         return (
           <div key={ann.id} className="group">
@@ -377,28 +378,29 @@ function SavedAnnotationsOverlay({
             <div
               className="absolute pointer-events-auto z-10"
               style={{
-                right: -16, // Align with wire end (pushed out)
-                top: data.endY,
+                right: -48, // Match endX offset
+                top: iconTop,
                 transform: "translate(0, -50%)", // Center vertically on the line
               }}
               onMouseEnter={() => setHoveredId(ann.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
               <button
+                id={`annotation-icon-${ann.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenAnnotation?.(ann.id, ann.selectedText);
                 }}
-                className={`flex items-center justify-center rounded-full p-1 shadow-sm border transition-all ${
+                className={`flex items-center justify-center rounded-full p-2 shadow-sm border transition-all ${
                   isHovered
-                    ? "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 scale-110 shadow-md ring-2 ring-amber-200 dark:ring-amber-800"
-                    : "bg-card/90 border-border text-muted-foreground/60 scale-100 hover:bg-amber-50 dark:hover:bg-amber-900/50"
+                    ? "bg-amber-200 dark:bg-amber-700 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-100 scale-115 shadow-md ring-2 ring-amber-300 dark:ring-amber-600"
+                    : "bg-amber-100 dark:bg-amber-900/80 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 scale-100 hover:bg-amber-200 dark:hover:bg-amber-800"
                 }`}
                 title="View thread"
               >
-                <MessageSquareText className="size-3.5" />
+                <MessageSquareText className="size-5" />
                 {ann.messageCount !== undefined && ann.messageCount > 0 && (
-                  <span className="ml-1 text-[9px] font-bold leading-none">
+                  <span className="ml-1 text-[10px] font-bold leading-none">
                     {ann.messageCount}
                   </span>
                 )}

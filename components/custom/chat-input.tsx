@@ -77,7 +77,7 @@ export function ChatInput({
           : "shrink-0 p-4 border-t border-border bg-card/80 backdrop-blur-sm relative z-20"
       }
     >
-      <div className="max-w-3xl mx-auto pointer-events-auto">
+      <div id="chat-input-area" className="max-w-3xl mx-auto pointer-events-auto">
         {usageLimitInfo?.exceeded ? (
           bannerContent
         ) : (

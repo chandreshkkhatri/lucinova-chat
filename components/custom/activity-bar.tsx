@@ -1,17 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { FolderKanban, Search, Settings } from "lucide-react";
 import cx from "classnames";
+import { FolderKanban, Route, Search, Settings } from "lucide-react";
+import Link from "next/link";
 
-import { MessageIcon, PencilEditIcon } from "./icons";
-import { useSidebar, type SidebarPanelId } from "./sidebar-context";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { MessageIcon, PencilEditIcon } from "./icons";
+import { useSidebar, type SidebarPanelId } from "./sidebar-context";
+import { useTour } from "./tour-provider";
 
 interface ActivityBarItem {
   id: SidebarPanelId;
@@ -21,13 +23,18 @@ interface ActivityBarItem {
 
 const activityBarItems: ActivityBarItem[] = [
   { id: "history", icon: <MessageIcon size={20} />, label: "Chat History" },
-  { id: "projects", icon: <FolderKanban className="h-5 w-5" />, label: "Projects" },
-  { id: "search", icon: <Search className="h-5 w-5" />, label: "Search" },
-  { id: "settings", icon: <Settings className="h-5 w-5" />, label: "Settings" },
+  { id: "projects", icon: <FolderKanban className="size-5" />, label: "Projects" },
+  { id: "search", icon: <Search className="size-5" />, label: "Search" },
+  { id: "settings", icon: <Settings className="size-5" />, label: "Settings" },
 ];
 
 export function ActivityBar() {
   const { activePanel, togglePanel } = useSidebar();
+  const { startTour } = useTour();
+
+  const handleStartTour = () => {
+    startTour();
+  };
 
   return (
     <div className="hidden lg:flex flex-col w-12 bg-secondary border-r border-border h-full shrink-0">
@@ -38,7 +45,7 @@ export function ActivityBar() {
             <TooltipTrigger asChild>
               <Link
                 href="/"
-                className="flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="flex items-center justify-center size-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 aria-label="New Chat"
               >
                 <PencilEditIcon size={18} />
@@ -56,7 +63,7 @@ export function ActivityBar() {
                 <button
                   onClick={() => togglePanel(item.id)}
                   className={cx(
-                    "flex items-center justify-center w-10 h-10 rounded-lg transition-colors",
+                    "flex items-center justify-center size-10 rounded-lg transition-colors",
                     activePanel === item.id
                       ? "text-foreground bg-accent border-l-2 border-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
@@ -72,15 +79,28 @@ export function ActivityBar() {
           ))}
         </div>
 
-        {/* Bottom: Discord community link */}
-        <div className="flex flex-col items-center py-2 border-t border-border">
+        {/* Bottom: Tour + Discord */}
+        <div className="flex flex-col items-center py-2 border-t border-border gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleStartTour}
+                className="flex items-center justify-center size-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label="Start Product Tour"
+              >
+                <Route className="size-5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Start Tour</TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <a
                 href="https://discord.gg/ySGBwu9xvk"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="flex items-center justify-center size-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 aria-label="Join Community"
               >
                 <svg

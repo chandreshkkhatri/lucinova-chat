@@ -1,6 +1,6 @@
 "use client";
 
-import { Message } from "@/lib/chat-utils";
+
 import {
   Sparkles,
   MessageSquare,
@@ -11,6 +11,7 @@ import {
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
+import { Message } from "@/lib/chat-utils";
 import { SUGGESTIONS } from "@/lib/constants";
 
 import { ChatInput } from "./chat-input";
@@ -277,21 +278,20 @@ function ThreadReplyButton({
   const { threadCount } = useThreadCount(messageId, chatId);
 
   return (
-    <div className={`flex items-center gap-2 mt-2 ${
-      threadCount > 0
-        ? "opacity-100"
-        : "opacity-0 group-hover:opacity-100"
-    } transition-opacity`}>
+    <div className="flex items-center gap-2 mt-2 opacity-100">
       <button
+        id={`reply-btn-${messageId}`}
         onClick={() => onStartThread(messageId)}
-        className="flex items-center gap-1 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
         title="Reply in thread"
       >
-        <MessageSquare className="size-4" />
-        {threadCount > 0 && (
-          <span className="text-xs">
+        <MessageSquare className="size-3.5" />
+        {threadCount > 0 ? (
+          <span>
             {threadCount} {threadCount === 1 ? "reply" : "replies"}
           </span>
+        ) : (
+          <span>Reply</span>
         )}
       </button>
     </div>

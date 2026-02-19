@@ -1,13 +1,13 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { User } from "next-auth";
-import { motion, AnimatePresence } from "framer-motion";
 
-import { useSidebar } from "./sidebar-context";
 import { HistoryPanel } from "./panels/history-panel";
 import { ProjectsPanel } from "./panels/projects-panel";
 import { SearchPanel } from "./panels/search-panel";
 import { SettingsPanel } from "./panels/settings-panel";
+import { useSidebar } from "./sidebar-context";
 
 export function SidebarPanel({ user }: { user: User | undefined }) {
   const { activePanel, isPanelOpen } = useSidebar();
@@ -22,6 +22,7 @@ export function SidebarPanel({ user }: { user: User | undefined }) {
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
           className="hidden lg:block h-full overflow-hidden border-r border-border bg-secondary shrink-0"
+          id="sidebar-projects"
         >
           <div className="w-64 h-full">
             <AnimatePresence mode="wait">

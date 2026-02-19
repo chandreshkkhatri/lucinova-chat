@@ -8,13 +8,16 @@ import useSWR, { mutate as globalMutate } from "swr";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoogleChat } from "@/hooks/use-google-chat";
 import { Message } from "@/lib/chat-utils";
+import { DEMO_ANNOTATIONS, DEMO_MESSAGES } from "@/lib/demo-data";
 
 import { Canvas } from "./canvas";
 import { ChatList } from "./chat-list";
 import { SavedAnnotation } from "./enhanced-message";
 import { RightSidebar } from "./right-sidebar";
 import { useSidebar } from "./sidebar-context";
+import { useTour } from "./tour-provider";
 import { Attachment } from "./types";
+
 import type { NodeType } from "@/lib/message-to-nodes";
 
 // Fetcher for SWR
@@ -75,11 +78,24 @@ export function Chat({
     periodEnd: Date | string;
   } | null>(null);
 
-  // Feature Flag & View Mode Check
+  const { isTourActive } = useTour();
   const isToggleEnabled =
     process.env.NEXT_PUBLIC_FEATURE_FLAG_CANVAS_CHAT_TOGGLE !== "false";
 
-  const [viewMode, setViewMode] = useState<"chat" | "canvas">("chat");
+  const [viewMode, setViewMode] = useState<"chat" | "canvas">("chat"); 
+  
+  // Use demo data if tour is active and valid to show
+  const showDemoData = isTourActive && !isThread;
+
+  // When tour starts, ensure clean state (chat view, no threads)
+  useEffect(() => {
+    if (isTourActive) {
+      setViewMode("chat");
+      setActiveThread(null);
+      setActiveAnnotation(null);
+      setPendingAnnotation(null);
+    }
+  }, [isTourActive]);
 
   const { messages, sendMessage, status, stop, setMessages, regenerate } =
     useGoogleChat({
@@ -403,12 +419,16 @@ export function Chat({
     regenerate();
   }, [regenerate]);
 
+  // Use demo data when tour is active and chat is empty
+  const effectiveMessages = showDemoData ? DEMO_MESSAGES : messages;
+  const effectiveAnnotations = showDemoData ? DEMO_ANNOTATIONS : annotationsByMessage;
+
   // Shared props
   const sharedProps = {
-    messages: messages,
+    messages: effectiveMessages,
     status: status as "idle" | "streaming" | "submitted" | "error",
     chatId: id,
-    annotationsByMessage,
+    annotationsByMessage: effectiveAnnotations,
     onStartThread: handleStartThread,
     onAskLucinova: handleAskLucinova,
     onOpenAnnotation: handleOpenAnnotation,
@@ -445,32 +465,34 @@ export function Chat({
 
   return (
     <div ref={containerRef} className={`flex h-full bg-paper ${className}`}>
-      {/* View Toggle */}
-      {isToggleEnabled && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm p-1">
-          <Tabs
-            value={viewMode}
-            onValueChange={(v) => setViewMode(v as any)}
-            className="w-[180px]"
-          >
-            <TabsList className="grid w-full grid-cols-2 h-8">
-              <TabsTrigger value="chat" className="text-xs">
-                <MessageSquare className="size-3.5 mr-1.5" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger value="canvas" className="text-xs">
-                <Grid className="size-3.5 mr-1.5" />
-                Canvas
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
-
       {/* Main Content Area */}
       <div className="flex flex-1 min-w-0 h-full relative z-0">
         <div className="flex-1 flex flex-col min-w-0 h-full">
-          <div className="flex-1 h-full">
+          
+          {/* View Toggle - Centered at top */}
+          {isToggleEnabled && (
+            <div className="flex items-center justify-center py-2 absolute inset-x-0 top-0 z-20 pointer-events-none">
+               <Tabs
+                id="view-toggle"
+                value={viewMode}
+                onValueChange={(v) => setViewMode(v as any)}
+                className="w-auto pointer-events-auto"
+              >
+                <TabsList className="grid w-full grid-cols-2 h-8 p-1 gap-1 bg-muted/80 backdrop-blur-sm shadow-sm">
+                  <TabsTrigger value="chat" className="text-xs px-3 py-1 bg-transparent data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <MessageSquare className="size-3.5 mr-1.5" />
+                    Chat
+                  </TabsTrigger>
+                  <TabsTrigger value="canvas" className="text-xs px-3 py-1 bg-transparent data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <Grid className="size-3.5 mr-1.5" />
+                    Canvas
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
+
+          <div className="flex-1 h-full overflow-hidden relative">
             {isToggleEnabled && viewMode === "canvas" ? (
               <Canvas {...sharedProps} isThread={false} />
             ) : (
