@@ -1,6 +1,6 @@
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
-import { Message } from "@/db/models";
+import { Message, Chat } from "@/db/models";
 
 /**
  * GET /api/threads/counts?chatId=XXX
@@ -21,6 +21,16 @@ export async function GET(request: Request) {
   }
 
   await ensureConnection();
+
+  // Verify chat ownership
+  const chat = await Chat.findOne({
+    _id: chatId,
+    userId: session.user.id,
+  }).select("_id");
+
+  if (!chat) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   // Get all direct messages in this chat (parentMsgId: null = top-level messages)
   const topLevelMessages = await Message.find({ chatId, parentMsgId: null })

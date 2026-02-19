@@ -204,7 +204,6 @@ export function ChatList({
                         messageId={message.id}
                         threadCount={threadCounts[message.id] ?? 0}
                         onStartThread={onStartThread}
-                        onThreadCreated={refreshThreadCounts}
                       />
                     )}
                   </div>
@@ -272,22 +271,16 @@ function ThreadReplyButton({
   messageId,
   threadCount,
   onStartThread,
-  onThreadCreated,
 }: {
   messageId: string;
   threadCount: number;
   onStartThread: (messageId: string) => void;
-  onThreadCreated?: () => void;
 }) {
   return (
     <div className="flex items-center gap-2 mt-2 opacity-100">
       <button
         id={`reply-btn-${messageId}`}
-        onClick={() => {
-          onStartThread(messageId);
-          // Optimistically trigger a refresh after a short delay for the new reply
-          setTimeout(() => onThreadCreated?.(), 1500);
-        }}
+        onClick={() => onStartThread(messageId)}
         className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
         title="Reply in thread"
       >
