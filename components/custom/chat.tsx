@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageSquare, Grid, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
@@ -10,7 +11,15 @@ import { useGoogleChat } from "@/hooks/use-google-chat";
 import { Message } from "@/lib/chat-utils";
 import { DEMO_ANNOTATIONS, DEMO_MESSAGES } from "@/lib/demo-data";
 
-import { Canvas } from "./canvas";
+const Canvas = dynamic(() => import("./canvas").then((mod) => mod.Canvas), {
+  loading: () => (
+    <div className="flex items-center justify-center size-full text-muted-foreground">
+      Loading Canvas...
+    </div>
+  ),
+  ssr: false, // Canvas uses window/DOM APIs heavily
+});
+
 import { ChatList } from "./chat-list";
 import { SavedAnnotation } from "./enhanced-message";
 import { RightSidebar } from "./right-sidebar";

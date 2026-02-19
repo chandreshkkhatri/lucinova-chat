@@ -293,6 +293,13 @@ const paymentSchema = new Schema<IPayment>(
   },
   { timestamps: true },
 );
+
+// Add missing indexes for common queries
+paymentSchema.index({ customerEmail: 1, status: 1 }); // User payment history
+paymentSchema.index({ subscriptionId: 1 }); // Webhook lookups
+paymentSchema.index({ paymentId: 1 }); // Webhook lookups
+paymentSchema.index({ status: 1, createdAt: -1 }); // Admin dashboard
+
 export const Payment =
   mongoose.models.Payment || mongoose.model<IPayment>("Payment", paymentSchema);
 
@@ -336,8 +343,9 @@ const usageSchema = new Schema<IUsage>(
   { timestamps: true },
 );
 
-usageSchema.index({ userId: 1, periodStart: -1 });
-usageSchema.index({ userId: 1, periodEnd: 1 });
+// Optimize for getUserUsageStats: exact match on userId + range query on period
+usageSchema.index({ userId: 1, periodStart: 1, periodEnd: 1 });
+usageSchema.index({ userId: 1, periodEnd: -1 }); // Finding latest usage
 
 export const Usage =
   mongoose.models.Usage || mongoose.model<IUsage>("Usage", usageSchema);
