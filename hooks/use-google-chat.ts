@@ -28,6 +28,7 @@ export function useGoogleChat({
   const [status, setStatus] = useState<"idle" | "streaming" | "submitted" | "error">("idle");
   
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -41,6 +42,7 @@ export function useGoogleChat({
       abortControllerRef.current = null;
       setIsLoading(false);
       setStatus("idle");
+      isSubmittingRef.current = false;
     }
   }, []);
 
@@ -54,6 +56,10 @@ export function useGoogleChat({
       } | Message,
       options?: { body?: any }
     ) => {
+      // Synchronous guard — prevents duplicate submissions from rapid Enter
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+
       // Determine content and files based on input shape
       const isMessageObject = "id" in messageInput && "role" in messageInput;
       
@@ -154,6 +160,8 @@ export function useGoogleChat({
         setIsLoading(false);
         setStatus("error");
         onError?.(err);
+      } finally {
+        isSubmittingRef.current = false;
       }
     },
     [api, messages, body, onFinish, onError]

@@ -7,14 +7,6 @@ export const appConfig = {
     "gemini-3-pro-preview": "Lucinova 3 Pro",
   } as Record<string, string>,
 
-  // Underlying Gemini model IDs for tooltip display
-  geminiNames: {
-    "gemini-2.5-flash": "Gemini 2.5 Flash",
-    "gemini-2.5-pro": "Gemini 2.5 Pro",
-    "gemini-3-flash-preview": "Gemini 3.0 Flash",
-    "gemini-3-pro-preview": "Gemini 3.0 Pro",
-  } as Record<string, string>,
-
   // Model descriptions for selection
   modelDescriptions: {
     "gemini-2.5-flash": "Previous gen fast",
@@ -31,11 +23,6 @@ export const appConfig = {
   // Get Lucinova display name for a model
   getModelDisplayName: (modelId: string): string => {
     return appConfig.modelNames[modelId] || modelId;
-  },
-
-  // Get underlying Gemini model name (for tooltip)
-  getGeminiName: (modelId: string): string => {
-    return appConfig.geminiNames[modelId] || modelId;
   },
 
   // Get model description

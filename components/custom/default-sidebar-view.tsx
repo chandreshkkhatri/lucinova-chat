@@ -111,6 +111,16 @@ export function DefaultSidebarView({
               <div className="flex items-center gap-1.5 truncate">
                 <Sparkles className="size-3 text-primary shrink-0" />
                 <SelectValue placeholder="Model" />
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Info className="size-3 text-muted-foreground/60 shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Powered by Gemini
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
@@ -137,7 +147,7 @@ export function DefaultSidebarView({
                     <div className="flex items-center justify-between gap-2 w-full">
                       <div className="flex flex-col">
                         <span className="font-medium text-xs">
-                          {appConfig.geminiNames[modelId] || modelId}
+                          {appConfig.modelNames[modelId] || modelId}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
                           {appConfig.modelDescriptions[modelId] || ""}

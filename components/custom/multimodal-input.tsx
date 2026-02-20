@@ -16,6 +16,7 @@ import {
   Check,
   Sparkles,
   Crown,
+  Info,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -501,6 +502,16 @@ export function MultimodalInput({
                 <SelectTrigger className="w-auto h-8 bg-muted/50 border-0 text-xs gap-1.5 focus:ring-0">
                   <Sparkles className="size-3 text-primary shrink-0" />
                   <SelectValue placeholder="Model" />
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Info className="size-3 text-muted-foreground/60 shrink-0" />
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        Powered by Gemini
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border min-w-[200px]">
                   {Object.keys(appConfig.modelNames).map((modelId) => {
@@ -523,7 +534,7 @@ export function MultimodalInput({
                         <div className="flex items-center justify-between gap-2 w-full">
                           <div className="flex flex-col">
                             <span className="font-medium text-xs">
-                              {appConfig.geminiNames[modelId] || modelId}
+                              {appConfig.modelNames[modelId] || modelId}
                             </span>
                           </div>
                           {showCrown && (
