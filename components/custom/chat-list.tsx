@@ -7,6 +7,8 @@ import {
   Bot,
   GitBranch,
   FileCode,
+  Copy,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
@@ -200,11 +202,14 @@ export function ChatList({
 
                     {/* Action Bar (Simple version for Chat List) */}
                     {!isUser && (
-                      <ThreadReplyButton
-                        messageId={message.id}
-                        threadCount={threadCounts[message.id] ?? 0}
-                        onStartThread={onStartThread}
-                      />
+                      <div className="flex items-center gap-1 mt-2">
+                        <ThreadReplyButton
+                          messageId={message.id}
+                          threadCount={threadCounts[message.id] ?? 0}
+                          onStartThread={onStartThread}
+                        />
+                        <CopyMessageButton message={message} />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -277,22 +282,67 @@ function ThreadReplyButton({
   onStartThread: (messageId: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 mt-2 opacity-100">
-      <button
-        id={`reply-btn-${messageId}`}
-        onClick={() => onStartThread(messageId)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
-        title="Reply in thread"
-      >
-        <MessageSquare className="size-3.5" />
-        {threadCount > 0 ? (
-          <span>
-            {threadCount} {threadCount === 1 ? "reply" : "replies"}
-          </span>
-        ) : (
-          <span>Reply</span>
-        )}
-      </button>
-    </div>
+    <button
+      id={`reply-btn-${messageId}`}
+      onClick={() => onStartThread(messageId)}
+      className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
+      title="Reply in thread"
+    >
+      <MessageSquare className="size-3.5" />
+      {threadCount > 0 ? (
+        <span>
+          {threadCount} {threadCount === 1 ? "reply" : "replies"}
+        </span>
+      ) : (
+        <span>Reply</span>
+      )}
+    </button>
+  );
+}
+
+/** Extract plain text content from a message */
+function getMessageTextContent(message: Message): string {
+  if ((message as any).parts) {
+    const text = (message as any).parts
+      .filter((p: any) => p.type === "text")
+      .map((p: any) => p.text)
+      .join("");
+    if (text) return text;
+  }
+  const rawContent = (message as any).content;
+  if (
+    typeof rawContent === "string" &&
+    !rawContent.startsWith("[object Object]")
+  ) {
+    return rawContent;
+  }
+  return "";
+}
+
+/** Copy message content to clipboard */
+function CopyMessageButton({ message }: { message: Message }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = getMessageTextContent(message);
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
+      title={copied ? "Copied!" : "Copy message"}
+    >
+      {copied ? (
+        <Check className="size-3.5" />
+      ) : (
+        <Copy className="size-3.5" />
+      )}
+      <span>{copied ? "Copied" : "Copy"}</span>
+    </button>
   );
 }
