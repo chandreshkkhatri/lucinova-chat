@@ -105,7 +105,7 @@ export default async function RootLayout({
           <StructuredData />
           <ProfileGate />
           <SidebarProvider>
-            <div className="flex flex-col h-screen overflow-hidden">
+            <div className="flex flex-col min-h-screen">
               <Navbar />
               {children}
             </div>
