@@ -20,7 +20,7 @@ export interface IUser extends Document {
   proSince?: Date;
   currentPeriodStart?: Date | null;
   currentPeriodEnd?: Date | null;
-  subscriptionProvider?: "razorpay" | "manual" | null;
+  subscriptionProvider?: "razorpay" | "manual" | "gift" | null;
   subscriptionStatus?: "active" | "inactive" | "canceled" | null;
   subscriptionId?: string; // Razorpay subscription_id
   razorpayCustomerId?: string; // Razorpay customer_id for recurring payments
@@ -74,7 +74,7 @@ const userSchema = new Schema<IUser>(
     currentPeriodEnd: { type: Date, default: null },
     subscriptionProvider: {
       type: String,
-      enum: ["razorpay", "manual"],
+      enum: ["razorpay", "manual", "gift"],
       default: null,
     },
     subscriptionStatus: {

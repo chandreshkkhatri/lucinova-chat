@@ -190,7 +190,7 @@ export async function incrementBadgeBenefitUsage(
 export async function activateProSubscriptionByEmail(
   email: string,
   periodInDays = 30,
-  provider: "razorpay" | "manual" = "razorpay",
+  provider: "razorpay" | "manual" | "gift" = "razorpay",
 ) {
   await ensureConnection();
   // Normalize email and check if user exists
