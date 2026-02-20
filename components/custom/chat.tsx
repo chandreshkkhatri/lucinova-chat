@@ -191,6 +191,26 @@ export function Chat({
       },
     });
 
+  // Wrap sendMessage to always include the body options (id, modelId, etc.)
+  // so every code path (text, audio, file) sends chatId to the API.
+  const sendMessageWithBody = useCallback(
+    (
+      message: { text?: string; content?: string; files?: any[]; role?: "user" },
+      options?: { body?: any },
+    ) =>
+      sendMessage(message, {
+        ...options,
+        body: {
+          id: chatIdForSubmit,
+          modelId: selectedModel,
+          ...(selectedProjectId && { projectId: selectedProjectId }),
+          ...(isThread && { parentMessageId, mainChatId, selectedText }),
+          ...options?.body,
+        },
+      }),
+    [sendMessage, chatIdForSubmit, selectedModel, selectedProjectId, isThread, parentMessageId, mainChatId, selectedText],
+  );
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
@@ -223,20 +243,10 @@ export function Chat({
       url: a.url,
     }));
 
-    sendMessage(
-      {
-        text: input,
-        files: fileParts,
-      },
-      {
-        body: {
-          id: chatIdForSubmit,
-          modelId: selectedModel,
-          ...(selectedProjectId && { projectId: selectedProjectId }),
-          ...(isThread && { parentMessageId, mainChatId, selectedText }),
-        },
-      },
-    );
+    sendMessageWithBody({
+      text: input,
+      files: fileParts,
+    });
 
     setInput("");
     setAttachments([]);
@@ -447,7 +457,7 @@ export function Chat({
     stop,
     attachments,
     setAttachments,
-    sendMessage,
+    sendMessage: sendMessageWithBody,
     isGuest,
     usageLimitInfo,
     onRegenerate: handleRegenerate,

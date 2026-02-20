@@ -60,7 +60,7 @@ export function PricingSection({
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto mt-6 overflow-visible">
         {/* Basic Plan */}
         <Card className="relative">
           <CardHeader>
@@ -92,22 +92,22 @@ export function PricingSection({
         </Card>
 
         {/* Pro Plan */}
-        <Card className="relative border-primary">
+        <Card className="relative border-primary overflow-visible">
           {hasActiveEarlyBirdDiscount ? (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-400 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+              <span className="bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-400 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 whitespace-nowrap">
                 <Award className="size-4" />
                 Early Bird Discount
               </span>
             </div>
           ) : (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
               <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
                 Popular
               </span>
             </div>
           )}
-          <CardHeader>
+          <CardHeader className="pt-12">
             <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>For power users and professionals</CardDescription>
             {hasActiveEarlyBirdDiscount ? (
