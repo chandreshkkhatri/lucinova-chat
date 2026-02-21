@@ -6,17 +6,14 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
-  addEdge,
-  Connection,
   Edge,
   Node,
   ReactFlowProvider,
-  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useCallback, useState, useRef } from "react";
+import { Dispatch, SetStateAction, useEffect, useState, useRef } from "react";
 
 import { Message } from "@/lib/chat-utils";
 import { messagesToNodes } from "@/lib/message-to-nodes";
@@ -26,6 +23,7 @@ import { ChatInput } from "./chat-input";
 import { SavedAnnotation } from "./enhanced-message";
 import { Attachment } from "./types";
 import { useAutoLayout } from "./use-auto-layout";
+
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface CanvasProps {
@@ -77,10 +75,10 @@ function CanvasGraph({
   annotationsByMessage,
   ...props
 }: CanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<CanvasNodeData>>(
+  const [nodes, setNodes] = useNodesState<Node<CanvasNodeData>>(
     [],
   );
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [edges, setEdges] = useEdgesState<Edge>([]);
   // fitView removed as unused
 
   const nodesRef = useRef(nodes);
@@ -177,31 +175,26 @@ function CanvasGraph({
     setNodes,
   ]);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
-  );
-
   return (
     <div className="size-full bg-background/50">
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
         minZoom={0.1}
         maxZoom={4}
         defaultEdgeOptions={{ type: "smoothstep" }}
         proOptions={{ hideAttribution: true }}
-        onNodeClick={(_event, node) => {
-          // Selection handled by ReactFlow UI, sidebar details removed
-        }}
-        onPaneClick={() => {
-          // Deselection handled by ReactFlow UI, sidebar details removed
-        }}
+        /* ── Read-only: disable all editing interactions ── */
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
+        edgesFocusable={false}
+        nodesFocusable={false}
+        panOnDrag
+        zoomOnScroll
+        preventScrolling
       >
         <Background
           gap={20}
