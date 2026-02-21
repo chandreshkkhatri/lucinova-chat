@@ -11,12 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { appConfig } from "@/lib/config";
+import { appConfig, type SupportedCurrency } from "@/lib/config";
 
 interface PricingSectionProps {
   isUserPro?: boolean;
   isAuthenticated?: boolean;
   subscriptionStatus?: string | null;
+  /** ISO currency code resolved from user's country */
+  currency?: SupportedCurrency;
   userBadges?: Array<{
     badgeId: string;
     metadata?: {
@@ -29,12 +31,16 @@ export function PricingSection({
   isUserPro = false,
   isAuthenticated = false,
   subscriptionStatus = null,
+  currency: currencyProp,
   userBadges = [],
 }: PricingSectionProps) {
-  const price = appConfig.pricing.proMonthlyPrice;
-  const priceInCents = Math.round(price * 100); // Razorpay expects amount in smallest currency unit
-  const currency = appConfig.pricing.currency;
-  const symbol = appConfig.getCurrencySymbol(currency);
+  // Resolve pricing for the detected (or default) currency
+  const currency = currencyProp || appConfig.pricing.currency;
+  const tier = appConfig.getPricingForCurrency(currency);
+  const price = tier.price;
+  const priceInCents = tier.priceInSmallestUnit; // Razorpay expects amount in smallest currency unit
+  const symbol = tier.symbol;
+  const taxNote = tier.taxNote;
 
   // Check for Early Bird badge with active discount
   const earlyBirdBadge = userBadges?.find((b) => b.badgeId === "early-bird");
@@ -44,10 +50,12 @@ export function PricingSection({
     earlyBirdBadge.metadata.benefitUsedMonths < 3;
 
   const discountedPriceInCents = hasActiveEarlyBirdDiscount
-    ? Math.round(price * 100 * 0.25) // 75% off means pay 25% of price
-    : Math.round(price * 100);
+    ? tier.earlyBirdPriceInSmallestUnit
+    : tier.priceInSmallestUnit;
 
-  const discountedPrice = discountedPriceInCents / 100;
+  const discountedPrice = hasActiveEarlyBirdDiscount
+    ? tier.earlyBirdPrice
+    : tier.price;
 
   return (
     <section className="w-full max-w-4xl mx-auto">
@@ -142,7 +150,7 @@ export function PricingSection({
                 </span>
                 <span className="text-muted-foreground">/month</span>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Plus applicable taxes
+                  {taxNote}
                 </p>
               </div>
             )}
@@ -176,6 +184,7 @@ export function PricingSection({
             ) : hasActiveEarlyBirdDiscount ? (
               <PaymentButton
                 amount={discountedPriceInCents}
+                currency={currency}
                 planName="Pro Monthly Subscription"
                 buttonText={
                   subscriptionStatus === "canceled"
@@ -187,6 +196,7 @@ export function PricingSection({
               isAuthenticated ? (
               <PaymentButton
                 amount={priceInCents}
+                currency={currency}
                 planName="Lucidity Pro Monthly"
                 className="w-full"
                 buttonText={

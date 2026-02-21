@@ -4,7 +4,7 @@ import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { User } from "@/db/models";
 import { getUserByEmail, hasActiveBadgeBenefit } from "@/db/queries";
-import { appConfig } from "@/lib/config";
+import { appConfig, type SupportedCurrency } from "@/lib/config";
 import { ensureRazorpayClient } from "@/lib/razorpay";
 
 function jsonError(message: string, status = 400, details?: string | object) {
@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
     const rz = ensureRazorpayClient();
     if ("error" in rz) return jsonError(rz.error, 500);
 
-    const { customerName, customerEmail, customerPhone } = await request.json();
+    const { customerName, customerEmail, customerPhone, currency: requestedCurrency } = await request.json();
+
+    // Resolve currency — accept from client, validate it's supported, fall back to default
+    const resolvedCurrency: SupportedCurrency =
+      requestedCurrency && ["USD", "INR"].includes(requestedCurrency.toUpperCase())
+        ? (requestedCurrency.toUpperCase() as SupportedCurrency)
+        : appConfig.pricing.currency;
+    const tier = appConfig.getPricingForCurrency(resolvedCurrency);
 
     // Ensure the email matches the logged-in user (prevent subscribing for others)
     if (customerEmail.toLowerCase() !== session.user.email.toLowerCase()) {
@@ -46,8 +53,8 @@ export async function POST(request: NextRequest) {
       return jsonError("User account not found", 404);
     }
 
-    // Get or create plan ID from environment
-    let planId = process.env.RAZORPAY_PLAN_ID;
+    // Get or create plan ID from environment — currency-specific
+    let planId = tier.razorpayPlanId;
 
     // Verify the plan exists
     if (planId) {
@@ -62,28 +69,23 @@ export async function POST(request: NextRequest) {
         return jsonError(
           "Invalid plan configuration",
           500,
-          `Plan ${planId} does not exist. Please verify RAZORPAY_PLAN_ID in your environment.`,
+          `Plan ${planId} does not exist. Please verify RAZORPAY_PLAN_ID${resolvedCurrency === "INR" ? "_INR" : ""} in your environment.`,
         );
       }
     }
 
     // If no plan exists, create one (typically done once during setup)
     if (!planId) {
-      const currency = (
-        process.env.CURRENCY ||
-        appConfig.pricing.currency ||
-        "USD"
-      ).toUpperCase();
-      const amountInCents = appConfig.pricing.proMonthlyPrice * 100;
+      const amountInSmallestUnit = tier.priceInSmallestUnit;
 
       const plan = await rz.client.plans.create({
         period: "monthly",
         interval: 1,
         item: {
-          name: "Pro Monthly Subscription",
-          amount: amountInCents,
-          currency,
-          description: "Monthly Pro Plan subscription",
+          name: `Pro Monthly Subscription (${resolvedCurrency})`,
+          amount: amountInSmallestUnit,
+          currency: resolvedCurrency,
+          description: `Monthly Pro Plan subscription in ${resolvedCurrency}`,
         },
       });
 
@@ -125,7 +127,6 @@ export async function POST(request: NextRequest) {
     try {
       // Check if user has active Early Bird benefit
       let useDiscountedPlan = false;
-      const earlyBirdDiscountPercent = 75; // 75% off
       try {
         const hasEarlyBirdBenefit = await hasActiveBadgeBenefit(
           (user as any)._id.toString(),
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
         if (hasEarlyBirdBenefit) {
           useDiscountedPlan = true;
           console.log(
-            `[Subscription] Applying Early Bird discount (${earlyBirdDiscountPercent}% off) for ${customerEmail}`,
+            `[Subscription] Applying Early Bird discount for ${customerEmail} — ${tier.currency} ${tier.earlyBirdPrice}/mo`,
           );
         }
       } catch (badgeCheckError) {
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       // If early bird, create or use a discounted plan instead of using Razorpay offers
       let effectivePlanId = planId;
       if (useDiscountedPlan) {
-        const discountedPlanId = process.env.RAZORPAY_EARLY_BIRD_PLAN_ID;
+        const discountedPlanId = tier.razorpayEarlyBirdPlanId;
         if (discountedPlanId) {
           // Verify the discounted plan exists
           try {
@@ -168,29 +169,20 @@ export async function POST(request: NextRequest) {
         // If no valid discounted plan, create one dynamically
         if (effectivePlanId === planId) {
           try {
-            const currency = (
-              process.env.CURRENCY ||
-              appConfig.pricing.currency ||
-              "USD"
-            ).toUpperCase();
-            const discountedAmount = Math.round(
-              appConfig.pricing.proMonthlyPrice *
-                100 *
-                ((100 - earlyBirdDiscountPercent) / 100),
-            );
+            const discountedAmount = tier.earlyBirdPriceInSmallestUnit;
             const discountedPlan = await rz.client.plans.create({
               period: "monthly",
               interval: 1,
               item: {
-                name: `Pro Monthly - Early Bird (${earlyBirdDiscountPercent}% off)`,
+                name: `Pro Monthly - Early Bird (${resolvedCurrency} ${tier.earlyBirdPrice}/mo)`,
                 amount: discountedAmount,
-                currency,
-                description: `Early Bird discounted Pro Plan (${earlyBirdDiscountPercent}% off for first 3 months)`,
+                currency: resolvedCurrency,
+                description: `Early Bird discounted Pro Plan (${resolvedCurrency} ${tier.earlyBirdPrice}/mo for first 3 months)`,
               },
             });
             effectivePlanId = discountedPlan.id;
             console.log(
-              `[Subscription] Created discounted plan: ${discountedPlan.id} at ${discountedAmount} ${currency}`,
+              `[Subscription] Created discounted plan: ${discountedPlan.id} at ${discountedAmount} ${resolvedCurrency}`,
             );
           } catch (planError: any) {
             console.warn(
@@ -211,10 +203,11 @@ export async function POST(request: NextRequest) {
         notes: {
           customer_email: customerEmail,
           customer_name: customerName,
+          currency: resolvedCurrency,
           ...(useDiscountedPlan
             ? {
                 plan_type: "early-bird",
-                discount_percent: String(earlyBirdDiscountPercent),
+                early_bird_price: String(tier.earlyBirdPrice),
               }
             : {}),
         },
@@ -247,19 +240,15 @@ export async function POST(request: NextRequest) {
 
       // Return only what the client needs
       const effectivePrice = useDiscountedPlan
-        ? Math.round(
-            appConfig.pricing.proMonthlyPrice *
-              ((100 - earlyBirdDiscountPercent) / 100) *
-              100,
-          )
-        : appConfig.pricing.proMonthlyPrice * 100;
+        ? tier.earlyBirdPriceInSmallestUnit
+        : tier.priceInSmallestUnit;
 
       return NextResponse.json({
         success: true,
         subscriptionId: subscription.id,
         razorpayKeyId: process.env.RAZORPAY_KEY_ID,
         amount: effectivePrice,
-        currency: appConfig.pricing.currency,
+        currency: resolvedCurrency,
       });
     } catch (error: any) {
       console.error(

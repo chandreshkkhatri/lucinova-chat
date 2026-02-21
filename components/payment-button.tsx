@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 
 interface PaymentButtonProps {
   amount: number;
+  /** ISO currency code (e.g. "USD", "INR"). Defaults to appConfig default. */
+  currency?: string;
   planName: string;
   className?: string;
   buttonText?: string;
@@ -25,6 +27,7 @@ interface UserSession {
  */
 export function PaymentButton({
   amount,
+  currency,
   planName,
   className,
   buttonText = "Subscribe Now",
@@ -78,6 +81,7 @@ export function PaymentButton({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         amount={amount}
+        currency={currency}
         planName={planName}
         userEmail={userSession?.user?.email}
         userName={profile?.name || userSession?.user?.name}

@@ -22,6 +22,8 @@ interface RazorpayPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   amount: number;
+  /** ISO currency code (e.g. "USD", "INR"). Overrides global config. */
+  currency?: string;
   planName: string;
   userEmail?: string;
   userName?: string;
@@ -35,13 +37,14 @@ export function RazorpayPaymentModal({
   isOpen,
   onClose,
   amount,
+  currency: currencyProp,
   planName,
   userEmail = "",
   userName = "",
   userPhone = "",
   userCountryCode = "",
 }: RazorpayPaymentModalProps) {
-  const currency = appConfig.pricing.currency;
+  const currency = (currencyProp || appConfig.pricing.currency).toUpperCase();
   const symbol = appConfig.getCurrencySymbol(currency);
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
@@ -119,6 +122,7 @@ export function RazorpayPaymentModal({
           customerName: formData.customerName,
           customerEmail: formData.customerEmail,
           customerPhone: formData.customerPhone,
+          currency,
         }),
       });
 
