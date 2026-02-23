@@ -1,6 +1,6 @@
 "use client";
 
-import { X, MessageSquareText, Trash2 } from "lucide-react";
+import { X, MessageSquareText, Trash2, Copy, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -58,11 +58,54 @@ export function AnnotationThreadView({
   }, [annotationId]);
 
   // If there's an initial message and no existing messages, seed it as the first user message
-  // so the Chat component's useGoogleChat will include it and auto-send
   const effectiveInitialMessages =
     !isLoading && initialMessage && threadMessages.length === 0 && !initialMessageSentRef.current
-      ? [] // Start empty — the Chat component will handle sending via selectedText context
+      ? [{
+          id: `temp-${Date.now()}`,
+          role: "user" as const,
+          content: initialMessage,
+          createdAt: new Date(),
+          parts: [{ type: "text" as const, text: initialMessage }]
+        }]
       : threadMessages;
+
+  useEffect(() => {
+    // If we haven't sent the initial message and we have one, flag it as sent so we
+    // don't keep overriding the messages array with the temp message
+    if (!isLoading && initialMessage && threadMessages.length === 0 && !initialMessageSentRef.current) {
+        // Find the form element within the Chat component and submit it
+        const timer = setTimeout(() => {
+           initialMessageSentRef.current = true;
+           const form = document.querySelector(`form[id="chat-form-${chatId}"]`) as HTMLFormElement;
+           if (form) {
+               // We need to inject the initialMessage into the Chat's internal state
+               // Since we can't do that directly, we simulate input and submission
+               const textarea = form.querySelector('textarea') as HTMLTextAreaElement;
+               if (textarea) {
+                   // Actually use React setter to update value if possible, or just submit
+                   // We're passing it via effectiveInitialMessages, but it needs to trigger the AI
+                   // Let's fire a custom event or click the submit button
+                   const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+                   if (submitBtn && !submitBtn.disabled) {
+                       submitBtn.click();
+                   }
+               }
+           }
+        }, 500);
+        return () => clearTimeout(timer);
+    }
+  }, [isLoading, initialMessage, threadMessages.length, chatId]);
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopySelectedText = async () => {
+    if (!selectedText) return;
+    try {
+      await navigator.clipboard.writeText(selectedText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
 
   const handleDelete = async () => {
     if (
@@ -131,11 +174,18 @@ export function AnnotationThreadView({
       {/* Selected Text Display */}
       <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
         <div className="flex items-start gap-2">
-          <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
+          <div className="flex-1 text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
             {'"'}
             {selectedText}
             {'"'}
           </div>
+          <button
+            onClick={handleCopySelectedText}
+            className="shrink-0 p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+            title="Copy selected text"
+          >
+            {copied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
+          </button>
         </div>
       </div>
 

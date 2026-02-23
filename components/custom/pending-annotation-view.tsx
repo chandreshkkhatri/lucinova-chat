@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Sparkles, Copy, Check } from "lucide-react";
 import { useState } from "react";
 
 interface PendingAnnotationViewProps {
@@ -24,6 +24,16 @@ export function PendingAnnotationView({
 }: PendingAnnotationViewProps) {
   const [input, setInput] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopySelectedText = async () => {
+    if (!selectedText) return;
+    try {
+      await navigator.clipboard.writeText(selectedText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
 
   const submitQuestion = async (question: string) => {
     if (!question.trim() || isCreating) return;
@@ -66,8 +76,17 @@ export function PendingAnnotationView({
 
       {/* Selected Text Display */}
       <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
-        <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
-          {'"'}{selectedText}{'"'}
+        <div className="flex items-start gap-2">
+          <div className="flex-1 text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500 max-h-24 overflow-y-auto">
+            {'"'}{selectedText}{'"'}
+          </div>
+          <button
+            onClick={handleCopySelectedText}
+            className="shrink-0 p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+            title="Copy selected text"
+          >
+            {copied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
+          </button>
         </div>
       </div>
 

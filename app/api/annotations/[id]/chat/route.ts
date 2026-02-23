@@ -137,28 +137,37 @@ export async function POST(
                  }
               }
               
-              if (fullResponseText && aiIdString) {
-                  // Mock usage
-                  if (currentUser) {
-                      // await recordUsage(...);
-                  }
+               // Close the stream as soon as text generation is complete
+               controller.close();
+               
+               // Run DB writes asynchronously so they don't block the stream
+               if (fullResponseText && aiIdString) {
+                  (async () => {
+                     try {
+                        // Mock usage
+                        if (currentUser) {
+                           // await recordUsage(...);
+                        }
 
-                  await createMessage({
-                     chatId,
-                     senderId: aiIdString,
-                     parentMsgId: annotationId,
-                     body: fullResponseText
-                  });
-              }
-              controller.close();
-           } catch(err) {
-              console.error("[Annotation API] Streaming error:", err);
-              controller.error(err);
-           }
-        }
-     });
+                        await createMessage({
+                           chatId,
+                           senderId: aiIdString,
+                           parentMsgId: annotationId,
+                           body: fullResponseText
+                        });
+                     } catch (dbErr) {
+                        console.error("[Annotation API DB Write Error]:", dbErr);
+                     }
+                  })();
+               }
+            } catch(err) {
+               console.error("[Annotation API] Streaming error:", err);
+               controller.error(err);
+            }
+         }
+      });
 
-     return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
   } catch (error) {
      console.error("[Annotation API] Generation error:", error);
      return new Response("Internal Server Error", { status: 500 });
