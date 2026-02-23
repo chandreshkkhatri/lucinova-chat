@@ -7,8 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Message } from "@/lib/chat-utils";
 
 import { AnnotationThreadView } from "./annotation-thread-view";
-import { PendingAnnotationView } from "./pending-annotation-view";
 import { ThreadView } from "./thread-view";
+
 import type { Attachment } from "./types";
 import type { NodeType } from "@/lib/message-to-nodes";
 
@@ -27,13 +27,11 @@ interface RightSidebarProps {
   // Sidebar content state
   activeThread: { parentMessage: Message; selectedText?: string } | null;
   activeAnnotation: { id: string; selectedText: string; initialMessage?: string } | null;
-  pendingAnnotation: { messageId: string; selectedText: string } | null;
+  pendingAnnotation: { messageId: string; selectedText: string; isLoading?: boolean } | null;
 
   // Sidebar actions
   onCloseThread: () => void;
   onCloseAnnotation: () => void;
-  onCreateAnnotation: (firstMessage: string) => Promise<string | null>;
-  onAnnotationCreated: (annotationId: string, selectedText: string) => void;
   onAnnotationDeleted: () => void;
 
   // Model selector
@@ -69,8 +67,6 @@ export function RightSidebar({
   pendingAnnotation,
   onCloseThread,
   onCloseAnnotation,
-  onCreateAnnotation,
-  onAnnotationCreated,
   onAnnotationDeleted,
   selectedModel,
   setSelectedModel,
@@ -200,16 +196,30 @@ export function RightSidebar({
               className="size-full"
               modelId={selectedModel}
             />
-          ) : pendingAnnotation ? (
-            <PendingAnnotationView
-              selectedText={pendingAnnotation.selectedText}
-              messageId={pendingAnnotation.messageId}
-              chatId={chatId}
-              onClose={onCloseAnnotation}
-              onCreateAnnotation={onCreateAnnotation}
-              onAnnotationCreated={onAnnotationCreated}
-              className="size-full"
-            />
+          ) : pendingAnnotation?.isLoading ? (
+            <div className="flex flex-col bg-secondary h-full min-h-full">
+              {/* Header Skeleton */}
+              <div className="px-4 py-3 border-b border-border bg-card flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-lg bg-muted flex items-center justify-center animate-pulse" />
+                  <div>
+                    <div className="h-4 w-24 bg-muted rounded animate-pulse mb-1" />
+                    <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Selected Text Skeleton */}
+              <div className="px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30 shrink-0">
+                <div className="text-sm italic text-foreground/80 bg-card rounded-lg px-4 py-2 border-l-4 border-purple-400 dark:border-purple-500">
+                  {'"'}{pendingAnnotation.selectedText}{'"'}
+                </div>
+              </div>
+              
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-sm text-muted-foreground animate-pulse">Creating annotation...</p>
+              </div>
+            </div>
           ) : null}
         </TabsContent>
       )}

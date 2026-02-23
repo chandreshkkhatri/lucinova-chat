@@ -307,6 +307,7 @@ export function Chat({
   const [pendingAnnotation, setPendingAnnotation] = useState<{
     messageId: string;
     selectedText: string;
+    isLoading?: boolean;
     initialMessage?: string;
   } | null>(null);
 
@@ -349,12 +350,42 @@ export function Chat({
   };
 
   const handleAskLucinova = useCallback(
-    (messageId: string, selectedText: string) => {
-      setPendingAnnotation({ messageId, selectedText });
+    async (messageId: string, selectedText: string) => {
+      // 1. Trigger the sidebar to open immediately in a loading state
+      setPendingAnnotation({ messageId, selectedText, isLoading: true });
       setActiveThread(null);
       setActiveAnnotation(null);
+
+      // 2. Create the annotation instantly in the background
+      try {
+        const res = await fetch("/api/annotations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messageId,
+            chatId: id,
+            selectedText,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Failed to create annotation");
+
+        const { annotation } = await res.json();
+
+        mutateAnnotations();
+
+        // 3. Mount the actual AnnotationThreadView
+        setActiveAnnotation({
+          id: annotation.id,
+          selectedText: annotation.selectedText,
+        });
+        setPendingAnnotation(null);
+      } catch (error) {
+        console.error("Failed to create annotation:", error);
+        setPendingAnnotation(null);
+      }
     },
-    [],
+    [id, mutateAnnotations],
   );
 
   const handleOpenAnnotation = useCallback(
@@ -375,40 +406,7 @@ export function Chat({
     mutateAnnotations();
   };
 
-  const handleCreateAnnotation = async (firstMessage: string) => {
-    if (!pendingAnnotation) return null;
-
-    try {
-      const res = await fetch("/api/annotations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messageId: pendingAnnotation.messageId,
-          chatId: id,
-          selectedText: pendingAnnotation.selectedText,
-          firstMessage,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to create annotation");
-
-      const { annotation } = await res.json();
-
-      mutateAnnotations();
-
-      setActiveAnnotation({
-        id: annotation.id,
-        selectedText: annotation.selectedText,
-        initialMessage: firstMessage,
-      });
-      setPendingAnnotation(null);
-
-      return annotation.id;
-    } catch (error) {
-      console.error("Failed to create annotation:", error);
-      return null;
-    }
-  };
+  // handleCreateAnnotation is removed as annotations are created instantly on click
 
   const handleAnnotationCreated = useCallback(
     (annotationId: string, selectedText: string) => {
@@ -537,8 +535,6 @@ export function Chat({
               pendingAnnotation={pendingAnnotation}
               onCloseThread={handleCloseThread}
               onCloseAnnotation={handleCloseAnnotation}
-              onCreateAnnotation={handleCreateAnnotation}
-              onAnnotationCreated={handleAnnotationCreated}
               onAnnotationDeleted={handleAnnotationDeleted}
               isMounted={true}
             />
@@ -555,8 +551,6 @@ export function Chat({
               pendingAnnotation={pendingAnnotation}
               onCloseThread={handleCloseThread}
               onCloseAnnotation={handleCloseAnnotation}
-              onCreateAnnotation={handleCreateAnnotation}
-              onAnnotationCreated={handleAnnotationCreated}
               onAnnotationDeleted={handleAnnotationDeleted}
               isMounted={true}
             />
