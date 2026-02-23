@@ -106,11 +106,17 @@ export function Chat({
     }
   }, [isTourActive]);
 
-  const { messages, sendMessage, status, stop, setMessages, regenerate } =
+  const { messages, sendMessage, status, stop, setMessages, regenerate, editMessage } =
     useGoogleChat({
       id: chatSessionId,
       api: apiOverride || (isThread ? "/api/thread" : "/api/chat"),
       initialMessages: initialMessages,
+      body: {
+        id: chatIdForSubmit,
+        modelId: selectedModel,
+        ...(selectedProjectId && { projectId: selectedProjectId }),
+        ...(isThread && { parentMessageId, mainChatId, selectedText }),
+      },
       onFinish: (message) => {
         const url = `/chat/${chatIdForSubmit}`;
         if (!isThread) {
@@ -461,6 +467,7 @@ export function Chat({
     isGuest,
     usageLimitInfo,
     onRegenerate: handleRegenerate,
+    onEditMessage: editMessage,
     selectedModel,
     setSelectedModel,
     isUserPro,

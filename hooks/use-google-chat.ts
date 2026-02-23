@@ -171,8 +171,43 @@ export function useGoogleChat({
   const sendMessage = append;
   
   const reload = useCallback(async () => {
-     // TODO: Implement reload if needed
-  }, []);
+    // Find the last user message
+    const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
+    if (lastUserIdx === -1) return;
+
+    // Remove the last assistant response (if any) and get messages up to the last user message
+    const messagesUpToUser = messages.slice(0, lastUserIdx);
+    const lastUserMessage = messages[lastUserIdx];
+
+    // Reset messages to just before the user message
+    setMessages(messagesUpToUser);
+
+    // Re-send the last user message
+    await append({
+      id: lastUserMessage.id,
+      role: "user",
+      content: lastUserMessage.content,
+      createdAt: lastUserMessage.createdAt,
+      experimental_attachments: lastUserMessage.experimental_attachments,
+      parts: lastUserMessage.parts,
+    });
+  }, [messages, append]);
+
+  const editMessage = useCallback(async (newContent: string) => {
+    // Find the last user message
+    const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
+    if (lastUserIdx === -1) return;
+
+    // Remove everything from the last user message onward
+    const messagesBeforeUser = messages.slice(0, lastUserIdx);
+    setMessages(messagesBeforeUser);
+
+    // Send the edited content as a new message
+    await append({
+      text: newContent,
+      role: "user",
+    });
+  }, [messages, append]);
 
   return {
     messages,
@@ -186,6 +221,7 @@ export function useGoogleChat({
     sendMessage,
     status,
     reload,
+    editMessage,
     regenerate: reload // typical alias
   };
 }

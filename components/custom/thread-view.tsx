@@ -1,4 +1,4 @@
-import { X, MessageSquare, Trash } from "lucide-react";
+import { X, MessageSquare, Trash, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { mutate as revalidateSWR } from "swr";
 
@@ -33,6 +33,17 @@ export function ThreadView({
     );
     // Revalidate the batch thread counts (for the main chat list)
     revalidateSWR(`/api/threads/counts?chatId=${mainChatId}`);
+  };
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopySelectedText = async () => {
+    if (!selectedText) return;
+    try {
+      await navigator.clipboard.writeText(selectedText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
   };
 
   const handleDeleteThread = async () => {
@@ -125,10 +136,17 @@ export function ThreadView({
       {/* Selected Text Display (if present) */}
       {selectedText && (
         <div className="px-4 py-3 bg-muted/50 border-b border-border shrink-0">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center gap-2">
             <div className="text-sm italic text-foreground/80 bg-muted rounded-lg px-4 py-2 max-w-2xl">
               {'"'}{selectedText}{'"'}
             </div>
+            <button
+              onClick={handleCopySelectedText}
+              className="shrink-0 p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Copy selected text"
+            >
+              {copied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
+            </button>
           </div>
         </div>
       )}

@@ -260,41 +260,48 @@ export async function POST(req: NextRequest) {
           }
         }
         
-        // --- Post-Generation Logic (Persistence & background tasks) ---
-        if (!isGuest && userId && fullResponseText && chat) {
-          // Persist AI Message
-          await createMessage({
-            chatId: id,
-            senderId: (chat as any).aiId,
-            body: fullResponseText
-          });
-
-          // Title & Category Generation (first exchange only)
-          if (messages.length === 1) {
-            const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
-            const analysis = await generateSimpleText(googleModels.fast,
-              `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
-               User: ${lastUserText}
-               AI: ${fullResponseText}`
-            );
-
-            if (analysis) {
-              const parts = analysis.split('|');
-              const title = parts[0]?.replace('Title:', '').trim();
-              const category = parts[1]?.replace('Category:', '').trim();
-              
-              const updates: any = {};
-              if (title) updates.title = title;
-              if (category) updates.category = category;
-              
-              if (Object.keys(updates).length > 0) {
-                await Chat.findByIdAndUpdate(id, updates);
-              }
-            }
-          }
-        }
-
+        // Close the stream immediately so the client sees the response as complete
         controller.close();
+
+        // --- Post-Generation Logic (fire-and-forget, non-blocking) ---
+        if (!isGuest && userId && fullResponseText && chat) {
+          (async () => {
+            try {
+              // Persist AI Message
+              await createMessage({
+                chatId: id,
+                senderId: (chat as any).aiId,
+                body: fullResponseText
+              });
+
+              // Title & Category Generation (first exchange only)
+              if (messages.length === 1) {
+                const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
+                const analysis = await generateSimpleText(googleModels.fast,
+                  `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
+                   User: ${lastUserText}
+                   AI: ${fullResponseText}`
+                );
+
+                if (analysis) {
+                  const parts = analysis.split('|');
+                  const title = parts[0]?.replace('Title:', '').trim();
+                  const category = parts[1]?.replace('Category:', '').trim();
+                  
+                  const updates: any = {};
+                  if (title) updates.title = title;
+                  if (category) updates.category = category;
+                  
+                  if (Object.keys(updates).length > 0) {
+                    await Chat.findByIdAndUpdate(id, updates);
+                  }
+                }
+              }
+            } catch (postGenErr) {
+              console.error("[Chat API] Post-generation error:", postGenErr);
+            }
+          })();
+        }
       } catch (err) {
         console.error("[Chat API] Streaming error:", err);
         controller.error(err);

@@ -1,6 +1,5 @@
 "use client";
 
-
 import {
   Sparkles,
   MessageSquare,
@@ -9,12 +8,16 @@ import {
   FileCode,
   Copy,
   Check,
+  Pencil,
+  RefreshCw,
 } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
+import { fetchUserSuggestions } from "@/app/actions/suggestions";
 import { Message } from "@/lib/chat-utils";
 import { SUGGESTIONS } from "@/lib/constants";
+import { Suggestion } from "@/lib/suggestions";
 
 import { ChatInput } from "./chat-input";
 import { EnhancedMessage, SavedAnnotation } from "./enhanced-message";
@@ -22,9 +25,6 @@ import { useScrollToBottom } from "./use-scroll-to-bottom";
 import { useThreadCounts } from "./use-thread-counts";
 
 import type { Attachment } from "./types";
-import { Suggestion } from "@/lib/suggestions";
-import { fetchUserSuggestions } from "@/app/actions/suggestions";
-
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface ChatListProps {
@@ -54,6 +54,8 @@ interface ChatListProps {
   onStartThread: (messageId: string, selectedText?: string) => void;
   onAskLucinova: (messageId: string, selectedText: string) => void;
   onOpenAnnotation: (annotationId: string, selectedText: string) => void;
+  onRegenerate?: () => void;
+  onEditMessage?: (newContent: string) => Promise<void>;
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   isUserPro?: boolean;
@@ -76,6 +78,8 @@ export function ChatList({
   onStartThread,
   onAskLucinova,
   onOpenAnnotation,
+  onRegenerate,
+  onEditMessage,
   selectedModel,
   setSelectedModel,
   isUserPro,
@@ -176,11 +180,17 @@ export function ChatList({
               </div>
             </div>
           ) : (
-            messages.map((message) => {
+            messages.map((message, index) => {
               const isUser = message.role === "user";
               const isSystem = message.role === "system";
 
               if (isSystem) return null;
+
+              // Determine if this is the last user/assistant message for edit/regenerate
+              const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
+              const lastAssistantIdx = messages.map(m => m.role).lastIndexOf('assistant');
+              const isLastUser = isUser && index === lastUserIdx;
+              const isLastAssistant = !isUser && index === lastAssistantIdx;
 
               return (
                 <div
@@ -224,7 +234,15 @@ export function ChatList({
                       }
                     />
 
-                    {/* Action Bar (Simple version for Chat List) */}
+                    {/* Action Bar */}
+                    {isUser && isLastUser && status === "idle" && (
+                      <div className="flex items-center gap-1 mt-2">
+                        <EditMessageButton
+                          message={message}
+                          onEditMessage={onEditMessage}
+                        />
+                      </div>
+                    )}
                     {!isUser && (
                       <div className="flex items-center gap-1 mt-2">
                         <ThreadReplyButton
@@ -233,6 +251,16 @@ export function ChatList({
                           onStartThread={onStartThread}
                         />
                         <CopyMessageButton message={message} />
+                        {isLastAssistant && status === "idle" && onRegenerate && (
+                          <button
+                            onClick={onRegenerate}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors"
+                            title="Regenerate response"
+                          >
+                            <RefreshCw className="size-3.5" />
+                            <span>Regenerate</span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -241,8 +269,8 @@ export function ChatList({
             })
           )}
 
-          {/* Streaming / Loading Indicator */}
-          {(status === "submitted" || status === "streaming") && (
+          {/* Loading Indicator — only before first token arrives */}
+          {status === "submitted" && (
             <div className="group relative flex gap-4 pr-4">
               <div className="shrink-0">
                 <div className="size-8 rounded-lg flex items-center justify-center shadow-sm border border-border bg-card">
@@ -367,6 +395,79 @@ function CopyMessageButton({ message }: { message: Message }) {
         <Copy className="size-3.5" />
       )}
       <span>{copied ? "Copied" : "Copy"}</span>
+    </button>
+  );
+}
+
+/** Edit the last user message and get a fresh AI response */
+function EditMessageButton({
+  message,
+  onEditMessage,
+}: {
+  message: Message;
+  onEditMessage?: (newContent: string) => Promise<void>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+
+  const handleStartEdit = () => {
+    setEditContent(getMessageTextContent(message));
+    setIsEditing(true);
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!editContent.trim() || !onEditMessage) return;
+    setIsEditing(false);
+    await onEditMessage(editContent.trim());
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmitEdit();
+    }
+    if (e.key === "Escape") {
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="w-full mt-1">
+        <textarea
+          value={editContent}
+          onChange={(e) => setEditContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="w-full p-2 text-sm rounded-lg border border-border bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+          rows={3}
+          autoFocus
+        />
+        <div className="flex items-center gap-2 mt-1.5">
+          <button
+            onClick={handleSubmitEdit}
+            className="text-xs px-3 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+          >
+            Save & Resend
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="text-xs px-3 py-1 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleStartEdit}
+      className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
+      title="Edit message"
+    >
+      <Pencil className="size-3.5" />
+      <span>Edit</span>
     </button>
   );
 }
