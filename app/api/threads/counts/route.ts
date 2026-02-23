@@ -11,9 +11,7 @@ import { Message, Chat } from "@/db/models";
  */
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = session?.user?.id;
 
   const { searchParams } = new URL(request.url);
   const chatId = searchParams.get("chatId");
@@ -24,18 +22,20 @@ export async function GET(request: Request) {
 
   await ensureConnection();
 
-  // Verify chat ownership
-  if (!mongoose.Types.ObjectId.isValid(session.user.id)) {
-    console.error(`[ThreadsCounts API] Invalid userId in session: ${session.user.id}`);
-    return Response.json({ error: "Invalid user session" }, { status: 401 });
+  // Verify chat exists and matches user if not guest
+  const query: any = { _id: chatId };
+  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+    query.userId = userId;
   }
 
-  const chat = await Chat.findOne({
-    _id: chatId,
-    userId: session.user.id,
-  }).select("_id");
+  const chat = await Chat.findOne(query).select("_id userId");
 
   if (!chat) {
+    return Response.json({ error: "Chat not found" }, { status: 404 });
+  }
+
+  // If chat has a userId but session doesn't match, 401
+  if (chat.userId && chat.userId.toString() !== userId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

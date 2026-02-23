@@ -22,6 +22,9 @@ import { useScrollToBottom } from "./use-scroll-to-bottom";
 import { useThreadCounts } from "./use-thread-counts";
 
 import type { Attachment } from "./types";
+import { Suggestion } from "@/lib/suggestions";
+import { fetchUserSuggestions } from "@/app/actions/suggestions";
+
 import type { NodeType } from "@/lib/message-to-nodes";
 
 interface ChatListProps {
@@ -81,6 +84,19 @@ export function ChatList({
     useScrollToBottom<HTMLDivElement>();
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
   const { threadCounts, refresh: refreshThreadCounts } = useThreadCounts(chatId);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+
+  useEffect(() => {
+    async function loadSuggestions() {
+      try {
+        const data = await fetchUserSuggestions();
+        setSuggestions(data);
+      } catch (error) {
+        console.error("Failed to load suggestions:", error);
+      }
+    }
+    loadSuggestions();
+  }, []);
 
   return (
     <div className="flex flex-col size-full bg-paper relative">
@@ -104,16 +120,16 @@ export function ChatList({
                   className="size-full object-contain"
                 />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+              <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/50">
                 Lucidity Chat
               </h2>
-              <p className="text-muted-foreground max-w-md">
-                Ask questions, explore ideas, and get answers powered by
-                advanced AI. Start by typing a message below.
+              <p className="text-lg text-muted-foreground max-w-lg mb-10 leading-relaxed">
+                Unlock your potential with advanced AI. Ask questions, explore
+                ideas, and get precise answers in seconds.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl mt-8">
-                {SUGGESTIONS.map((suggestion, i) => {
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mt-4">
+                {suggestions.map((suggestion, i) => {
                   const Icon =
                     suggestion.iconName === "message"
                       ? MessageSquare
@@ -130,20 +146,28 @@ export function ChatList({
                         ? "text-green-500"
                         : suggestion.color === "orange"
                           ? "text-orange-500"
-                          : "text-purple-500";
+                          : suggestion.color === "purple"
+                            ? "text-purple-500"
+                            : suggestion.color === "indigo"
+                              ? "text-indigo-500"
+                              : suggestion.color === "rose"
+                                ? "text-rose-500"
+                                : "text-teal-500";
 
                   return (
                     <button
                       key={suggestion.value}
                       onClick={() => setInput(suggestion.value)}
-                      className="p-3 text-left rounded-xl border border-border/50 hover:border-border hover:bg-muted/50 transition-all flex items-center gap-3 bg-card/50"
+                      className="p-4 text-left rounded-2xl border border-border/40 hover:border-primary/30 hover:bg-primary/5 hover:scale-[1.02] transition-all flex items-center gap-4 bg-card/40 backdrop-blur-sm group shadow-sm"
                       style={{
                         animation: `canvas-fade-in-up 500ms ease-out ${300 + i * 80}ms forwards`,
                         opacity: 0,
                       }}
                     >
-                      <Icon className={`size-4 ${colorClass} shrink-0`} />
-                      <p className="text-sm text-foreground/80">
+                      <div className="size-10 rounded-xl bg-background flex items-center justify-center border border-border/50 group-hover:border-primary/20 transition-colors">
+                        <Icon className={`size-5 ${colorClass} shrink-0`} />
+                      </div>
+                      <p className="text-sm font-medium text-foreground/90 group-hover:text-foreground">
                         {suggestion.label}
                       </p>
                     </button>

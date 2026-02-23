@@ -269,13 +269,28 @@ export async function POST(req: NextRequest) {
             body: fullResponseText
           });
 
-          // Title Generation (first exchange only)
+          // Title & Category Generation (first exchange only)
           if (messages.length === 1) {
             const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
-            const title = await generateSimpleText(googleModels.fast,
-              `Summarize into title (<5 words), no markdown:\nUser: ${lastUserText}\nAI: ${fullResponseText}`
+            const analysis = await generateSimpleText(googleModels.fast,
+              `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
+               User: ${lastUserText}
+               AI: ${fullResponseText}`
             );
-            if (title) await Chat.findByIdAndUpdate(id, { title: title.trim() });
+
+            if (analysis) {
+              const parts = analysis.split('|');
+              const title = parts[0]?.replace('Title:', '').trim();
+              const category = parts[1]?.replace('Category:', '').trim();
+              
+              const updates: any = {};
+              if (title) updates.title = title;
+              if (category) updates.category = category;
+              
+              if (Object.keys(updates).length > 0) {
+                await Chat.findByIdAndUpdate(id, updates);
+              }
+            }
           }
         }
 

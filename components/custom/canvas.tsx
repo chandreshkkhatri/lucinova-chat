@@ -360,27 +360,27 @@ function EmptyState({ isThread, selectedText, setInput }: CanvasProps) {
 
       {/* Center content — matches Chat empty state structure */}
       <div
-        className="relative z-20 flex flex-col items-center text-center p-8 pt-16 max-w-md w-full"
+        className="relative z-20 flex flex-col items-center text-center p-8 pt-24 max-w-2xl w-full"
         style={{
           animation: "canvas-fade-in-up 600ms ease-out 100ms forwards",
           opacity: 0,
         }}
       >
-        <div className="size-16 mx-auto mb-4 rounded-xl flex items-center justify-center">
+        <div className="size-20 mx-auto mb-6 rounded-2xl flex items-center justify-center p-2">
           <Image
             src="/images/lucidity-logo.svg"
             alt="Lucidity"
-            width={64}
-            height={64}
+            width={80}
+            height={80}
             className="size-full object-contain"
           />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-4xl md:text-7xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/50">
           Lucidity Canvas
         </h2>
-        <p className="text-muted-foreground max-w-md">
-          Your thinking space. Ask questions, explore ideas, and branch into
-          threads.
+        <p className="text-lg text-muted-foreground max-w-lg mb-12 leading-relaxed">
+          Your infinite thinking space. Map out ideas, branch into threads, and
+          visualize the future of your projects.
         </p>
       </div>
     </div>

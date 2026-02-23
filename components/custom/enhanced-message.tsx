@@ -32,11 +32,16 @@ export const EnhancedMessage = memo(function EnhancedMessage({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // State for selection UI
+  const [isMobile, setIsMobile] = useState(false);
   const [selectionRects, setSelectionRects] = useState<DOMRect[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [capturedText, setCapturedText] = useState<string>("");
 
   useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    
     const handleSelectionChange = () => {
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
@@ -86,6 +91,7 @@ export const EnhancedMessage = memo(function EnhancedMessage({
 
     return () => {
       document.removeEventListener("selectionchange", handleSelectionChange);
+      window.removeEventListener("resize", checkMobile);
     };
   }, []);
 
@@ -99,6 +105,7 @@ export const EnhancedMessage = memo(function EnhancedMessage({
 
   // Button position: centered above the first highlighted line
   const firstRect = selectionRects.length > 0 ? selectionRects[0] : null;
+
   const buttonX = firstRect ? firstRect.left + firstRect.width / 2 : 0;
   const buttonY = firstRect ? firstRect.top : 0;
 
@@ -127,6 +134,11 @@ export const EnhancedMessage = memo(function EnhancedMessage({
     <div className="relative group">
       <div
         ref={containerRef}
+        onContextMenu={(e) => {
+          if (isMobile) {
+            e.preventDefault();
+          }
+        }}
         className="message-content relative max-w-full break-words prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
       >
         <Markdown>{content}</Markdown>

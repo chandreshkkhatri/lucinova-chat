@@ -92,87 +92,95 @@
 
   /* Modern Paper Background with Education Doodles */
   .bg-paper {
-    background-color: #fdf8f3; /* Warm cream matching peach theme */
+    background-color: hsl(var(--background));
     background-image:
-      url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c4a088' stroke-width='1.5' stroke-linecap='round' opacity='0.4'%3E%3Cpath d='M40 60 Q40 50 50 50 L90 50 L90 100 L50 100 Q40 100 40 90 Z'/%3E%3Cpath d='M50 50 L50 100'/%3E%3Cpath d='M240 40 L280 25 L320 40 L280 55 Z'/%3E%3Cpath d='M255 45 L255 65 Q280 75 305 65 L305 45'/%3E%3Cpath d='M320 40 L325 70'/%3E%3Cpath d='M340 140 L370 110 L380 120 L350 150 Z'/%3E%3Cpath d='M370 110 L385 95 L395 105 L380 120'/%3E%3Cpath d='M340 140 L335 150 L350 150'/%3E%3Cpath d='M50 180 L90 180 M65 180 Q65 210 55 220 M85 180 Q85 210 95 220'/%3E%3Ccircle cx='320' cy='280' r='3' fill='%23c4a088'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(45 320 280)'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(-45 320 280)'/%3E%3Cpath d='M180 250 L210 250 M195 250 L195 275 L160 330 L230 330 L195 275'/%3E%3Cpath d='M230 150 L260 150 L245 165 L260 180 L230 180'/%3E%3Cpath d='M140 100 Q140 70 170 70 Q200 70 200 100 Q200 120 180 130 L180 145 M160 145 L160 130 Q140 120 140 100'/%3E%3Cpath d='M160 150 L180 150'/%3E%3Cpath d='M50 280 C70 280 70 340 90 340 M50 340 C70 340 70 280 90 280'/%3E%3Cpath d='M60 295 L80 295 M60 325 L80 325'/%3E%3Cpath d='M40 370 L60 370 M50 360 L50 380'/%3E%3Cpath d='M120 370 L140 370'/%3E%3Cpath d='M200 370 L220 370'/%3E%3Ccircle cx='210' cy='360' r='1' fill='%23c4a088'/%3E%3Ccircle cx='210' cy='380' r='1' fill='%23c4a088'/%3E%3Crect x='300' y='360' width='20' height='20' rx='3'/%3E%3Cpath d='M310 360 L310 380'/%3E%3Ccircle cx='100' cy='40' r='3' fill='%23c4a088'/%3E%3Ccircle cx='350' cy='80' r='2' fill='%23c4a088'/%3E%3Ccircle cx='150' cy='200' r='2' fill='%23c4a088'/%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(
+        to bottom,
+        transparent,
+        hsl(var(--background) / 0.8) 40%,
+        hsl(var(--background)) 100%
+      ),
+      url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2388a0c4' stroke-width='1.5' stroke-linecap='round' opacity='0.2'%3E%3Cpath d='M40 60 Q40 50 50 50 L90 50 L90 100 L50 100 Q40 100 40 90 Z'/%3E%3Cpath d='M50 50 L50 100'/%3E%3Cpath d='M240 40 L280 25 L320 40 L280 55 Z'/%3E%3Cpath d='M255 45 L255 65 Q280 75 305 65 L305 45'/%3E%3Cpath d='M320 40 L325 70'/%3E%3Cpath d='M340 140 L370 110 L380 120 L350 150 Z'/%3E%3Cpath d='M370 110 L385 95 L395 105 L380 120'/%3E%3Cpath d='M340 140 L335 150 L350 150'/%3E%3Cpath d='M50 180 L90 180 M65 180 Q65 210 55 220 M85 180 Q85 210 95 220'/%3E%3Ccircle cx='320' cy='280' r='3' fill='%2388a0c4'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(45 320 280)'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(-45 320 280)'/%3E%3Cpath d='M180 250 L210 250 M195 250 L195 275 L160 330 L230 330 L195 275'/%3E%3Cpath d='M230 150 L260 150 L245 165 L260 180 L230 180'/%3E%3Cpath d='M140 100 Q140 70 170 70 Q200 70 200 100 Q200 120 180 130 L180 145 M160 145 L160 130 Q140 120 140 100'/%3E%3Cpath d='M160 150 L180 150'/%3E%3Cpath d='M50 280 C70 280 70 340 90 340 M50 340 C70 340 70 280 90 280'/%3E%3Cpath d='M60 295 L80 295 M60 325 L80 325'/%3E%3Cpath d='M40 370 L60 370 M50 360 L50 380'/%3E%3Cpath d='M120 370 L140 370'/%3E%3Cpath d='M200 370 L220 370'/%3E%3Ccircle cx='210' cy='360' r='1' fill='%2388a0c4'/%3E%3Ccircle cx='210' cy='380' r='1' fill='%2388a0c4'/%3E%3Crect x='300' y='360' width='20' height='20' rx='3'/%3E%3Cpath d='M310 360 L310 380'/%3E%3Ccircle cx='100' cy='40' r='3' fill='%2388a0c4'/%3E%3Ccircle cx='350' cy='80' r='2' fill='%2388a0c4'/%3E%3Ccircle cx='150' cy='200' r='2' fill='%2388a0c4'/%3E%3C/g%3E%3C/svg%3E"),
       url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
   .dark .bg-paper {
-    background-color: hsl(
-      15,
-      25%,
-      10%
-    ); /* Warm brown base matching --background */
+    background-color: hsl(var(--background));
     background-image:
-      url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23584a3d' stroke-width='1.5' stroke-linecap='round' opacity='0.4'%3E%3Cpath d='M40 60 Q40 50 50 50 L90 50 L90 100 L50 100 Q40 100 40 90 Z'/%3E%3Cpath d='M50 50 L50 100'/%3E%3Cpath d='M240 40 L280 25 L320 40 L280 55 Z'/%3E%3Cpath d='M255 45 L255 65 Q280 75 305 65 L305 45'/%3E%3Cpath d='M320 40 L325 70'/%3E%3Cpath d='M340 140 L370 110 L380 120 L350 150 Z'/%3E%3Cpath d='M370 110 L385 95 L395 105 L380 120'/%3E%3Cpath d='M340 140 L335 150 L350 150'/%3E%3Cpath d='M50 180 L90 180 M65 180 Q65 210 55 220 M85 180 Q85 210 95 220'/%3E%3Ccircle cx='320' cy='280' r='3' fill='%23584a3d'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(45 320 280)'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(-45 320 280)'/%3E%3Cpath d='M180 250 L210 250 M195 250 L195 275 L160 330 L230 330 L195 275'/%3E%3Cpath d='M230 150 L260 150 L245 165 L260 180 L230 180'/%3E%3Cpath d='M140 100 Q140 70 170 70 Q200 70 200 100 Q200 120 180 130 L180 145 M160 145 L160 130 Q140 120 140 100'/%3E%3Cpath d='M160 150 L180 150'/%3E%3Cpath d='M50 280 C70 280 70 340 90 340 M50 340 C70 340 70 280 90 280'/%3E%3Cpath d='M60 295 L80 295 M60 325 L80 325'/%3E%3Cpath d='M40 370 L60 370 M50 360 L50 380'/%3E%3Cpath d='M120 370 L140 370'/%3E%3Cpath d='M200 370 L220 370'/%3E%3Ccircle cx='210' cy='360' r='1' fill='%23584a3d'/%3E%3Ccircle cx='210' cy='380' r='1' fill='%23584a3d'/%3E%3Crect x='300' y='360' width='20' height='20' rx='3'/%3E%3Cpath d='M310 360 L310 380'/%3E%3Ccircle cx='100' cy='40' r='3' fill='%23584a3d'/%3E%3Ccircle cx='350' cy='80' r='2' fill='%23584a3d'/%3E%3Ccircle cx='150' cy='200' r='2' fill='%23584a3d'/%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(
+        to bottom,
+        transparent,
+        hsl(var(--background) / 0.8) 40%,
+        hsl(var(--background)) 100%
+      ),
+      url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%233d4a58' stroke-width='1.5' stroke-linecap='round' opacity='0.3'%3E%3Cpath d='M40 60 Q40 50 50 50 L90 50 L90 100 L50 100 Q40 100 40 90 Z'/%3E%3Cpath d='M50 50 L50 100'/%3E%3Cpath d='M240 40 L280 25 L320 40 L280 55 Z'/%3E%3Cpath d='M255 45 L255 65 Q280 75 305 65 L305 45'/%3E%3Cpath d='M320 40 L325 70'/%3E%3Cpath d='M340 140 L370 110 L380 120 L350 150 Z'/%3E%3Cpath d='M370 110 L385 95 L395 105 L380 120'/%3E%3Cpath d='M340 140 L335 150 L350 150'/%3E%3Cpath d='M50 180 L90 180 M65 180 Q65 210 55 220 M85 180 Q85 210 95 220'/%3E%3Ccircle cx='320' cy='280' r='3' fill='%233d4a58'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(45 320 280)'/%3E%3Cellipse cx='320' cy='280' rx='30' ry='12' transform='rotate(-45 320 280)'/%3E%3Cpath d='M180 250 L210 250 M195 250 L195 275 L160 330 L230 330 L195 275'/%3E%3Cpath d='M230 150 L260 150 L245 165 L260 180 L230 180'/%3E%3Cpath d='M140 100 Q140 70 170 70 Q200 70 200 100 Q200 120 180 130 L180 145 M160 145 L160 130 Q140 120 140 100'/%3E%3Cpath d='M160 150 L180 150'/%3E%3Cpath d='M50 280 C70 280 70 340 90 340 M50 340 C70 340 70 280 90 280'/%3E%3Cpath d='M60 295 L80 295 M60 325 L80 325'/%3E%3Cpath d='M40 370 L60 370 M50 360 L50 380'/%3E%3Cpath d='M120 370 L140 370'/%3E%3Cpath d='M200 370 L220 370'/%3E%3Ccircle cx='210' cy='360' r='1' fill='%233d4a58'/%3E%3Ccircle cx='210' cy='380' r='1' fill='%233d4a58'/%3E%3Crect x='300' y='360' width='20' height='20' rx='3'/%3E%3Cpath d='M310 360 L310 380'/%3E%3Ccircle cx='100' cy='40' r='3' fill='%233d4a58'/%3E%3Ccircle cx='350' cy='80' r='2' fill='%233d4a58'/%3E%3Ccircle cx='150' cy='200' r='2' fill='%233d4a58'/%3E%3C/g%3E%3C/svg%3E"),
       url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
   }
 }
 
 @layer base {
   :root {
-    /* Dark Peach Color Palette - Light Mode */
-    --background: 25 30% 97%;
-    --foreground: 20 25% 15%;
-    --card: 25 25% 99%;
-    --card-foreground: 20 25% 15%;
-    --popover: 25 25% 99%;
-    --popover-foreground: 20 25% 15%;
-    --primary: 18 55% 45%;
-    --primary-foreground: 25 30% 98%;
-    --secondary: 25 25% 92%;
-    --secondary-foreground: 20 25% 20%;
-    --muted: 25 20% 94%;
-    --muted-foreground: 20 15% 45%;
-    --accent: 30 35% 88%;
-    --accent-foreground: 20 25% 15%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 25 20% 88%;
-    --input: 25 20% 88%;
-    --ring: 18 55% 45%;
-    --chart-1: 18 65% 55%;
-    --chart-2: 35 60% 50%;
-    --chart-3: 10 50% 40%;
-    --chart-4: 45 55% 55%;
-    --chart-5: 5 70% 60%;
-    --radius: 0.5rem;
-    --thread-bg: 255 251 247;
-    --thread-border: 235 220 210;
-    --annotation-bg: 255 245 230;
-    --annotation-border: 220 160 100;
+    /* Midnight Vibrant Color Palette - Light Mode */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 94%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 263 70% 50%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.75rem;
+    --thread-bg: 210 40% 99%;
+    --thread-border: 214.3 31.8% 91.4%;
+    --annotation-bg: 263 70% 98%;
+    --annotation-border: 263 70% 90%;
   }
   .dark {
-    /* Dark Peach Color Palette - Dark Mode */
-    --background: 15 25% 10%;
-    --foreground: 25 20% 92%;
-    --card: 18 22% 12%;
-    --card-foreground: 25 20% 92%;
-    --popover: 18 22% 12%;
-    --popover-foreground: 25 20% 92%;
-    --primary: 20 60% 65%;
-    --primary-foreground: 15 25% 10%;
-    --secondary: 20 20% 18%;
-    --secondary-foreground: 25 20% 90%;
-    --muted: 20 18% 16%;
-    --muted-foreground: 25 15% 60%;
-    --accent: 25 25% 22%;
-    --accent-foreground: 25 20% 92%;
-    --destructive: 0 55% 45%;
-    --destructive-foreground: 25 20% 95%;
-    --border: 20 18% 20%;
-    --input: 20 18% 20%;
-    --ring: 20 60% 65%;
-    --chart-1: 20 70% 60%;
-    --chart-2: 35 55% 55%;
-    --chart-3: 10 45% 50%;
-    --chart-4: 45 50% 60%;
-    --chart-5: 5 65% 55%;
-    --thread-bg: 30 22 18;
-    --thread-border: 55 40 35;
-    --annotation-bg: 50 35 25;
-    --annotation-border: 200 140 80;
+    /* Midnight Vibrant Color Palette - Dark Mode */
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 6%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 11%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 222 47% 11%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 47% 11%;
+    --input: 222 47% 11%;
+    --ring: 263 70% 50%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --thread-bg: 222 47% 8%;
+    --thread-border: 222 47% 15%;
+    --annotation-bg: 263 70% 15%;
+    --annotation-border: 263 70% 25%;
   }
 }
 
