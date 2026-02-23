@@ -24,30 +24,40 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id: annotationId } = await params;
-  const { messages, modelId } = await request.json();
+  // Warm the DB connection once at the top
+  await ensureConnection();
 
-  const session = await auth();
+  const [{ id: annotationId }, body, session] = await Promise.all([
+    params,
+    request.json(),
+    auth(),
+  ]);
+
+  const { messages, modelId } = body;
+
   if (!session || !session.user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const annotation = await getAnnotationById(annotationId);
+  // Parallelize all independent DB reads upfront
+  const [annotation, currentUser] = await Promise.all([
+    getAnnotationById(annotationId),
+    getUserByEmail(session.user.email!),
+  ]);
+
   if (!annotation) {
     return new Response("Annotation not found", { status: 404 });
+  }
+  if (!currentUser) {
+    return new Response("User not found", { status: 401 });
   }
 
   const chatId = (annotation as any).chatId.toString();
   const messageId = (annotation as any).messageId.toString();
   const selectedText = (annotation as any).selectedText;
-
-  const currentUser = await getUserByEmail(session.user.email!);
-  if (!currentUser) {
-    return new Response("User not found", { status: 401 });
-  }
-
   const userId = (currentUser as any)._id.toString();
 
+  // Usage check
   const usageCheck = await checkUsageLimit(
     userId,
     currentUser.isPro || false,
@@ -62,27 +72,29 @@ export async function POST(
     }, { status: 429 });
   }
 
-  // Persist User Message
+  // Fire-and-forget: Persist user message (don't block streaming)
   const userMsg = messages.filter((m: any) => m.role === 'user' && m.content).pop();
   if (userMsg) {
-    await createMessage({
+    createMessage({
       chatId,
       senderId: userId,
       parentMsgId: annotationId,
       body: userMsg.content,
-    });
+    }).catch(err => console.error("[Annotation API] User message persist error:", err));
   }
 
-  // --- Context Construction ---
-  const chatDoc = await getChatById({ id: chatId });
+  // --- Context Construction (parallelized) ---
+  // Fetch chat doc + parent message in parallel
+  const [chatDoc, parentDbMsg] = await Promise.all([
+    getChatById({ id: chatId }),
+    DbMessage.findById(messageId).lean(),
+  ]);
+
   let additionalContextGoogle: any[] = [];
   let aiIdString = "";
 
   if (chatDoc) {
-    await ensureConnection();
     aiIdString = (chatDoc as any).aiId?.toString() || "";
-    // For annotations, context is the parent message containing the annotation
-    const parentDbMsg = await DbMessage.findById(messageId).lean();
 
     if (parentDbMsg && !Array.isArray(parentDbMsg)) {
         const toGoogle = (m: any) => ({
@@ -140,25 +152,14 @@ export async function POST(
                // Close the stream as soon as text generation is complete
                controller.close();
                
-               // Run DB writes asynchronously so they don't block the stream
+               // Fire-and-forget: Persist AI response
                if (fullResponseText && aiIdString) {
-                  (async () => {
-                     try {
-                        // Mock usage
-                        if (currentUser) {
-                           // await recordUsage(...);
-                        }
-
-                        await createMessage({
-                           chatId,
-                           senderId: aiIdString,
-                           parentMsgId: annotationId,
-                           body: fullResponseText
-                        });
-                     } catch (dbErr) {
-                        console.error("[Annotation API DB Write Error]:", dbErr);
-                     }
-                  })();
+                  createMessage({
+                     chatId,
+                     senderId: aiIdString,
+                     parentMsgId: annotationId,
+                     body: fullResponseText
+                  }).catch(err => console.error("[Annotation API] AI message persist error:", err));
                }
             } catch(err) {
                console.error("[Annotation API] Streaming error:", err);

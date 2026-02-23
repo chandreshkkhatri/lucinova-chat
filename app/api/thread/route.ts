@@ -23,6 +23,9 @@ interface UIMessage {
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  // Warm the DB connection once at the top
+  await ensureConnection();
+
   const body = await request.json();
   const {
     messages,
@@ -43,10 +46,14 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // Get user info
-  const currentUser = await getUserByEmail(session.user.email!);
+  // Parallelize user lookup + chat doc fetch — both are independent reads
+  const [currentUser, chatDoc] = await Promise.all([
+    getUserByEmail(session.user.email!),
+    getChatById({ id: mainChatId }),
+  ]);
+
   if (!currentUser) return new Response("User not found", { status: 401 });
-  
+
   const userId = (currentUser as any)._id.toString();
 
   // Check usage limit
@@ -68,31 +75,29 @@ export async function POST(request: Request) {
       }, { status: 429 });
   }
 
-  // Persist User Message (The last one in the list is the new reply)
-  // We filter out empty content or system messages if any
+  // Fire-and-forget: Persist user message (don't block streaming)
   const userMsg = messages.filter(m => m.role === 'user' && m.content).pop();
-  
   if (userMsg) {
-    await createMessage({
+    createMessage({
       chatId: mainChatId,
       senderId: userId,
       parentMsgId: parentMessageId,
       body: userMsg.content,
-    });
+    }).catch(err => console.error("[Thread API] User message persist error:", err));
   }
 
-  // --- Context Construction ---
-  const chatDoc = await getChatById({ id: mainChatId });
+  // --- Context Construction (parallelized) ---
   let additionalContextGoogle: any[] = [];
   let aiIdString = "";
 
   if (chatDoc) {
-     await ensureConnection();
      aiIdString = (chatDoc as any).aiId?.toString() || "";
+
+     // Fetch parent message (needed for sibling query)
      const parentDbMsg = await DbMessage.findById(parentMessageId).lean();
 
      if (parentDbMsg && !Array.isArray(parentDbMsg)) {
-        // Fetch previous context (siblings)
+        // Fetch sibling messages for context
         const prevDbMsgs = await DbMessage.find({
            chatId: mainChatId,
            parentMsgId: null,
@@ -102,13 +107,11 @@ export async function POST(request: Request) {
         .limit(4)
         .lean();
 
-        // Convert DB messages to Google Content
         const toGoogle = (m: any) => ({
            role: m.senderId.toString() === aiIdString ? "model" : "user",
            parts: [{ text: m.body }]
         });
 
-        // Add history: reversed prev messages + parent message
         additionalContextGoogle = [
            ...prevDbMsgs.reverse().map(toGoogle),
            toGoogle(parentDbMsg)
@@ -160,22 +163,18 @@ export async function POST(request: Request) {
                  }
               }
               
-              // Persist AI Response
+              // Close stream first so client sees completion immediately
+              controller.close();
+
+              // Fire-and-forget: Persist AI Response
               if (fullResponseText && aiIdString) {
-                  // Usage tracking (mock or estimate)
-                  if (currentUser) {
-                      // await recordUsage(...)
-                  }
-                  
-                  await createMessage({
+                  createMessage({
                      chatId: mainChatId,
                      senderId: aiIdString,
                      parentMsgId: parentMessageId,
                      body: fullResponseText
-                  });
+                  }).catch(err => console.error("[Thread API] AI message persist error:", err));
               }
-              
-              controller.close();
            } catch(err) {
               console.error("[Thread API] Streaming error:", err);
               controller.error(err);

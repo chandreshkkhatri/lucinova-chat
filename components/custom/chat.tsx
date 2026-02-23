@@ -221,27 +221,7 @@ export function Chat({
     e?.preventDefault();
     if (!input.trim() && attachments.length === 0) return;
 
-    if (!isGuest) {
-      try {
-        const checkRes = await fetch("/api/usage");
-        if (checkRes.ok) {
-          const usageData = await checkRes.json();
-          if (usageData.current.percentUsed > 100) {
-            setUsageLimitInfo({
-              exceeded: true,
-              isPro: usageData.isPro,
-              currentUsage: usageData.current.unitsUsed,
-              limit: usageData.current.limit,
-              periodEnd: usageData.current.periodEnd,
-            });
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Usage check failed:", err);
-      }
-    }
-
+    // Usage limits are enforced server-side; the onError handler catches 429s.
     // Attachments are passed directly; useGoogleChat handles them
     const fileParts: any[] = attachments.map((a) => ({
       name: a.name,

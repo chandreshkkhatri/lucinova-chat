@@ -125,6 +125,9 @@ async function generateSimpleText(modelId: string, prompt: string) {
 }
 
 export async function POST(req: NextRequest) {
+  // Warm the DB connection once — all subsequent queries skip this check
+  await ensureConnection();
+
   const {
     id,
     messages,
@@ -142,14 +145,20 @@ export async function POST(req: NextRequest) {
   let userId: string | null = null;
   let currentUser: any = null;
 
-  // Auth & Usage Check
+  // --- Auth & Usage Check (parallelised where possible) ---
   if (!isGuest && session?.user?.email) {
-    const user = await getUserByEmail(session.user.email);
+    // Fetch user and existing chat in parallel — both are independent reads
+    const [user, existingChat] = await Promise.all([
+      getUserByEmail(session.user.email),
+      getChatById({ id }),
+    ]);
+
     if (!user) return new Response("User not found", { status: 401 });
-    
+
     userId = (user as any)._id.toString();
     currentUser = user;
 
+    // Usage check — needs user data but nothing else
     const usageCheck = await checkUsageLimit(
       userId!,
       user.isPro || false,
@@ -167,14 +176,11 @@ export async function POST(req: NextRequest) {
         periodEnd: usageCheck.periodEnd,
       }, { status: 429 });
     }
-  }
 
-  // --- Project & DB Setup ---
-  let validatedProjectId: string | undefined;
-  let chat: any = null;
+    // --- Project validation + Chat creation (parallel where possible) ---
+    let validatedProjectId: string | undefined;
+    let chat: any = existingChat;
 
-  if (!isGuest && userId) {
-    // Validate project
     if (requestProjectId) {
       try {
         const project = await getProjectById(requestProjectId);
@@ -184,20 +190,18 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
-    // Ensure Chat Persistence
-    chat = await getChatById({ id });
     if (!chat) {
       const aiBotId = await getAiBotId();
       chat = await createChat(
-        userId,
+        userId!,
         aiBotId,
         "New Chat",
         id,
         validatedProjectId
       );
     }
-    
-    // Persist User Message
+
+    // Fire-and-forget: Persist user message (don't block streaming)
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     if (lastUserMsg) {
       const filesToSave = lastUserMsg.experimental_attachments?.map((a: any) => ({
@@ -205,103 +209,134 @@ export async function POST(req: NextRequest) {
         url: a.url,
         mime: a.contentType || "application/octet-stream"
       })) || [];
-      
-      await createMessage({
+
+      createMessage({
         chatId: id,
-        senderId: userId,
+        senderId: userId!,
         body: lastUserMsg.content || (filesToSave.length ? "[Attachment]" : " "),
         files: filesToSave
-      });
+      }).catch(err => console.error("[Chat API] User message persist error:", err));
     }
-  }
 
-  // --- Context Retrieval ---
-  let projectMemoryContext = "";
-  if (!isGuest && userId && chat) {
+    // --- Build AI request while context loads in parallel ---
     const chatProjectId = validatedProjectId || chat?.projectId?.toString();
-    if (chatProjectId) {
-      try {
-        const summaries = await getProjectChatSummaries(chatProjectId, id, 5);
-        if (summaries.length > 0) {
-          const project = await getProjectById(chatProjectId);
-          const projectName = (project as any)?.name || "this project";
-          projectMemoryContext = `\n\nYou are working within the project "${projectName}". Previous context:\n` +
-            summaries.map(c => `[${c.title}]: ${c.summary}`).join("\n");
+
+    // Start content conversion and project context retrieval in parallel
+    const [googleContents, projectMemoryContext] = await Promise.all([
+      convertMessagesToGoogleContent(messages),
+      (async () => {
+        if (!chatProjectId) return "";
+        try {
+          const summaries = await getProjectChatSummaries(chatProjectId, id, 5);
+          if (summaries.length > 0) {
+            const project = await getProjectById(chatProjectId);
+            const projectName = (project as any)?.name || "this project";
+            return `\n\nYou are working within the project "${projectName}". Previous context:\n` +
+              summaries.map((c: any) => `[${c.title}]: ${c.summary}`).join("\n");
+          }
+        } catch {}
+        return "";
+      })(),
+    ]);
+
+    const targetModelId = modelId || DEFAULT_MODEL_ID;
+    const systemInstruction = `${appConfig.getModelIdentity()} You can help with various tasks. Today is ${new Date().toLocaleDateString()}.${projectMemoryContext}`;
+
+    const streamingResponse = await googleClient.models.generateContentStream({
+      model: targetModelId,
+      contents: googleContents,
+      config: { systemInstruction },
+    });
+
+    // Create ReadableStream for response
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        let fullResponseText = "";
+
+        try {
+          for await (const chunk of streamingResponse) {
+            const text = chunk.text;
+            if (text) {
+              fullResponseText += text;
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+
+          // Close the stream immediately so the client sees the response as complete
+          controller.close();
+
+          // --- Post-Generation Logic (fire-and-forget, non-blocking) ---
+          if (fullResponseText && chat) {
+            (async () => {
+              try {
+                await createMessage({
+                  chatId: id,
+                  senderId: (chat as any).aiId,
+                  body: fullResponseText
+                });
+
+                if (messages.length === 1) {
+                  const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
+                  const analysis = await generateSimpleText(googleModels.fast,
+                    `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
+                     User: ${lastUserText}
+                     AI: ${fullResponseText}`
+                  );
+
+                  if (analysis) {
+                    const parts = analysis.split('|');
+                    const title = parts[0]?.replace('Title:', '').trim();
+                    const category = parts[1]?.replace('Category:', '').trim();
+
+                    const updates: any = {};
+                    if (title) updates.title = title;
+                    if (category) updates.category = category;
+
+                    if (Object.keys(updates).length > 0) {
+                      await Chat.findByIdAndUpdate(id, updates);
+                    }
+                  }
+                }
+              } catch (postGenErr) {
+                console.error("[Chat API] Post-generation error:", postGenErr);
+              }
+            })();
+          }
+        } catch (err) {
+          console.error("[Chat API] Streaming error:", err);
+          controller.error(err);
         }
-      } catch {}
-    }
+      }
+    });
+
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
 
-  // --- Google GenAI Streaming ---
+  // --- Guest path (no DB ops, just stream) ---
   const googleContents = await convertMessagesToGoogleContent(messages);
   const targetModelId = modelId || DEFAULT_MODEL_ID;
-  const systemInstruction = `${appConfig.getModelIdentity()} You can help with various tasks. Today is ${new Date().toLocaleDateString()}.${projectMemoryContext}`;
+  const systemInstruction = `${appConfig.getModelIdentity()} You can help with various tasks. Today is ${new Date().toLocaleDateString()}.`;
 
   const streamingResponse = await googleClient.models.generateContentStream({
     model: targetModelId,
     contents: googleContents,
-    config: {
-      systemInstruction: systemInstruction,
-    }
+    config: { systemInstruction },
   });
 
-  // Create ReadableStream for response
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      let fullResponseText = "";
-      
       try {
         for await (const chunk of streamingResponse) {
           const text = chunk.text;
           if (text) {
-             fullResponseText += text;
-             controller.enqueue(encoder.encode(text));
+            controller.enqueue(encoder.encode(text));
           }
         }
-        
-        // Close the stream immediately so the client sees the response as complete
         controller.close();
-
-        // --- Post-Generation Logic (fire-and-forget, non-blocking) ---
-        if (!isGuest && userId && fullResponseText && chat) {
-          (async () => {
-            try {
-              // Persist AI Message
-              await createMessage({
-                chatId: id,
-                senderId: (chat as any).aiId,
-                body: fullResponseText
-              });
-
-              // Title & Category Generation (first exchange only)
-              if (messages.length === 1) {
-                const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
-                const analysis = await generateSimpleText(googleModels.fast,
-                  `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
-                   User: ${lastUserText}
-                   AI: ${fullResponseText}`
-                );
-
-                if (analysis) {
-                  const parts = analysis.split('|');
-                  const title = parts[0]?.replace('Title:', '').trim();
-                  const category = parts[1]?.replace('Category:', '').trim();
-                  
-                  const updates: any = {};
-                  if (title) updates.title = title;
-                  if (category) updates.category = category;
-                  
-                  if (Object.keys(updates).length > 0) {
-                    await Chat.findByIdAndUpdate(id, updates);
-                  }
-                }
-              }
-            } catch (postGenErr) {
-              console.error("[Chat API] Post-generation error:", postGenErr);
-            }
-          })();
-        }
       } catch (err) {
         console.error("[Chat API] Streaming error:", err);
         controller.error(err);
