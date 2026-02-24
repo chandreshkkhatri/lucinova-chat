@@ -245,7 +245,10 @@ export async function POST(req: NextRequest) {
     const streamingResponse = await googleClient.models.generateContentStream({
       model: targetModelId,
       contents: googleContents,
-      config: { systemInstruction },
+      config: {
+        systemInstruction,
+        tools: [{ googleSearch: {} }],
+      },
     });
 
     // Create ReadableStream for response
@@ -253,18 +256,29 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         let fullResponseText = "";
+        let lastGroundingMetadata: any = null;
+        let streamClosed = false;
 
         try {
           for await (const chunk of streamingResponse) {
+            if (streamClosed) break;
             const text = chunk.text;
             if (text) {
               fullResponseText += text;
-              controller.enqueue(encoder.encode(text));
+              controller.enqueue(encoder.encode(`0:${text}\n`));
             }
+            // Capture grounding metadata (appears on the last chunk)
+            const gm = (chunk as any).candidates?.[0]?.groundingMetadata;
+            if (gm) lastGroundingMetadata = gm;
+          }
+
+          // Send grounding metadata if present
+          if (!streamClosed && lastGroundingMetadata) {
+            controller.enqueue(encoder.encode(`2:${JSON.stringify(lastGroundingMetadata)}\n`));
           }
 
           // Close the stream immediately so the client sees the response as complete
-          controller.close();
+          if (!streamClosed) { controller.close(); streamClosed = true; }
 
           // --- Post-Generation Logic (fire-and-forget, non-blocking) ---
           if (fullResponseText && chat) {
@@ -305,7 +319,7 @@ export async function POST(req: NextRequest) {
           }
         } catch (err) {
           console.error("[Chat API] Streaming error:", err);
-          controller.error(err);
+          if (!streamClosed) { try { controller.error(err); } catch {} streamClosed = true; }
         }
       }
     });
@@ -323,23 +337,34 @@ export async function POST(req: NextRequest) {
   const streamingResponse = await googleClient.models.generateContentStream({
     model: targetModelId,
     contents: googleContents,
-    config: { systemInstruction },
+    config: {
+      systemInstruction,
+      tools: [{ googleSearch: {} }],
+    },
   });
 
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+      let lastGroundingMetadata: any = null;
+      let streamClosed = false;
       try {
         for await (const chunk of streamingResponse) {
+          if (streamClosed) break;
           const text = chunk.text;
           if (text) {
-            controller.enqueue(encoder.encode(text));
+            controller.enqueue(encoder.encode(`0:${text}\n`));
           }
+          const gm = (chunk as any).candidates?.[0]?.groundingMetadata;
+          if (gm) lastGroundingMetadata = gm;
         }
-        controller.close();
+        if (!streamClosed && lastGroundingMetadata) {
+          controller.enqueue(encoder.encode(`2:${JSON.stringify(lastGroundingMetadata)}\n`));
+        }
+        if (!streamClosed) { controller.close(); streamClosed = true; }
       } catch (err) {
         console.error("[Chat API] Streaming error:", err);
-        controller.error(err);
+        if (!streamClosed) { try { controller.error(err); } catch {} streamClosed = true; }
       }
     }
   });

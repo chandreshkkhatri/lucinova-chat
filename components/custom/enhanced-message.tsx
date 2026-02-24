@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquareText } from "lucide-react";
+import { MessageSquareText, Globe } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState, RefObject } from "react";
 
 import { Message } from "@/lib/chat-utils";
@@ -143,6 +143,11 @@ export const EnhancedMessage = memo(function EnhancedMessage({
       >
         <Markdown>{content}</Markdown>
 
+        {/* Google Search Grounding Sources */}
+        {message.role === "assistant" && message.groundingMetadata?.groundingChunks && (
+          <SourcesCitation groundingMetadata={message.groundingMetadata} />
+        )}
+
         {(message as any).experimental_attachments &&
           (message as any).experimental_attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
@@ -230,6 +235,83 @@ export const EnhancedMessage = memo(function EnhancedMessage({
     </div>
   );
 });
+
+// Source citation cards for Google Search grounding
+function SourcesCitation({
+  groundingMetadata,
+}: {
+  groundingMetadata: NonNullable<Message["groundingMetadata"]>;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const chunks = groundingMetadata.groundingChunks?.filter(c => c.web?.uri) || [];
+  if (chunks.length === 0) return null;
+
+  const MAX_VISIBLE = 3;
+  const visibleChunks = showAll ? chunks : chunks.slice(0, MAX_VISIBLE);
+  const hasMore = chunks.length > MAX_VISIBLE;
+
+  const getDomain = (url: string) => {
+    try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
+  };
+
+  const getFaviconUrl = (url: string) => {
+    try {
+      const domain = new URL(url).hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    } catch { return null; }
+  };
+
+  return (
+    <div className="mt-3 pt-2 border-t border-white/5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Globe className="size-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">
+          Sources ({chunks.length})
+        </span>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        {visibleChunks.map((chunk, i) => {
+          const uri = chunk.web!.uri!;
+          const title = chunk.web?.title || getDomain(uri);
+          const favicon = getFaviconUrl(uri);
+
+          return (
+            <a
+              key={i}
+              href={uri}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 min-w-[180px] max-w-[240px] px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all text-left no-underline group/source"
+            >
+              {favicon ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={favicon} alt="" className="size-4 rounded-sm shrink-0" />
+              ) : (
+                <Globe className="size-4 text-muted-foreground shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-foreground truncate group-hover/source:text-purple-400 transition-colors">
+                  {title}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {getDomain(uri)}
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-1 text-[11px] text-purple-400 hover:text-purple-300 transition-colors"
+        >
+          {showAll ? "Show less" : `+${chunks.length - MAX_VISIBLE} more sources`}
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Sub-component to handle rendering of saved annotations
 function SavedAnnotationsOverlay({

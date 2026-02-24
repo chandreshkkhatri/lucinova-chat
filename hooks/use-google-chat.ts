@@ -130,26 +130,70 @@ export function useGoogleChat({
         
         setMessages((prev) => [...prev, assistantMessage]);
 
+        let lineBuffer = "";
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           
           const chunk = decoder.decode(value, { stream: true });
-          
-          // Server returns raw text stream for now
-          assistantMessage = {
-             ...assistantMessage,
-             content: assistantMessage.content + chunk
-          };
+          lineBuffer += chunk;
+
+          // Process complete lines from the buffer
+          const lines = lineBuffer.split("\n");
+          lineBuffer = lines.pop() || ""; // Keep the incomplete last line in buffer
+
+          for (const line of lines) {
+            if (!line) continue;
+
+            if (line.startsWith("0:")) {
+              // Text chunk
+              const text = line.slice(2);
+              assistantMessage = {
+                ...assistantMessage,
+                content: assistantMessage.content + text,
+              };
+            } else if (line.startsWith("2:")) {
+              // Grounding metadata
+              try {
+                const metadata = JSON.parse(line.slice(2));
+                assistantMessage = {
+                  ...assistantMessage,
+                  groundingMetadata: metadata,
+                };
+              } catch {}
+            }
+          }
           
           setMessages((prev) => {
              const newMessages = [...prev];
-             // Update the last message (which is the assistant message we added)
              newMessages[newMessages.length - 1] = { ...assistantMessage };
              return newMessages;
           });
         }
-        
+
+        // Process any remaining buffered content
+        if (lineBuffer) {
+          if (lineBuffer.startsWith("0:")) {
+            assistantMessage = {
+              ...assistantMessage,
+              content: assistantMessage.content + lineBuffer.slice(2),
+            };
+          } else if (lineBuffer.startsWith("2:")) {
+            try {
+              assistantMessage = {
+                ...assistantMessage,
+                groundingMetadata: JSON.parse(lineBuffer.slice(2)),
+              };
+            } catch {}
+          }
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = { ...assistantMessage };
+            return newMessages;
+          });
+        }
+
         setIsLoading(false);
         setStatus("idle");
         onFinish?.(assistantMessage);

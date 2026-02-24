@@ -146,25 +146,38 @@ export async function POST(request: Request) {
      const streamingResponse = await googleClient.models.generateContentStream({
         model: targetModelId,
         contents: fullGoogleContext,
-        config: { systemInstruction }
+        config: {
+          systemInstruction,
+          tools: [{ googleSearch: {} }],
+        }
      });
 
      const stream = new ReadableStream({
         async start(controller) {
            const encoder = new TextEncoder();
            let fullResponseText = "";
+           let lastGroundingMetadata: any = null;
+           let streamClosed = false;
            
            try {
               for await (const chunk of streamingResponse) {
+                 if (streamClosed) break;
                  const text = chunk.text;
                  if (text) {
                     fullResponseText += text;
-                    controller.enqueue(encoder.encode(text));
+                    controller.enqueue(encoder.encode(`0:${text}\n`));
                  }
+                 const gm = (chunk as any).candidates?.[0]?.groundingMetadata;
+                 if (gm) lastGroundingMetadata = gm;
               }
               
+              // Send grounding metadata if present
+              if (!streamClosed && lastGroundingMetadata) {
+                 controller.enqueue(encoder.encode(`2:${JSON.stringify(lastGroundingMetadata)}\n`));
+              }
+
               // Close stream first so client sees completion immediately
-              controller.close();
+              if (!streamClosed) { controller.close(); streamClosed = true; }
 
               // Fire-and-forget: Persist AI Response
               if (fullResponseText && aiIdString) {
@@ -177,7 +190,7 @@ export async function POST(request: Request) {
               }
            } catch(err) {
               console.error("[Thread API] Streaming error:", err);
-              controller.error(err);
+              if (!streamClosed) { try { controller.error(err); } catch {} streamClosed = true; }
            }
         }
      });

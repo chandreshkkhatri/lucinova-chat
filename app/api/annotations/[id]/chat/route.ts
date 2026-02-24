@@ -132,43 +132,56 @@ export async function POST(
      const streamingResponse = await googleClient.models.generateContentStream({
         model: modelId || DEFAULT_MODEL_ID,
         contents: fullGoogleContext,
-        config: { systemInstruction }
+        config: {
+          systemInstruction,
+          tools: [{ googleSearch: {} }],
+        }
      });
 
      const stream = new ReadableStream({
         async start(controller) {
            const encoder = new TextEncoder();
            let fullResponseText = "";
+           let lastGroundingMetadata: any = null;
+           let streamClosed = false;
            
            try {
               for await (const chunk of streamingResponse) {
+                 if (streamClosed) break;
                  const text = chunk.text;
                  if (text) {
                     fullResponseText += text;
-                    controller.enqueue(encoder.encode(text));
+                    controller.enqueue(encoder.encode(`0:${text}\n`));
                  }
+                 const gm = (chunk as any).candidates?.[0]?.groundingMetadata;
+                 if (gm) lastGroundingMetadata = gm;
               }
               
-               // Close the stream as soon as text generation is complete
-               controller.close();
-               
-               // Fire-and-forget: Persist AI response
-               if (fullResponseText && aiIdString) {
-                  createMessage({
-                     chatId,
-                     senderId: aiIdString,
-                     parentMsgId: annotationId,
-                     body: fullResponseText
-                  }).catch(err => console.error("[Annotation API] AI message persist error:", err));
-               }
-            } catch(err) {
-               console.error("[Annotation API] Streaming error:", err);
-               controller.error(err);
-            }
-         }
-      });
+              // Send grounding metadata if present
+              if (!streamClosed && lastGroundingMetadata) {
+                 controller.enqueue(encoder.encode(`2:${JSON.stringify(lastGroundingMetadata)}\n`));
+              }
 
-      return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+              // Close the stream as soon as text generation is complete
+              if (!streamClosed) { controller.close(); streamClosed = true; }
+              
+              // Fire-and-forget: Persist AI response
+              if (fullResponseText && aiIdString) {
+                 createMessage({
+                    chatId,
+                    senderId: aiIdString,
+                    parentMsgId: annotationId,
+                    body: fullResponseText
+                 }).catch(err => console.error("[Annotation API] AI message persist error:", err));
+              }
+           } catch(err) {
+              console.error("[Annotation API] Streaming error:", err);
+              if (!streamClosed) { try { controller.error(err); } catch {} streamClosed = true; }
+           }
+        }
+     });
+
+     return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
   } catch (error) {
      console.error("[Annotation API] Generation error:", error);
      return new Response("Internal Server Error", { status: 500 });
