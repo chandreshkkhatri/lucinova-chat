@@ -394,6 +394,52 @@ export async function POST(req: NextRequest) {
   const targetModelId = modelId || DEFAULT_MODEL_ID;
   const systemInstruction = `${appConfig.getModelIdentity()} You can help with various tasks. Today is ${new Date().toLocaleDateString()}.`;
 
+  // Image model path for guests (non-streaming)
+  const isGuestImageModel = targetModelId.includes('image');
+  if (isGuestImageModel) {
+    const imageResponse = await googleClient.models.generateContent({
+      model: targetModelId,
+      contents: googleContents,
+      config: {
+        systemInstruction,
+        responseModalities: ['TEXT', 'IMAGE'],
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    const stream = new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          const parts = imageResponse.candidates?.[0]?.content?.parts || [];
+          for (const part of parts) {
+            if (part.text) {
+              controller.enqueue(encoder.encode(`0:${part.text}\n`));
+            } else if (part.inlineData) {
+              controller.enqueue(encoder.encode(`1:${JSON.stringify({
+                mimeType: part.inlineData.mimeType,
+                data: part.inlineData.data,
+              })}\n`));
+            }
+          }
+          const gm = (imageResponse as any).candidates?.[0]?.groundingMetadata;
+          if (gm) {
+            controller.enqueue(encoder.encode(`2:${JSON.stringify(gm)}\n`));
+          }
+          controller.close();
+        } catch (err) {
+          console.error("[Chat API] Guest image generation error:", err);
+          try { controller.error(err); } catch {}
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  // Text model path for guests (streaming)
   const streamingResponse = await googleClient.models.generateContentStream({
     model: targetModelId,
     contents: googleContents,
