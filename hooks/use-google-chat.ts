@@ -153,6 +153,15 @@ export function useGoogleChat({
                 ...assistantMessage,
                 content: assistantMessage.content + text,
               };
+            } else if (line.startsWith("1:")) {
+              // Inline image data
+              try {
+                const imageData = JSON.parse(line.slice(2));
+                assistantMessage = {
+                  ...assistantMessage,
+                  generatedImages: [...(assistantMessage.generatedImages || []), imageData],
+                };
+              } catch {}
             } else if (line.startsWith("2:")) {
               // Grounding metadata
               try {
@@ -179,6 +188,14 @@ export function useGoogleChat({
               ...assistantMessage,
               content: assistantMessage.content + lineBuffer.slice(2),
             };
+          } else if (lineBuffer.startsWith("1:")) {
+            try {
+              const imageData = JSON.parse(lineBuffer.slice(2));
+              assistantMessage = {
+                ...assistantMessage,
+                generatedImages: [...(assistantMessage.generatedImages || []), imageData],
+              };
+            } catch {}
           } else if (lineBuffer.startsWith("2:")) {
             try {
               assistantMessage = {

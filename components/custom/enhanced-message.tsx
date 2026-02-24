@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquareText, Globe } from "lucide-react";
+import { MessageSquareText, Globe, Download } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState, RefObject } from "react";
 
 import { Message } from "@/lib/chat-utils";
@@ -142,6 +142,30 @@ export const EnhancedMessage = memo(function EnhancedMessage({
         className="message-content relative max-w-full break-words prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
       >
         <Markdown>{content}</Markdown>
+
+        {/* Generated Images from Gemini Image Model */}
+        {message.role === "assistant" && message.generatedImages && message.generatedImages.length > 0 && (
+          <div className="flex flex-wrap gap-3 mt-3">
+            {message.generatedImages.map((img, i) => (
+              <div key={i} className="relative group/img max-w-[512px] w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`data:${img.mimeType};base64,${img.data}`}
+                  alt={`Generated image ${i + 1}`}
+                  className="rounded-xl w-full h-auto object-contain border border-white/10 shadow-lg"
+                />
+                <a
+                  href={`data:${img.mimeType};base64,${img.data}`}
+                  download={`generated-image-${i + 1}.png`}
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white opacity-0 group-hover/img:opacity-100 transition-opacity"
+                  title="Download image"
+                >
+                  <Download className="size-4" />
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Google Search Grounding Sources */}
         {message.role === "assistant" && message.groundingMetadata?.groundingChunks && (

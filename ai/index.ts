@@ -5,6 +5,8 @@ export const PRIMARY_MODEL_ID =
   process.env.GOOGLE_GEMINI_PRIMARY_MODEL || "gemini-3-pro-preview";
 export const FAST_MODEL_ID =
   process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-3-flash-preview";
+export const IMAGE_MODEL_ID =
+  process.env.GOOGLE_GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview";
 
 // Default model ID used when no specific model is requested
 export const DEFAULT_MODEL_ID = FAST_MODEL_ID;
@@ -25,5 +27,6 @@ export const googleClient = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
 export const googleModels = {
    primary: PRIMARY_MODEL_ID,
    fast: FAST_MODEL_ID,
+   image: IMAGE_MODEL_ID,
    default: DEFAULT_MODEL_ID
 };

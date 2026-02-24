@@ -242,6 +242,66 @@ export async function POST(req: NextRequest) {
     const targetModelId = modelId || DEFAULT_MODEL_ID;
     const systemInstruction = `${appConfig.getModelIdentity()} You can help with various tasks. Today is ${new Date().toLocaleDateString()}.${projectMemoryContext}`;
 
+    // --- Image Model Path (non-streaming, uses generateContent) ---
+    const isImageModel = targetModelId.includes('image');
+    if (isImageModel) {
+      const imageResponse = await googleClient.models.generateContent({
+        model: targetModelId,
+        contents: googleContents,
+        config: {
+          systemInstruction,
+          responseModalities: ['TEXT', 'IMAGE'],
+          tools: [{ googleSearch: {} }],
+        },
+      });
+
+      const stream = new ReadableStream({
+        start(controller) {
+          const encoder = new TextEncoder();
+          try {
+            const parts = imageResponse.candidates?.[0]?.content?.parts || [];
+            let fullResponseText = "";
+            for (const part of parts) {
+              if (part.text) {
+                fullResponseText += part.text;
+                controller.enqueue(encoder.encode(`0:${part.text}\n`));
+              } else if (part.inlineData) {
+                controller.enqueue(encoder.encode(`1:${JSON.stringify({
+                  mimeType: part.inlineData.mimeType,
+                  data: part.inlineData.data,
+                })}\n`));
+              }
+            }
+
+            // Send grounding metadata if present
+            const gm = (imageResponse as any).candidates?.[0]?.groundingMetadata;
+            if (gm) {
+              controller.enqueue(encoder.encode(`2:${JSON.stringify(gm)}\n`));
+            }
+
+            controller.close();
+
+            // Fire-and-forget: persist AI message
+            if (fullResponseText && chat) {
+              createMessage({
+                chatId: id,
+                senderId: (chat as any).aiId,
+                body: fullResponseText,
+              }).catch(err => console.error("[Chat API] Image message persist error:", err));
+            }
+          } catch (err) {
+            console.error("[Chat API] Image generation error:", err);
+            try { controller.error(err); } catch {}
+          }
+        }
+      });
+
+      return new Response(stream, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+    }
+
+    // --- Text Model Path (streaming) ---
     const streamingResponse = await googleClient.models.generateContentStream({
       model: targetModelId,
       contents: googleContents,

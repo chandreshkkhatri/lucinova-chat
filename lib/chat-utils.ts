@@ -5,6 +5,7 @@ export interface Message {
   createdAt?: Date;
   parts?: any[];
   experimental_attachments?: any[];
+  generatedImages?: Array<{ mimeType: string; data: string }>;
   groundingMetadata?: {
     groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
     groundingSupports?: Array<{
