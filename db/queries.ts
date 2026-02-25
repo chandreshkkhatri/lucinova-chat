@@ -367,7 +367,7 @@ export async function getChatsByUserId(userId: string) {
     return [];
   }
   const chats = await Chat.find({ userId })
-    .sort({ lastMsgAt: -1 })
+    .sort({ isPinned: -1, lastMsgAt: -1 })
     .limit(100) // Limit to 100 recent chats for performance
     .lean();
 
@@ -384,6 +384,17 @@ export async function getChatById({ id }: { id: string }) {
     return { ...chat, id: (chat as any)._id.toString() } as any;
   }
   return chat;
+}
+
+export async function toggleChatPin(chatId: string, isPinned: boolean) {
+  await ensureConnection();
+  const chat = await Chat.findByIdAndUpdate(
+    chatId,
+    { isPinned },
+    { new: true },
+  ).lean();
+  if (!chat || Array.isArray(chat)) return null;
+  return { ...chat, id: (chat as any)._id.toString() };
 }
 
 // Message functions

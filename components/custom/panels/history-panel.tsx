@@ -2,6 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from 'clsx';
+import { ArrowLeft, FolderKanban, Pin, PinOff } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
@@ -12,17 +13,6 @@ import useSWR from "swr";
 import { IChat } from "@/db/models";
 import { fetcher } from "@/lib/utils";
 
-type ChatListItem = IChat & { id: string };
-
-import { ArrowLeft, FolderKanban } from "lucide-react";
-
-import {
-  InfoIcon,
-  MoreHorizontalIcon,
-  PencilEditIcon,
-  TrashIcon,
-} from "../icons";
-import { useSidebar } from "../sidebar-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +34,15 @@ import {
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
 import { Input } from "../../ui/input";
+import {
+  InfoIcon,
+  MoreHorizontalIcon,
+  PencilEditIcon,
+  TrashIcon,
+} from "../icons";
+import { useSidebar } from "../sidebar-context";
+
+type ChatListItem = IChat & { id: string };
 
 export const HistoryPanel = ({
   user,
@@ -143,6 +142,29 @@ export const HistoryPanel = ({
     setEditingChatId(null);
   };
 
+  const handleTogglePin = async (chat: ChatListItem) => {
+    const chatId = chat.id;
+    const newPinState = !chat.isPinned;
+    mutate(
+      (history) =>
+        history?.map((c) =>
+          c.id === chatId
+            ? { ...c, isPinned: newPinState }
+            : c,
+        ).sort((a: any, b: any) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.lastMsgAt).getTime() - new Date(a.lastMsgAt).getTime();
+        }) as ChatListItem[],
+      false,
+    );
+    await fetch(`/api/chat`, {
+      method: "PUT",
+      body: JSON.stringify({ id: chatId, isPinned: newPinState }),
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
   const handleDelete = async () => {
     const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
       method: "DELETE",
@@ -181,7 +203,7 @@ export const HistoryPanel = ({
                 }}
                 className="p-1 rounded hover:bg-accent text-muted-foreground"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="size-4" />
               </button>
               <div className="min-w-0">
                 <h2 className="text-lg font-semibold text-foreground truncate">
@@ -288,8 +310,13 @@ export const HistoryPanel = ({
                           className="block truncate"
                           title={chat.title || "Untitled Chat"}
                         >
-                          <div className="text-sm font-medium text-foreground truncate">
-                            {chat.title || "Untitled Chat"}
+                          <div className="flex items-center gap-1.5">
+                            {chat.isPinned && (
+                              <Pin className="size-2.5 shrink-0 text-primary/70" />
+                            )}
+                            <div className="text-sm font-medium text-foreground truncate">
+                              {chat.title || "Untitled Chat"}
+                            </div>
                           </div>
                         </Link>
                       </Button>
@@ -300,13 +327,23 @@ export const HistoryPanel = ({
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+                        className="size-8 p-0 opacity-0 group-hover:opacity-100"
                       >
                         <MoreHorizontalIcon size={16} />
                         <VisuallyHidden.Root>Dropdown Menu</VisuallyHidden.Root>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent side="right" className="z-[60]">
+                      <DropdownMenuItem asChild>
+                        <Button
+                          className="flex items-center gap-2 w-full justify-start font-normal"
+                          variant="ghost"
+                          onClick={() => handleTogglePin(chat)}
+                        >
+                          {chat.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                          {chat.isPinned ? "Unpin" : "Pin"}
+                        </Button>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Button
                           className="flex items-center gap-2 w-full justify-start font-normal"
@@ -320,7 +357,7 @@ export const HistoryPanel = ({
                       {projects && projects.length > 0 && (
                         <DropdownMenuSub>
                           <DropdownMenuSubTrigger className="flex items-center gap-2">
-                            <FolderKanban className="h-4 w-4" />
+                            <FolderKanban className="size-4" />
                             Move to Project
                           </DropdownMenuSubTrigger>
                           <DropdownMenuSubContent className="z-[60]">
@@ -336,7 +373,7 @@ export const HistoryPanel = ({
                               >
                                 {project.color && (
                                   <span
-                                    className="inline-block w-2 h-2 rounded-full mr-2"
+                                    className="inline-block size-2 rounded-full mr-2"
                                     style={{ backgroundColor: project.color }}
                                   />
                                 )}

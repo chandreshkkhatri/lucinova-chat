@@ -125,6 +125,34 @@ async function generateSimpleText(modelId: string, prompt: string) {
   }
 }
 
+async function generateAndSaveTitle(id: string, messages: any[], aiResponseText: string) {
+  if (messages.length !== 1) return;
+  try {
+    const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
+    const analysis = await generateSimpleText(googleModels.fast,
+      `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
+       User: ${lastUserText}
+       AI: ${aiResponseText}`
+    );
+
+    if (analysis) {
+      const parts = analysis.split('|');
+      const title = parts[0]?.replace('Title:', '').trim();
+      const category = parts[1]?.replace('Category:', '').trim();
+
+      const updates: any = {};
+      if (title) updates.title = title;
+      if (category) updates.category = category;
+
+      if (Object.keys(updates).length > 0) {
+        await Chat.findByIdAndUpdate(id, updates);
+      }
+    }
+  } catch (err) {
+    console.error("[Chat API] generateAndSaveTitle failed:", err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   // Warm the DB connection once — all subsequent queries skip this check
   await ensureConnection();
@@ -346,6 +374,8 @@ export async function POST(req: NextRequest) {
                 files: imageFiles,
                 groundingMetadata: gm,
               }).catch(err => console.error("[Chat API] Image message persist error:", err));
+              
+              generateAndSaveTitle(id, messages, fullResponseText || "[Generated Image]").catch(console.error);
             }
           } catch (err) {
             console.error("[Chat API] Image generation error:", err);
@@ -412,28 +442,7 @@ export async function POST(req: NextRequest) {
                   groundingMetadata: lastGroundingMetadata
                 });
 
-                if (messages.length === 1) {
-                  const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
-                  const analysis = await generateSimpleText(googleModels.fast,
-                    `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
-                     User: ${lastUserText}
-                     AI: ${fullResponseText}`
-                  );
-
-                  if (analysis) {
-                    const parts = analysis.split('|');
-                    const title = parts[0]?.replace('Title:', '').trim();
-                    const category = parts[1]?.replace('Category:', '').trim();
-
-                    const updates: any = {};
-                    if (title) updates.title = title;
-                    if (category) updates.category = category;
-
-                    if (Object.keys(updates).length > 0) {
-                      await Chat.findByIdAndUpdate(id, updates);
-                    }
-                  }
-                }
+                await generateAndSaveTitle(id, messages, fullResponseText);
               } catch (postGenErr) {
                 console.error("[Chat API] Post-generation error:", postGenErr);
               }
@@ -583,14 +592,15 @@ export async function POST(req: NextRequest) {
 }
 
 // Keep other handlers (PUT, PATCH, DELETE) as they are logic-independent of AI SDK
-export async function PUT(request: Request) { /* ... same as before ... */ 
-  const { id, title } = await request.json();
+export async function PUT(request: Request) {
+  const { id, title, isPinned } = await request.json();
   const session = await auth();
   if (!session?.user) return new Response("Unauthorized", { status: 401 });
-  // ... implementation (can copy from original file or keep if I could replace only POST)
-  // Since I am overwriting, I must include them.
   await ensureConnection();
-  await Chat.findByIdAndUpdate(id, { title });
+  const update: any = {};
+  if (title !== undefined) update.title = title;
+  if (isPinned !== undefined) update.isPinned = isPinned;
+  await Chat.findByIdAndUpdate(id, update);
   return new Response("OK", { status: 200 });
 }
 

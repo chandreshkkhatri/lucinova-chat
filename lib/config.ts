@@ -30,6 +30,10 @@ export interface CurrencyPricing {
 export const appConfig = {
   // Model display names (Lucinova branding)
   modelNames: {
+    "gemini-2.5-flash": "Lucinova 2.5 Flash",
+    "gemini-2.5-pro": "Lucinova 2.5 Pro",
+    "gemini-3-flash-preview": "Lucinova 3 Flash",
+    "gemini-3-pro-preview": "Lucinova 3 Pro",
     "gemini-3-pro-image-preview": "Lucinova 3 Image Pro",
     "gemini-2.5-flash-image": "Lucinova 2.5 Image Flash",
     "gemini-2.0-flash-exp-image-generation": "Lucinova Image",
@@ -37,6 +41,10 @@ export const appConfig = {
 
   // Model descriptions for selection
   modelDescriptions: {
+    "gemini-2.5-flash": "Previous gen fast",
+    "gemini-2.5-pro": "Balanced performance",
+    "gemini-3-flash-preview": "Fastest & lightweight",
+    "gemini-3-pro-preview": "Best reasoning",
     "gemini-3-pro-image-preview": "Professional 4K generation",
     "gemini-2.5-flash-image": "Fast image generation",
     "gemini-2.0-flash-exp-image-generation": "Stable image generation",

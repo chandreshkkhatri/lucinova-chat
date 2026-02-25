@@ -2,11 +2,11 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from 'clsx';
+import { Pin, PinOff } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
 import { useEffect, useState, useRef } from "react";
-
 import { toast } from "sonner";
 import useSWR from "swr";
 
@@ -106,6 +106,29 @@ export const History = ({
     });
 
     setEditingChatId(null);
+  };
+
+  const handleTogglePin = async (chat: IChat) => {
+    const chatId = (chat as any)._id.toString();
+    const newPinState = !(chat as any).isPinned;
+    mutate(
+      (history) =>
+        history?.map((c) =>
+          (c as any)._id.toString() === chatId
+            ? { ...c, isPinned: newPinState }
+            : c,
+        ).sort((a: any, b: any) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.lastMsgAt).getTime() - new Date(a.lastMsgAt).getTime();
+        }) as IChat[],
+      false,
+    );
+    await fetch(`/api/chat`, {
+      method: "PUT",
+      body: JSON.stringify({ id: chatId, isPinned: newPinState }),
+      headers: { "Content-Type": "application/json" },
+    });
   };
 
   const handleDelete = async () => {
@@ -229,8 +252,13 @@ export const History = ({
                           className="block truncate"
                           title={chat.title || "Untitled Chat"}
                         >
-                          <div className="text-sm font-medium text-foreground truncate">
-                            {chat.title || "Untitled Chat"}
+                          <div className="flex items-center gap-1.5">
+                            {(chat as any).isPinned && (
+                              <Pin className="size-2.5 shrink-0 text-primary/70" />
+                            )}
+                            <div className="text-sm font-medium text-foreground truncate">
+                              {chat.title || "Untitled Chat"}
+                            </div>
                           </div>
                         </Link>
                       </Button>
@@ -241,13 +269,23 @@ export const History = ({
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+                        className="size-8 p-0 opacity-0 group-hover:opacity-100"
                       >
                         <MoreHorizontalIcon size={16} />
                         <VisuallyHidden.Root>Dropdown Menu</VisuallyHidden.Root>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent side="right" className="z-[60]">
+                      <DropdownMenuItem asChild>
+                        <Button
+                          className="flex items-center gap-2 w-full justify-start font-normal"
+                          variant="ghost"
+                          onClick={() => handleTogglePin(chat)}
+                        >
+                          {(chat as any).isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                          {(chat as any).isPinned ? "Unpin" : "Pin"}
+                        </Button>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Button
                           className="flex items-center gap-2 w-full justify-start font-normal"

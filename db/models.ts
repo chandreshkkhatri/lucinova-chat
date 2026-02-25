@@ -146,6 +146,7 @@ export interface IChat extends Document {
   tags?: string[];
   summary?: string;
   category?: string;
+  isPinned?: boolean;
   lastMsgAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -160,6 +161,7 @@ const chatSchema = new Schema<IChat>(
     tags: [{ type: String }],
     summary: { type: String },
     category: { type: String },
+    isPinned: { type: Boolean, default: false },
     lastMsgAt: { type: Date, default: Date.now, required: true },
   },
   { timestamps: true },
