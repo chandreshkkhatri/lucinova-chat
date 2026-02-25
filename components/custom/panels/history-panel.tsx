@@ -2,7 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from 'clsx';
-import { ArrowLeft, FolderKanban, Pin, PinOff } from "lucide-react";
+import { ArrowLeft, FolderKanban, Pin, PinOff, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
@@ -165,6 +165,34 @@ export const HistoryPanel = ({
     });
   };
 
+  const handleGenerateTitle = async (chat: ChatListItem) => {
+    const chatId = chat.id;
+    const generatePromise = fetch(`/api/chat/title`, {
+      method: "POST",
+      body: JSON.stringify({ chatId }),
+      headers: { "Content-Type": "application/json" },
+    }).then(async (res) => {
+      if (!res.ok) throw new Error("Failed to generate title");
+      const data = await res.json();
+      mutate(
+        (history) =>
+          history?.map((c) =>
+            c.id === chatId
+              ? { ...c, title: data.title, category: data.category }
+              : c,
+          ) as ChatListItem[],
+        false,
+      );
+      return data;
+    });
+
+    toast.promise(generatePromise, {
+      loading: "Generating title...",
+      success: "Title generated successfully.",
+      error: "Failed to generate title.",
+    });
+  };
+
   const handleDelete = async () => {
     const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
       method: "DELETE",
@@ -323,8 +351,23 @@ export const HistoryPanel = ({
                     </>
                   )}
 
-                  <DropdownMenu modal={true}>
-                    <DropdownMenuTrigger asChild>
+                  <div className="flex items-center">
+                    {(!chat.title || chat.title.toLowerCase() === "untitled chat" || chat.title.toLowerCase() === "new chat") && (
+                      <Button
+                        variant="ghost"
+                        className="size-8 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground mr-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleGenerateTitle(chat);
+                        }}
+                        title="Generate Title"
+                      >
+                        <Sparkles size={14} />
+                        <VisuallyHidden.Root>Generate Title</VisuallyHidden.Root>
+                      </Button>
+                    )}
+                    <DropdownMenu modal={true}>
+                      <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
                         className="size-8 p-0 opacity-0 group-hover:opacity-100"
@@ -398,6 +441,7 @@ export const HistoryPanel = ({
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  </div>
                 </div>
               ))}
           </div>

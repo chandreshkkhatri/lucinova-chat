@@ -2,7 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from 'clsx';
-import { Pin, PinOff } from "lucide-react";
+import { Pin, PinOff, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { User } from "next-auth";
@@ -128,6 +128,34 @@ export const History = ({
       method: "PUT",
       body: JSON.stringify({ id: chatId, isPinned: newPinState }),
       headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const handleGenerateTitle = async (chat: IChat) => {
+    const chatId = (chat as any)._id.toString();
+    const generatePromise = fetch(`/api/chat/title`, {
+      method: "POST",
+      body: JSON.stringify({ chatId }),
+      headers: { "Content-Type": "application/json" },
+    }).then(async (res) => {
+      if (!res.ok) throw new Error("Failed to generate title");
+      const data = await res.json();
+      mutate(
+        (history) =>
+          history?.map((c) =>
+            (c as any)._id.toString() === chatId
+              ? { ...c, title: data.title, category: data.category }
+              : c,
+          ) as IChat[],
+        false,
+      );
+      return data;
+    });
+
+    toast.promise(generatePromise, {
+      loading: "Generating title...",
+      success: "Title generated successfully.",
+      error: "Failed to generate title.",
     });
   };
 
@@ -265,8 +293,23 @@ export const History = ({
                     </>
                   )}
 
-                  <DropdownMenu modal={true}>
-                    <DropdownMenuTrigger asChild>
+                  <div className="flex items-center">
+                    {(!chat.title || chat.title.toLowerCase() === "untitled chat" || chat.title.toLowerCase() === "new chat") && (
+                      <Button
+                        variant="ghost"
+                        className="size-8 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground mr-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleGenerateTitle(chat);
+                        }}
+                        title="Generate Title"
+                      >
+                        <Sparkles size={14} />
+                        <VisuallyHidden.Root>Generate Title</VisuallyHidden.Root>
+                      </Button>
+                    )}
+                    <DropdownMenu modal={true}>
+                      <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
                         className="size-8 p-0 opacity-0 group-hover:opacity-100"
@@ -311,6 +354,7 @@ export const History = ({
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  </div>
                 </div>
               ))}
           </div>

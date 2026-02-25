@@ -18,6 +18,7 @@ import {
 } from "@/db/queries";
 import { appConfig } from "@/lib/config";
 import { checkUsageLimit } from "@/lib/usage-service";
+import { generateSimpleText } from "@/lib/ai-utils";
 
 // Local compatibility types
 interface UIMessage {
@@ -109,21 +110,6 @@ async function convertMessagesToGoogleContent(messages: UIMessage[]) {
   return contents;
 }
 
-/**
- * Generate a simple text response using Google GenAI (for titles, summaries)
- */
-async function generateSimpleText(modelId: string, prompt: string) {
-  try {
-    const response = await googleClient.models.generateContent({
-      model: modelId,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
-    });
-    return response.text || "";
-  } catch (error) {
-    console.error("[Chat API] Generate text failed:", error);
-    return "";
-  }
-}
 
 async function generateAndSaveTitle(id: string, messages: any[], aiResponseText: string) {
   if (messages.length !== 1) return;
