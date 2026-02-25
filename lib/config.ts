@@ -34,7 +34,7 @@ export const appConfig = {
     "gemini-2.5-pro": "Lucinova 2.5 Pro",
     "gemini-3-flash-preview": "Lucinova 3 Flash",
     "gemini-3-pro-preview": "Lucinova 3 Pro",
-    "gemini-3-pro-image-preview": "Lucinova 3 Image",
+    "gemini-2.0-flash-exp-image-generation": "Lucinova Image",
   } as Record<string, string>,
 
   // Model descriptions for selection
@@ -43,7 +43,7 @@ export const appConfig = {
     "gemini-2.5-pro": "Balanced performance",
     "gemini-3-flash-preview": "Fastest & lightweight",
     "gemini-3-pro-preview": "Best reasoning",
-    "gemini-3-pro-image-preview": "Image generation",
+    "gemini-2.0-flash-exp-image-generation": "Image generation",
   } as Record<string, string>,
 
   // System prompt identity

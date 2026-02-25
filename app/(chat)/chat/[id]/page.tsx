@@ -105,19 +105,32 @@ export default async function Page({
     const role: "user" | "assistant" =
       msg.senderId.toString() === userId ? "user" : "assistant";
 
-    // Convert DB files back to AI SDK attachment format
-    const attachments = (msg.files || []).map((f: any) => ({
+    const allFiles = msg.files || [];
+
+    // For assistant messages, separate generated images from regular attachments
+    const isAssistant = role === "assistant";
+    const imageFiles = allFiles.filter((f: any) => f.mime?.startsWith("image/"));
+    const nonImageFiles = allFiles.filter((f: any) => !f.mime?.startsWith("image/"));
+
+    // Attachments: for user messages include all files, for assistant exclude generated images
+    const attachmentFiles = isAssistant ? nonImageFiles : allFiles;
+    const attachments = attachmentFiles.map((f: any) => ({
       name: f.name,
       url: f.url,
       contentType: f.mime,
     }));
+
+    // Reconstruct generatedImages from stored image files (for assistant messages only)
+    const generatedImages = isAssistant && imageFiles.length > 0
+      ? imageFiles.map((f: any) => ({ mimeType: f.mime, url: f.url }))
+      : undefined;
 
     // Build parts array (SDK v6 format)
     const parts: any[] = [];
     if (msg.body) {
       parts.push({ type: "text", text: msg.body });
     }
-    // Add file parts for attachments
+    // Add file parts for user attachments only (not assistant generated images)
     for (const attachment of attachments) {
       if (attachment.contentType?.startsWith("image/")) {
         parts.push({
@@ -133,6 +146,7 @@ export default async function Page({
       content: msg.body || "",
       parts,
       ...(attachments.length > 0 && { experimental_attachments: attachments }),
+      ...(generatedImages && { generatedImages }),
     };
   }) as Message[];
   const isThread = false;

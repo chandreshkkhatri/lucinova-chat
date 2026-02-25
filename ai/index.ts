@@ -6,7 +6,7 @@ export const PRIMARY_MODEL_ID =
 export const FAST_MODEL_ID =
   process.env.GOOGLE_GEMINI_FAST_MODEL || "gemini-3-flash-preview";
 export const IMAGE_MODEL_ID =
-  process.env.GOOGLE_GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview";
+  process.env.GOOGLE_GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp-image-generation";
 
 // Default model ID used when no specific model is requested
 export const DEFAULT_MODEL_ID = FAST_MODEL_ID;

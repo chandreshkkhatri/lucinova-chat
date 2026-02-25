@@ -144,7 +144,30 @@ export function Chat({
                 if (res.ok) {
                   const data = await res.json();
                   if (data.messages) {
-                    setMessages(data.messages);
+                    // Reconstruct generatedImages from DB files and preserve groundingMetadata
+                    setMessages((prev) => {
+                      const synced = (data.messages as typeof prev).map((msg: any) => {
+                        // Reconstruct generatedImages from files stored in the DB
+                        if (msg.files?.length > 0) {
+                          const imageFiles = msg.files.filter((f: any) =>
+                            f.mime?.startsWith('image/')
+                          );
+                          if (imageFiles.length > 0) {
+                            msg.generatedImages = imageFiles.map((f: any) => ({
+                              mimeType: f.mime,
+                              url: f.url,
+                            }));
+                          }
+                        }
+                        return msg;
+                      });
+                      // Preserve groundingMetadata from client-only state
+                      const lastClient = prev[prev.length - 1];
+                      if (lastClient?.role === 'assistant' && lastClient.groundingMetadata && synced.length > 0) {
+                        synced[synced.length - 1].groundingMetadata = lastClient.groundingMetadata;
+                      }
+                      return synced;
+                    });
                   }
                 }
               }

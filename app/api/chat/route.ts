@@ -1,3 +1,4 @@
+import { put } from "@vercel/blob";
 import { type NextRequest } from "next/server";
 
 import { googleClient, DEFAULT_MODEL_ID, googleModels } from "@/ai";
@@ -245,53 +246,83 @@ export async function POST(req: NextRequest) {
     // --- Image Model Path (non-streaming, uses generateContent) ---
     const isImageModel = targetModelId.includes('image');
     if (isImageModel) {
-      const imageResponse = await googleClient.models.generateContent({
-        model: targetModelId,
-        contents: googleContents,
-        config: {
-          systemInstruction,
-          responseModalities: ['TEXT', 'IMAGE'],
-          tools: [{ googleSearch: {} }],
-        },
-      });
-
       const stream = new ReadableStream({
-        start(controller) {
+        async start(controller) {
           const encoder = new TextEncoder();
+          let streamClosed = false;
+
           try {
+            const imageResponse = await googleClient.models.generateContent({
+              model: targetModelId,
+              contents: googleContents,
+              config: {
+                responseModalities: ['TEXT', 'IMAGE'],
+              },
+            });
+
+            if (streamClosed) return;
+
             const parts = imageResponse.candidates?.[0]?.content?.parts || [];
             let fullResponseText = "";
+            const imageFiles: Array<{ name: string; url: string; mime: string }> = [];
+
             for (const part of parts) {
               if (part.text) {
                 fullResponseText += part.text;
                 controller.enqueue(encoder.encode(`0:${part.text}\n`));
               } else if (part.inlineData) {
-                controller.enqueue(encoder.encode(`1:${JSON.stringify({
-                  mimeType: part.inlineData.mimeType,
-                  data: part.inlineData.data,
-                })}\n`));
+                // Upload image to Vercel Blob for persistence
+                const ext = part.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
+                const filename = `generated-${Date.now()}-${imageFiles.length}.${ext}`;
+                try {
+                  const buffer = Buffer.from(part.inlineData.data!, 'base64');
+                  const blob = await put(`chat-images/${filename}`, buffer, {
+                    access: 'public',
+                    contentType: part.inlineData.mimeType || 'image/png',
+                  });
+                  imageFiles.push({ name: filename, url: blob.url, mime: part.inlineData.mimeType || 'image/png' });
+                  // Send blob URL to client (persistent, smaller payload than base64)
+                  controller.enqueue(encoder.encode(`1:${JSON.stringify({
+                    mimeType: part.inlineData.mimeType,
+                    url: blob.url,
+                  })}\n`));
+                } catch (uploadErr) {
+                  console.error("[Chat API] Blob upload error, falling back to base64:", uploadErr);
+                  // Fallback: send base64 directly if blob upload fails
+                  controller.enqueue(encoder.encode(`1:${JSON.stringify({
+                    mimeType: part.inlineData.mimeType,
+                    data: part.inlineData.data,
+                  })}\n`));
+                }
               }
             }
 
             // Send grounding metadata if present
             const gm = (imageResponse as any).candidates?.[0]?.groundingMetadata;
-            if (gm) {
+            if (gm && !streamClosed) {
               controller.enqueue(encoder.encode(`2:${JSON.stringify(gm)}\n`));
             }
 
-            controller.close();
+            if (!streamClosed) {
+              controller.close();
+              streamClosed = true;
+            }
 
-            // Fire-and-forget: persist AI message
-            if (fullResponseText && chat) {
+            // Fire-and-forget: persist AI message with image file URLs
+            if ((fullResponseText || imageFiles.length > 0) && chat) {
               createMessage({
                 chatId: id,
                 senderId: (chat as any).aiId,
-                body: fullResponseText,
+                body: fullResponseText || "[Generated Image]",
+                files: imageFiles,
               }).catch(err => console.error("[Chat API] Image message persist error:", err));
             }
           } catch (err) {
             console.error("[Chat API] Image generation error:", err);
-            try { controller.error(err); } catch {}
+            if (!streamClosed) {
+              try { controller.error(err); } catch {}
+              streamClosed = true;
+            }
           }
         }
       });
@@ -397,21 +428,25 @@ export async function POST(req: NextRequest) {
   // Image model path for guests (non-streaming)
   const isGuestImageModel = targetModelId.includes('image');
   if (isGuestImageModel) {
-    const imageResponse = await googleClient.models.generateContent({
-      model: targetModelId,
-      contents: googleContents,
-      config: {
-        systemInstruction,
-        responseModalities: ['TEXT', 'IMAGE'],
-        tools: [{ googleSearch: {} }],
-      },
-    });
-
     const stream = new ReadableStream({
-      start(controller) {
+      async start(controller) {
         const encoder = new TextEncoder();
+        let streamClosed = false;
+
         try {
+          const imageResponse = await googleClient.models.generateContent({
+            model: targetModelId,
+            contents: googleContents,
+            config: {
+              responseModalities: ['TEXT', 'IMAGE'],
+            },
+          });
+
+          if (streamClosed) return;
+
           const parts = imageResponse.candidates?.[0]?.content?.parts || [];
+          console.log(`[Chat API] Guest Image Model Response parts count: ${parts.length}`);
+          
           for (const part of parts) {
             if (part.text) {
               controller.enqueue(encoder.encode(`0:${part.text}\n`));
@@ -423,13 +458,20 @@ export async function POST(req: NextRequest) {
             }
           }
           const gm = (imageResponse as any).candidates?.[0]?.groundingMetadata;
-          if (gm) {
+          if (gm && !streamClosed) {
+            console.log("[Chat API] Guest Grounding metadata found in image response");
             controller.enqueue(encoder.encode(`2:${JSON.stringify(gm)}\n`));
           }
-          controller.close();
+          if (!streamClosed) {
+            controller.close();
+            streamClosed = true;
+          }
         } catch (err) {
           console.error("[Chat API] Guest image generation error:", err);
-          try { controller.error(err); } catch {}
+          if (!streamClosed) {
+            try { controller.error(err); } catch {}
+            streamClosed = true;
+          }
         }
       }
     });
