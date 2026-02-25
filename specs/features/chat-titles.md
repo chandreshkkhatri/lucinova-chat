@@ -25,7 +25,7 @@ Intelligent abstraction of chat messages into a concise summary title. Titles he
 - [x] Unified helper `generateAndSaveTitle` to analyze chat and hit MongoDB.
 - [x] Automatic triggering after first message (text or image based).
 - [x] "Generate Title" manual dropdown action in the sidebar for untitled chats.
-- [x] Usage of a dedicated `TITLE_MODEL_ID` (`gemini-1.5-flash`) to ensure hyper-fast labeling.
+- [x] Usage of a dedicated `TITLE_MODEL_ID` (`gemini-2.5-flash-lite`) to ensure hyper-fast labeling.
 - [x] Truncation of prompt input (e.g. max 800 chars) to ensure the title generator isn't bogged down by giant text dumps.
 
 ### Non-Functional Requirements
@@ -41,7 +41,7 @@ Intelligent abstraction of chat messages into a concise summary title. Titles he
 2. The AI streams the response.
 3. Asynchronously, `generateAndSaveTitle` executes.
 4. The system truncates the user's prompt taking the first 800 chars.
-5. `gemini-1.5-flash` analyzes the short text and returns 2-5 words.
+5. `gemini-2.5-flash-lite` analyzes the short text and returns 2-5 words.
 6. The exact title string is committed to MongoDB `Chat` document.
 
 ### Component Specifications

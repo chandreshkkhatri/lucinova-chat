@@ -34,7 +34,7 @@ Lucidity is currently a functional AI chat platform supporting:
   - [x] **Copy in Threads**: Added copy button for thread header highlighted text.
   - [x] **Edit/Regenerate**: Users can edit their last message or regenerate the last AI response.
   - [x] **Pinned Chats**: Pin/unpin chats to keep them at the top of the history list.
-  - [x] **Chat Titles**: Automatic and manual title generation powered by `gemini-1.5-flash`.
+  - [x] **Chat Titles**: Automatic and manual title generation powered by `gemini-2.5-flash-lite`.
   - [x] **UI Polish**: Annotation hover text, smooth sidebar animations, contextual thread suggestions (via `gemini-2.5-flash-lite`), and font readability settings.
 
 ---
