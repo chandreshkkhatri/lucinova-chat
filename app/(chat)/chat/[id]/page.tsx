@@ -1,4 +1,3 @@
-import { Message, generateId } from "@/lib/chat-utils";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -6,6 +5,7 @@ import { cache } from "react";
 import { auth } from "@/app/(auth)/auth";
 import { Chat as PreviewChat } from "@/components/custom/chat";
 import { getChatById, getMessages, getUserByEmail } from "@/db/queries";
+import { Message, generateId } from "@/lib/chat-utils";
 
 // Cache the database calls to prevent duplicate fetching in generateMetadata and Page
 const getCachedChatById = cache(getChatById);
@@ -122,7 +122,7 @@ export default async function Page({
 
     // Reconstruct generatedImages from stored image files (for assistant messages only)
     const generatedImages = isAssistant && imageFiles.length > 0
-      ? imageFiles.map((f: any) => ({ mimeType: f.mime, url: f.url }))
+      ? imageFiles.map((f: any) => ({ mimeType: f.mime, url: f.url, modelName: f.modelName }))
       : undefined;
 
     // Build parts array (SDK v6 format)
@@ -145,6 +145,7 @@ export default async function Page({
       role,
       content: msg.body || "",
       parts,
+      groundingMetadata: msg.groundingMetadata,
       ...(attachments.length > 0 && { experimental_attachments: attachments }),
       ...(generatedImages && { generatedImages }),
     };

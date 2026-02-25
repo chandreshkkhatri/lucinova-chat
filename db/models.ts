@@ -176,10 +176,11 @@ export interface IMessage extends Document {
   senderId: mongoose.Types.ObjectId | string;
   parentMsgId?: string | null;
   body: string;
-  files: Array<{ name: string; url: string; mime: string }>;
+  files: Array<{ name: string; url: string; mime: string; modelName?: string }>;
   reactions: Array<{ userId: string; emoji: string }>;
   createdAt: Date;
   editedAt?: Date;
+  groundingMetadata?: any;
 }
 const messageSchema = new Schema<IMessage>(
   {
@@ -187,13 +188,14 @@ const messageSchema = new Schema<IMessage>(
     senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     parentMsgId: { type: String, default: null },
     body: { type: String, required: true },
-    files: [{ name: String, url: String, mime: String }],
+    files: [{ name: String, url: String, mime: String, modelName: String }],
     reactions: [
       {
         userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
         emoji: { type: String, required: true },
       },
     ],
+    groundingMetadata: { type: Schema.Types.Mixed },
   },
   { timestamps: { createdAt: true, updatedAt: "editedAt" } },
 );

@@ -393,12 +393,14 @@ export async function createMessage({
   parentMsgId = null,
   body,
   files = [],
+  groundingMetadata = null,
 }: {
   chatId: string;
   senderId: string;
   parentMsgId?: string | null;
   body: string;
-  files?: Array<{ name: string; url: string; mime: string }>;
+  files?: Array<{ name: string; url: string; mime: string; modelName?: string }>;
+  groundingMetadata?: any;
 }) {
   await ensureConnection();
   const message = await Message.create({
@@ -407,6 +409,7 @@ export async function createMessage({
     parentMsgId,
     body,
     files,
+    groundingMetadata,
   });
   await Chat.findByIdAndUpdate(chatId, { lastMsgAt: new Date() });
   return message.toObject();

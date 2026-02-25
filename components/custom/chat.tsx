@@ -156,15 +156,24 @@ export function Chat({
                             msg.generatedImages = imageFiles.map((f: any) => ({
                               mimeType: f.mime,
                               url: f.url,
+                              modelName: f.modelName,
                             }));
                           }
                         }
+                        // Restore groundingMetadata from DB if available
+                        if (msg.groundingMetadata) {
+                           // Mapping groundingMetadata is not strictly needed if the formats match, 
+                           // but ensures it's attached to the UI message object.
+                        }
                         return msg;
                       });
-                      // Preserve groundingMetadata from client-only state
+                      // Preserve groundingMetadata from client-only state (for those not yet in DB or just generated)
                       const lastClient = prev[prev.length - 1];
                       if (lastClient?.role === 'assistant' && lastClient.groundingMetadata && synced.length > 0) {
-                        synced[synced.length - 1].groundingMetadata = lastClient.groundingMetadata;
+                        const target = synced[synced.length - 1];
+                        if (!target.groundingMetadata) {
+                          target.groundingMetadata = lastClient.groundingMetadata;
+                        }
                       }
                       return synced;
                     });

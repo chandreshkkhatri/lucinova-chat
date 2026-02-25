@@ -156,6 +156,11 @@ export const EnhancedMessage = memo(function EnhancedMessage({
                     alt={`Generated image ${i + 1}`}
                     className="rounded-xl w-full h-auto object-contain border border-white/10 shadow-lg"
                   />
+                  {img.modelName && (
+                    <div className="absolute bottom-2 right-2 bg-black/60 text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-md shadow backdrop-blur-sm z-10 pointer-events-none">
+                      {img.modelName}
+                    </div>
+                  )}
                   <a
                     href={imgSrc}
                     download={`generated-image-${i + 1}.png`}

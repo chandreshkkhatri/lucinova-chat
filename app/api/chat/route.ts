@@ -250,21 +250,49 @@ export async function POST(req: NextRequest) {
         async start(controller) {
           const encoder = new TextEncoder();
           let streamClosed = false;
-
           try {
-            const imageResponse = await googleClient.models.generateContent({
-              model: targetModelId,
-              contents: googleContents,
-              config: {
-                responseModalities: ['TEXT', 'IMAGE'],
-              },
-            });
+            const isProImage = targetModelId.includes('gemini-3-pro-image');
+            const imageConfig: any = {
+              responseModalities: ['TEXT', 'IMAGE'],
+            };
+
+            const generateWithTimeout = async (modelIdToUse: string) => {
+              const generationPromise = googleClient.models.generateContent({
+                model: modelIdToUse,
+                contents: googleContents,
+                config: imageConfig,
+              });
+
+              generationPromise.catch(err => {
+                 console.error(`[Chat API] Background generation promise for ${modelIdToUse} failed (likely native timeout/hang):`, err.message || err);
+              });
+
+              // 45 second timeout for image generation
+              const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error("Image generation timed out")), 45000);
+              });
+
+              return Promise.race([generationPromise, timeoutPromise]);
+            };
+
+            let imageResponse: any;
+            let actualModelUsed = targetModelId;
+            try {
+              imageResponse = await generateWithTimeout(targetModelId);
+            } catch (initialErr) {
+              console.warn(`[Chat API] Primary image model (${targetModelId}) failed/timed out. Falling back to flash. Error:`, initialErr);
+              // Fallback to the reliable and fast flash model
+              actualModelUsed = "gemini-2.5-flash-image";
+              imageResponse = await generateWithTimeout(actualModelUsed);
+            }
+
+            const modelDisplayName = appConfig.modelNames?.[actualModelUsed] || actualModelUsed;
 
             if (streamClosed) return;
 
             const parts = imageResponse.candidates?.[0]?.content?.parts || [];
             let fullResponseText = "";
-            const imageFiles: Array<{ name: string; url: string; mime: string }> = [];
+            const imageFiles: Array<{ name: string; url: string; mime: string; modelName?: string }> = [];
 
             for (const part of parts) {
               if (part.text) {
@@ -280,11 +308,12 @@ export async function POST(req: NextRequest) {
                     access: 'public',
                     contentType: part.inlineData.mimeType || 'image/png',
                   });
-                  imageFiles.push({ name: filename, url: blob.url, mime: part.inlineData.mimeType || 'image/png' });
+                  imageFiles.push({ name: filename, url: blob.url, mime: part.inlineData.mimeType || 'image/png', modelName: modelDisplayName });
                   // Send blob URL to client (persistent, smaller payload than base64)
                   controller.enqueue(encoder.encode(`1:${JSON.stringify({
                     mimeType: part.inlineData.mimeType,
                     url: blob.url,
+                    modelName: modelDisplayName,
                   })}\n`));
                 } catch (uploadErr) {
                   console.error("[Chat API] Blob upload error, falling back to base64:", uploadErr);
@@ -315,6 +344,7 @@ export async function POST(req: NextRequest) {
                 senderId: (chat as any).aiId,
                 body: fullResponseText || "[Generated Image]",
                 files: imageFiles,
+                groundingMetadata: gm,
               }).catch(err => console.error("[Chat API] Image message persist error:", err));
             }
           } catch (err) {
@@ -378,7 +408,8 @@ export async function POST(req: NextRequest) {
                 await createMessage({
                   chatId: id,
                   senderId: (chat as any).aiId,
-                  body: fullResponseText
+                  body: fullResponseText,
+                  groundingMetadata: lastGroundingMetadata
                 });
 
                 if (messages.length === 1) {
@@ -432,15 +463,43 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         let streamClosed = false;
-
         try {
-          const imageResponse = await googleClient.models.generateContent({
-            model: targetModelId,
-            contents: googleContents,
-            config: {
-              responseModalities: ['TEXT', 'IMAGE'],
-            },
-          });
+          const isProImage = targetModelId.includes('gemini-3-pro-image');
+          const imageConfig: any = {
+            responseModalities: ['TEXT', 'IMAGE'],
+          };
+
+          const generateWithTimeout = async (modelIdToUse: string) => {
+            const generationPromise = googleClient.models.generateContent({
+              model: modelIdToUse,
+              contents: googleContents,
+              config: imageConfig,
+            });
+
+            generationPromise.catch(err => {
+               console.error(`[Chat API] Guest background generation promise for ${modelIdToUse} failed:`, err.message || err);
+            });
+
+            // 45 second timeout for image generation
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error("Image generation timed out")), 45000);
+            });
+
+            return Promise.race([generationPromise, timeoutPromise]);
+          };
+
+          let imageResponse: any;
+          let actualModelUsed = targetModelId;
+          try {
+            imageResponse = await generateWithTimeout(targetModelId);
+          } catch (initialErr) {
+            console.warn(`[Chat API] Guest primary image model (${targetModelId}) failed/timed out. Falling back to flash. Error:`, initialErr);
+            // Fallback to the reliable and fast flash model
+            actualModelUsed = "gemini-2.5-flash-image";
+            imageResponse = await generateWithTimeout(actualModelUsed);
+          }
+
+          const modelDisplayName = appConfig.modelNames?.[actualModelUsed] || actualModelUsed;
 
           if (streamClosed) return;
 
@@ -454,6 +513,7 @@ export async function POST(req: NextRequest) {
               controller.enqueue(encoder.encode(`1:${JSON.stringify({
                 mimeType: part.inlineData.mimeType,
                 data: part.inlineData.data,
+                modelName: modelDisplayName,
               })}\n`));
             }
           }
@@ -535,8 +595,7 @@ export async function PUT(request: Request) { /* ... same as before ... */
 }
 
 export async function PATCH(request: Request) {
-  // ... copy implementation
- try {
+  try {
     const session = await auth();
     if (!session?.user?.email) return new Response("Unauthorized", { status: 401 });
     const user = await getUserByEmail(session.user.email);
@@ -552,7 +611,9 @@ export async function PATCH(request: Request) {
     }
     await updateChatProject(id, projectId || null);
     return new Response("OK", { status: 200 });
- } catch (e) { return new Response("Error", { status: 500 }); }
+  } catch (e) { 
+    return new Response("Error", { status: 500 }); 
+  }
 }
 
 export async function DELETE(request: Request) {
