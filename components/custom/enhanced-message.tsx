@@ -3,6 +3,7 @@
 import { MessageSquareText, Globe, Download } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState, RefObject } from "react";
 
+import { useFontSize } from "@/hooks/use-font-size";
 import { Message } from "@/lib/chat-utils";
 
 import { Markdown } from "./markdown";
@@ -13,6 +14,7 @@ export interface SavedAnnotation {
   messageId: string;
   selectedText: string;
   messageCount?: number;
+  firstMessageText?: string;
 }
 
 interface EnhancedMessageProps {
@@ -30,6 +32,7 @@ export const EnhancedMessage = memo(function EnhancedMessage({
   onOpenAnnotation,
 }: EnhancedMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { getFontSizeClass } = useFontSize();
 
   // State for selection UI
   const [isMobile, setIsMobile] = useState(false);
@@ -139,7 +142,7 @@ export const EnhancedMessage = memo(function EnhancedMessage({
             e.preventDefault();
           }
         }}
-        className="message-content relative max-w-full break-words prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
+        className={`message-content relative max-w-full break-words prose dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 ${getFontSizeClass()}`}
       >
         <Markdown>{content}</Markdown>
 
@@ -522,7 +525,7 @@ function SavedAnnotationsOverlay({
                     ? "bg-amber-200 dark:bg-amber-700 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-100 scale-115 shadow-md ring-2 ring-amber-300 dark:ring-amber-600"
                     : "bg-amber-100 dark:bg-amber-900/80 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 scale-100 hover:bg-amber-200 dark:hover:bg-amber-800"
                 }`}
-                title="View thread"
+                title={ann.firstMessageText ? `Thread: "${ann.firstMessageText}"` : "View thread"}
               >
                 <MessageSquareText className="size-5" />
                 {ann.messageCount !== undefined && ann.messageCount > 0 && (

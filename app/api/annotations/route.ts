@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       startOffset: a.startOffset,
       endOffset: a.endOffset,
       createdAt: a.createdAt,
+      firstMessageText: a.firstMessageText,
     })),
   });
 }

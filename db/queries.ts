@@ -496,7 +496,31 @@ export async function getAnnotationsByMessageId(messageId: string) {
 
 export async function getAnnotationsByChatId(chatId: string) {
   await ensureConnection();
-  return Annotation.find({ chatId }).sort({ createdAt: 1 }).lean();
+  
+  // Use aggregation to fetch the annotation and its first thread message
+  const annotations = await Annotation.aggregate([
+    { $match: { chatId: new mongoose.Types.ObjectId(chatId) } },
+    { $sort: { createdAt: 1 } },
+    {
+      $lookup: {
+        from: "messages",
+        let: { annotationId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$parentMsgId", "$$annotationId"] } } },
+          { $sort: { createdAt: 1 } },
+          { $limit: 1 }
+        ],
+        as: "firstMessage"
+      }
+    }
+  ]);
+
+  return annotations.map((a: any) => ({
+    ...a,
+    firstMessageText: a.firstMessage && a.firstMessage.length > 0 
+      ? a.firstMessage[0].body || a.firstMessage[0].content || ""
+      : ""
+  }));
 }
 
 export async function getAnnotationById(id: string) {

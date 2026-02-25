@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
-import { fetchUserSuggestions } from "@/app/actions/suggestions";
+import { fetchUserSuggestions, fetchContextualSuggestions } from "@/app/actions/suggestions";
 import { Message } from "@/lib/chat-utils";
 import { SUGGESTIONS } from "@/lib/constants";
 import { Suggestion } from "@/lib/suggestions";
@@ -59,6 +59,8 @@ interface ChatListProps {
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   isUserPro?: boolean;
+  isThread?: boolean;
+  selectedText?: string;
 }
 
 export function ChatList({
@@ -83,6 +85,8 @@ export function ChatList({
   selectedModel,
   setSelectedModel,
   isUserPro,
+  isThread,
+  selectedText,
 }: ChatListProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
@@ -93,14 +97,25 @@ export function ChatList({
   useEffect(() => {
     async function loadSuggestions() {
       try {
-        const data = await fetchUserSuggestions();
-        setSuggestions(data);
+        if (isThread && selectedText) {
+          const data = await fetchContextualSuggestions(selectedText);
+          if (data && data.length > 0) {
+            setSuggestions(data);
+          } else {
+            // fallback
+            const fallback = await fetchUserSuggestions();
+            setSuggestions(fallback);
+          }
+        } else {
+          const data = await fetchUserSuggestions();
+          setSuggestions(data);
+        }
       } catch (error) {
         console.error("Failed to load suggestions:", error);
       }
     }
     loadSuggestions();
-  }, []);
+  }, [isThread, selectedText]);
 
   return (
     <div className="flex flex-col size-full bg-paper relative">
@@ -124,10 +139,10 @@ export function ChatList({
                   className="size-full object-contain"
                 />
               </div>
-              <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/50">
+              <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/50">
                 Lucidity Chat
               </h2>
-              <p className="text-lg text-muted-foreground max-w-lg mb-10 leading-relaxed">
+              <p className="text-xl text-muted-foreground max-w-lg mb-10 leading-relaxed">
                 Unlock your potential with advanced AI. Ask questions, explore
                 ideas, and get precise answers in seconds.
               </p>
