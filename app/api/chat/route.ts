@@ -115,10 +115,15 @@ async function generateAndSaveTitle(id: string, messages: any[], aiResponseText:
   if (messages.length !== 1) return;
   try {
     const lastUserText = messages.filter(m => m.role === 'user').pop()?.content || "";
-    const analysis = await generateSimpleText(googleModels.fast,
+    
+    // Truncate to maximum 800 chars to avoid feeding massive chunks of context (like code) into the title generator
+    const truncatedUserText = lastUserText.length > 800 ? lastUserText.slice(0, 800) + "..." : lastUserText;
+    const truncatedAiText = aiResponseText.length > 800 ? aiResponseText.slice(0, 800) + "..." : aiResponseText;
+
+    const analysis = await generateSimpleText(googleModels.title,
       `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
-       User: ${lastUserText}
-       AI: ${aiResponseText}`
+       User: ${truncatedUserText}
+       AI: ${truncatedAiText}`
     );
 
     if (analysis) {

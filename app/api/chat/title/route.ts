@@ -41,10 +41,14 @@ export async function POST(request: Request) {
 
     const aiResponseText = firstAIMsg ? firstAIMsg.body : "";
 
-    const analysis = await generateSimpleText(googleModels.fast,
+    // Truncate to maximum 800 chars to avoid feeding massive chunks of context (like code) into the title generator
+    const truncatedUserText = firstUserMsg.body.length > 800 ? firstUserMsg.body.slice(0, 800) + "..." : firstUserMsg.body;
+    const truncatedAiText = aiResponseText.length > 800 ? aiResponseText.slice(0, 800) + "..." : aiResponseText;
+
+    const analysis = await generateSimpleText(googleModels.title,
       `Analyze this exchange and return exactly in this format: "Title: <5 words> | Category: <One of: Coding, Academic, Creative, Business, Data, General>"
-       User: ${firstUserMsg.body}
-       AI: ${aiResponseText}`
+       User: ${truncatedUserText}
+       AI: ${truncatedAiText}`
     );
 
     if (analysis) {
