@@ -30,6 +30,10 @@ export function useGoogleChat({
   const abortControllerRef = useRef<AbortController | null>(null);
   const isSubmittingRef = useRef(false);
 
+  // Keep a ref to the latest messages so closures always read current state
+  const messagesRef = useRef<Message[]>(messages);
+  messagesRef.current = messages;
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -57,7 +61,14 @@ export function useGoogleChat({
       options?: { body?: any }
     ) => {
       // Synchronous guard — prevents duplicate submissions from rapid Enter
-      if (isSubmittingRef.current) return;
+      if (isSubmittingRef.current) {
+        const err = new Error(
+          "A message is already being sent. Please wait for the current response."
+        );
+        console.warn("[useGoogleChat] Duplicate submission blocked");
+        onError?.(err);
+        return;
+      }
       isSubmittingRef.current = true;
 
       // Determine content and files based on input shape
@@ -94,7 +105,8 @@ export function useGoogleChat({
       const MAX_CONTEXT_MESSAGES = 20;
 
       try {
-        const allMessages = [...messages, userMessage];
+        // Read from ref so we always have the latest messages, not a stale closure value
+        const allMessages = [...messagesRef.current, userMessage];
         const contextMessages = allMessages.slice(-MAX_CONTEXT_MESSAGES);
 
         const response = await fetch(api, {
@@ -225,20 +237,21 @@ export function useGoogleChat({
         isSubmittingRef.current = false;
       }
     },
-    [api, messages, body, onFinish, onError]
+    [api, body, onFinish, onError]
   );
   
   // Alias sendMessage to append and ensure it returns promise
   const sendMessage = append;
   
   const reload = useCallback(async () => {
-    // Find the last user message
-    const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
+    // Read from ref to avoid stale closure
+    const currentMessages = messagesRef.current;
+    const lastUserIdx = currentMessages.map(m => m.role).lastIndexOf('user');
     if (lastUserIdx === -1) return;
 
     // Remove the last assistant response (if any) and get messages up to the last user message
-    const messagesUpToUser = messages.slice(0, lastUserIdx);
-    const lastUserMessage = messages[lastUserIdx];
+    const messagesUpToUser = currentMessages.slice(0, lastUserIdx);
+    const lastUserMessage = currentMessages[lastUserIdx];
 
     // Reset messages to just before the user message
     setMessages(messagesUpToUser);
@@ -252,15 +265,16 @@ export function useGoogleChat({
       experimental_attachments: lastUserMessage.experimental_attachments,
       parts: lastUserMessage.parts,
     });
-  }, [messages, append]);
+  }, [append]);
 
   const editMessage = useCallback(async (newContent: string) => {
-    // Find the last user message
-    const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
+    // Read from ref to avoid stale closure
+    const currentMessages = messagesRef.current;
+    const lastUserIdx = currentMessages.map(m => m.role).lastIndexOf('user');
     if (lastUserIdx === -1) return;
 
     // Remove everything from the last user message onward
-    const messagesBeforeUser = messages.slice(0, lastUserIdx);
+    const messagesBeforeUser = currentMessages.slice(0, lastUserIdx);
     setMessages(messagesBeforeUser);
 
     // Send the edited content as a new message
@@ -268,7 +282,7 @@ export function useGoogleChat({
       text: newContent,
       role: "user",
     });
-  }, [messages, append]);
+  }, [append]);
 
   return {
     messages,

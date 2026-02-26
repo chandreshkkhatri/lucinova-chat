@@ -89,6 +89,7 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
               message={message}
               chatId={chatId}
               annotations={annotations}
+              hideAnnotationOverlay
               onAskLucinova={(selectedText) =>
                 onAskLucinova?.(message.id, selectedText)
               }
@@ -247,6 +248,15 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
         type="source"
         position={Position.Bottom}
         className="!bg-muted-foreground/50 !w-3 !h-3 !-bottom-1.5"
+        id="bottom"
+      />
+
+      {/* Right Handle (Source) - for annotation branches */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!bg-purple-400/60 !w-2.5 !h-2.5 !-right-1"
+        id="right"
       />
     </div>
   );

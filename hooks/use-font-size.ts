@@ -1,35 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 
 export type FontSize = "small" | "medium" | "large";
 
-export function useFontSize() {
-  const [fontSize, setFontSizeState] = useState<FontSize>("medium");
-  const [isMounted, setIsMounted] = useState(false);
+// ── Shared cross-component synchronization ──────────────────────────
+// Every `useFontSize()` hook subscribes here so that when *any* instance
+// calls `setFontSize`, all other instances re-render with the new value.
+const listeners = new Set<() => void>();
 
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function getSnapshot(): FontSize {
+  const stored = localStorage.getItem("app-font-size") as FontSize | null;
+  return stored && ["small", "medium", "large"].includes(stored)
+    ? stored
+    : "medium";
+}
+
+function getServerSnapshot(): FontSize {
+  return "medium";
+}
+
+export function useFontSize() {
+  const fontSize = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  // Keep isMounted for hydration-safe conditional rendering
+  const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
-    const stored = localStorage.getItem("app-font-size") as FontSize;
-    if (stored && ["small", "medium", "large"].includes(stored)) {
-      setFontSizeState(stored);
-    }
   }, []);
 
-  const setFontSize = (size: FontSize) => {
-    setFontSizeState(size);
+  const setFontSize = useCallback((size: FontSize) => {
     localStorage.setItem("app-font-size", size);
-  };
+    // Notify all subscribers (other useFontSize hooks across the app)
+    listeners.forEach((l) => l());
+  }, []);
 
-  const getFontSizeClass = () => {
+  const getFontSizeClass = useCallback(() => {
     switch (fontSize) {
       case "small":
-        return "prose-sm max-w-none"; // 14px base
+        return "text-sm"; // 14px base
       case "large":
-        return "prose-lg max-w-none"; // 18px base
+        return "text-xl"; // 20px base
       case "medium":
       default:
-        return "prose-base max-w-none"; // 16px base
+        return "text-base"; // 16px base
     }
-  };
+  }, [fontSize]);
 
   return {
     fontSize,

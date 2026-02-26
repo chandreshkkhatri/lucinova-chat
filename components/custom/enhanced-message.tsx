@@ -3,6 +3,12 @@
 import { MessageSquareText, Globe, Download } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState, RefObject } from "react";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useFontSize } from "@/hooks/use-font-size";
 import { Message } from "@/lib/chat-utils";
 
@@ -23,6 +29,9 @@ interface EnhancedMessageProps {
   annotations?: SavedAnnotation[];
   onAskLucinova?: (selectedText: string) => void;
   onOpenAnnotation?: (annotationId: string, selectedText: string) => void;
+  /** When true, the amber highlight/wire/icon overlay for saved annotations is hidden
+   *  (useful when annotations are shown as separate canvas nodes instead). */
+  hideAnnotationOverlay?: boolean;
 }
 
 export const EnhancedMessage = memo(function EnhancedMessage({
@@ -30,6 +39,7 @@ export const EnhancedMessage = memo(function EnhancedMessage({
   annotations = [],
   onAskLucinova,
   onOpenAnnotation,
+  hideAnnotationOverlay = false,
 }: EnhancedMessageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { getFontSizeClass } = useFontSize();
@@ -152,12 +162,19 @@ export const EnhancedMessage = memo(function EnhancedMessage({
             {message.generatedImages.map((img, i) => {
               const imgSrc = img.url || `data:${img.mimeType};base64,${img.data}`;
               return (
-                <div key={i} className="relative group/img max-w-[512px] w-full">
+                <div key={i} className="relative group/img max-w-[512px] w-full" style={{ aspectRatio: '1 / 1' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={imgSrc}
                     alt={`Generated image ${i + 1}`}
+                    width={1024}
+                    height={1024}
                     className="rounded-xl w-full h-auto object-contain border border-white/10 shadow-lg"
+                    onLoad={(e) => {
+                      // Remove placeholder aspect-ratio once real dimensions are known
+                      const wrapper = (e.target as HTMLElement).parentElement;
+                      if (wrapper) wrapper.style.aspectRatio = '';
+                    }}
                   />
                   {img.modelName && (
                     <div className="absolute bottom-2 right-2 bg-black/60 text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-md shadow backdrop-blur-sm z-10 pointer-events-none">
@@ -194,6 +211,8 @@ export const EnhancedMessage = memo(function EnhancedMessage({
                       <img
                         src={attachment.url}
                         alt={attachment.name ?? `Attachment ${index + 1}`}
+                        width={600}
+                        height={450}
                         className="rounded-lg w-full h-auto object-contain border border-border bg-card"
                       />
                     ) : (
@@ -218,8 +237,8 @@ export const EnhancedMessage = memo(function EnhancedMessage({
           )}
       </div>
 
-      {/* Saved Annotation Overlays */}
-      {annotations.length > 0 && (
+      {/* Saved Annotation Overlays (hidden in canvas mode where annotation nodes are used) */}
+      {!hideAnnotationOverlay && annotations.length > 0 && (
         <SavedAnnotationsOverlay
           annotations={annotations}
           containerRef={containerRef}
@@ -514,26 +533,43 @@ function SavedAnnotationsOverlay({
               onMouseEnter={() => setHoveredId(ann.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              <button
-                id={`annotation-icon-${ann.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenAnnotation?.(ann.id, ann.selectedText);
-                }}
-                className={`flex items-center justify-center rounded-full p-2 shadow-sm border transition-all ${
-                  isHovered
-                    ? "bg-amber-200 dark:bg-amber-700 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-100 scale-115 shadow-md ring-2 ring-amber-300 dark:ring-amber-600"
-                    : "bg-amber-100 dark:bg-amber-900/80 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 scale-100 hover:bg-amber-200 dark:hover:bg-amber-800"
-                }`}
-                title={ann.firstMessageText ? `Thread: "${ann.firstMessageText}"` : "View thread"}
-              >
-                <MessageSquareText className="size-5" />
-                {ann.messageCount !== undefined && ann.messageCount > 0 && (
-                  <span className="ml-1 text-[10px] font-bold leading-none">
-                    {ann.messageCount}
-                  </span>
-                )}
-              </button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      id={`annotation-icon-${ann.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenAnnotation?.(ann.id, ann.selectedText);
+                      }}
+                      className={`flex items-center justify-center rounded-full p-2 shadow-sm border transition-all ${
+                        isHovered
+                          ? "bg-amber-200 dark:bg-amber-700 border-amber-400 dark:border-amber-500 text-amber-800 dark:text-amber-100 scale-115 shadow-md ring-2 ring-amber-300 dark:ring-amber-600"
+                          : "bg-amber-100 dark:bg-amber-900/80 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 scale-100 hover:bg-amber-200 dark:hover:bg-amber-800"
+                      }`}
+                    >
+                      <MessageSquareText className="size-5" />
+                      {ann.messageCount !== undefined && ann.messageCount > 0 && (
+                        <span className="ml-1 text-[10px] font-bold leading-none">
+                          {ann.messageCount}
+                        </span>
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[280px]">
+                    <p className="text-xs">
+                      {ann.firstMessageText
+                        ? `Thread: \u201c${ann.firstMessageText}\u201d`
+                        : "View thread"}
+                    </p>
+                    {ann.messageCount !== undefined && ann.messageCount > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {ann.messageCount} message{ann.messageCount === 1 ? "" : "s"}
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         );
