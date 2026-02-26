@@ -496,7 +496,49 @@ export async function getAnnotationsByMessageId(messageId: string) {
 
 export async function getAnnotationsByChatId(chatId: string) {
   await ensureConnection();
-  return Annotation.find({ chatId }).sort({ createdAt: 1 }).lean();
+  
+  // Use aggregation to fetch the annotation, its first thread message, and count
+  // NOTE: parentMsgId is stored as String in the Message schema, so we must
+  // convert the annotation ObjectId to string for the $eq comparison.
+  const annotations = await Annotation.aggregate([
+    { $match: { chatId: new mongoose.Types.ObjectId(chatId) } },
+    { $sort: { createdAt: 1 } },
+    // Lookup first message in the annotation thread
+    {
+      $lookup: {
+        from: "messages",
+        let: { annotationId: { $toString: "$_id" } },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$parentMsgId", "$$annotationId"] } } },
+          { $sort: { createdAt: 1 } },
+          { $limit: 1 }
+        ],
+        as: "firstMessage"
+      }
+    },
+    // Lookup all messages to get the count
+    {
+      $lookup: {
+        from: "messages",
+        let: { annotationId: { $toString: "$_id" } },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$parentMsgId", "$$annotationId"] } } },
+          { $count: "total" }
+        ],
+        as: "messageCountResult"
+      }
+    }
+  ]);
+
+  return annotations.map((a: any) => ({
+    ...a,
+    firstMessageText: a.firstMessage && a.firstMessage.length > 0 
+      ? a.firstMessage[0].body || a.firstMessage[0].content || ""
+      : "",
+    messageCount: a.messageCountResult && a.messageCountResult.length > 0
+      ? a.messageCountResult[0].total
+      : 0
+  }));
 }
 
 export async function getAnnotationById(id: string) {

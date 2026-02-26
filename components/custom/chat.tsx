@@ -496,8 +496,6 @@ export function Chat({
     );
   }
 
-  const showMobileOverlay =
-    activeThread || activeAnnotation || pendingAnnotation;
 
   return (
     <div ref={containerRef} className={`flex h-full bg-paper ${className}`}>
@@ -532,42 +530,46 @@ export function Chat({
             {isToggleEnabled && viewMode === "canvas" ? (
               <Canvas {...sharedProps} isThread={false} />
             ) : (
-              <ChatList {...sharedProps} />
+              <ChatList {...sharedProps} isThread={isThread} selectedText={selectedText} />
             )}
           </div>
         </div>
 
         {/* Right Sidebar - Thread/Annotation View */}
-        {(activeThread || activeAnnotation || pendingAnnotation) && (
-          <div className="w-[450px] border-l border-border bg-card/30 backdrop-blur-md shrink-0 hidden md:block">
-            <RightSidebar
-              {...sharedProps}
-              activeThread={activeThread}
-              activeAnnotation={activeAnnotation}
-              pendingAnnotation={pendingAnnotation}
-              onCloseThread={handleCloseThread}
-              onCloseAnnotation={handleCloseAnnotation}
-              onAnnotationDeleted={handleAnnotationDeleted}
-              isMounted={true}
-            />
-          </div>
-        )}
+        <div className={`border-l border-border bg-card/30 backdrop-blur-md shrink-0 hidden md:block transition-all duration-300 ease-in-out ${
+          (activeThread || activeAnnotation || pendingAnnotation)
+            ? "w-[450px] min-w-[450px] opacity-100"
+            : "w-0 min-w-0 opacity-0 overflow-hidden border-transparent"
+        }`}>
+          <RightSidebar
+            {...sharedProps}
+            activeThread={activeThread}
+            activeAnnotation={activeAnnotation}
+            pendingAnnotation={pendingAnnotation}
+            onCloseThread={handleCloseThread}
+            onCloseAnnotation={handleCloseAnnotation}
+            onAnnotationDeleted={handleAnnotationDeleted}
+            isMounted={true}
+          />
+        </div>
 
         {/* Mobile Sidebar Overlay */}
-        {showMobileOverlay && (
-          <div className="absolute inset-0 z-50 bg-background md:hidden">
-            <RightSidebar
-              {...sharedProps}
-              activeThread={activeThread}
-              activeAnnotation={activeAnnotation}
-              pendingAnnotation={pendingAnnotation}
-              onCloseThread={handleCloseThread}
-              onCloseAnnotation={handleCloseAnnotation}
-              onAnnotationDeleted={handleAnnotationDeleted}
-              isMounted={true}
-            />
-          </div>
-        )}
+        <div className={`absolute inset-0 z-50 bg-background md:hidden transition-opacity duration-300 ease-in-out ${
+          (activeThread || activeAnnotation || pendingAnnotation)
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}>
+          <RightSidebar
+            {...sharedProps}
+            activeThread={activeThread}
+            activeAnnotation={activeAnnotation}
+            pendingAnnotation={pendingAnnotation}
+            onCloseThread={handleCloseThread}
+            onCloseAnnotation={handleCloseAnnotation}
+            onAnnotationDeleted={handleAnnotationDeleted}
+            isMounted={true}
+          />
+        </div>
       </div>
     </div>
   );

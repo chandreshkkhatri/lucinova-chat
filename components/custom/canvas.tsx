@@ -16,8 +16,10 @@ import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useState, useRef } from "react";
 
 import { Message } from "@/lib/chat-utils";
-import { messagesToNodes } from "@/lib/message-to-nodes";
 
+import {
+  AnnotationCanvasNode,
+} from "./annotation-canvas-node";
 import { CanvasNodeComponent, CanvasNodeData } from "./canvas-node";
 import { ChatInput } from "./chat-input";
 import { SavedAnnotation } from "./enhanced-message";
@@ -65,6 +67,7 @@ interface CanvasProps {
 
 const nodeTypes = {
   "canvas-node": CanvasNodeComponent,
+  "annotation-node": AnnotationCanvasNode,
 };
 
 function CanvasGraph({
@@ -75,9 +78,8 @@ function CanvasGraph({
   annotationsByMessage,
   ...props
 }: CanvasProps) {
-  const [nodes, setNodes] = useNodesState<Node<CanvasNodeData>>(
-    [],
-  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [nodes, setNodes] = useNodesState<Node<any>>([]);
   const [edges, setEdges] = useEdgesState<Edge>([]);
   // fitView removed as unused
 
@@ -92,7 +94,8 @@ function CanvasGraph({
   // Sync messages to nodes/edges
   useEffect(() => {
     // 1. Transform messages to nodes
-    const newNodes: Node<CanvasNodeData>[] = messages.map((msg, index) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const newNodes: Node<any>[] = messages.map((msg, index) => {
       // Find existing node to preserve position if it exists
       const existingNode = nodesRef.current.find((n) => n.id === msg.id);
 
@@ -123,6 +126,8 @@ function CanvasGraph({
         id: msg.id,
         type: "canvas-node",
         position: existingNode?.position || { x: 0, y: index * 200 },
+        // Preserve measured dimensions so React Flow doesn't re-measure unnecessarily
+        ...(existingNode?.measured ? { measured: existingNode.measured } : {}),
         data: {
           message: msg,
           chatId,
@@ -144,7 +149,7 @@ function CanvasGraph({
       };
     });
 
-    // 2. Create Edges
+    // 2. Create Edges (message chain)
     const newEdges: Edge[] = [];
     for (let i = 0; i < messages.length - 1; i++) {
       const source = messages[i].id;
@@ -158,6 +163,47 @@ function CanvasGraph({
         style: { stroke: "hsl(var(--muted-foreground))", opacity: 0.5 },
       });
     }
+
+    // 3. Create Annotation nodes + edges (branching to the right)
+    Object.entries(annotationsByMessage).forEach(([messageId, anns]) => {
+      anns.forEach((ann, annIdx) => {
+        const annotationNodeId = `annotation-${ann.id}`;
+        const parentNode = newNodes.find((n) => n.id === messageId);
+        const existingAnnNode = nodesRef.current.find(
+          (n) => n.id === annotationNodeId,
+        );
+
+        // Annotation node — positioned to the right of its parent
+        newNodes.push({
+          id: annotationNodeId,
+          type: "annotation-node",
+          position: existingAnnNode?.position || {
+            x: (parentNode?.position?.x ?? 0) + 500,
+            y: (parentNode?.position?.y ?? 0) + annIdx * 140,
+          },
+          ...(existingAnnNode?.measured ? { measured: existingAnnNode.measured } : {}),
+          data: {
+            annotation: ann,
+            onOpenAnnotation: props.onOpenAnnotation,
+          },
+        });
+
+        // Edge: parent message → annotation (from right handle)
+        newEdges.push({
+          id: `${messageId}-${annotationNodeId}`,
+          source: messageId,
+          target: annotationNodeId,
+          type: "smoothstep",
+          animated: false,
+          style: {
+            stroke: "hsl(270 60% 60%)",
+            opacity: 0.6,
+            strokeDasharray: "6 3",
+          },
+          sourceHandle: "right",
+        });
+      });
+    });
 
     setNodes(newNodes);
     setEdges(newEdges);
