@@ -27,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { GEMINI_3_PRO_MODEL_ID } from "@/ai";
 import { appConfig } from "@/lib/config";
 import { SUGGESTIONS } from "@/lib/constants";
 
@@ -130,8 +131,8 @@ export function DefaultSidebarView({
                 // The original code was:
                 // 3.0-pro: disabled={!isUserPro}
 
-                const isDisabled = modelId === "gemini-3-pro-preview" && !isUserPro;
-                const showCrown = modelId === "gemini-3-pro-preview" && !isUserPro;
+                const isDisabled = modelId === GEMINI_3_PRO_MODEL_ID && !isUserPro;
+                const showCrown = modelId === GEMINI_3_PRO_MODEL_ID && !isUserPro;
 
                 return (
                   <SelectItem

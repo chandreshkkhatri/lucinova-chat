@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob";
 import { type NextRequest } from "next/server";
 
-import { googleClient, DEFAULT_MODEL_ID, googleModels } from "@/ai";
+import { googleClient, DEFAULT_MODEL_ID, googleModels, GEMINI_3_PRO_IMAGE_MODEL_ID, GEMINI_2_5_FLASH_IMAGE_MODEL_ID } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { ensureConnection } from "@/db/connection";
 import { Chat } from "@/db/models";
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
           const encoder = new TextEncoder();
           let streamClosed = false;
           try {
-            const isProImage = targetModelId.includes('gemini-3-pro-image');
+            const isProImage = targetModelId.includes(GEMINI_3_PRO_IMAGE_MODEL_ID);
             const imageConfig: any = {
               responseModalities: ['TEXT', 'IMAGE'],
             };
@@ -301,7 +301,7 @@ export async function POST(req: NextRequest) {
             } catch (initialErr) {
               console.warn(`[Chat API] Primary image model (${targetModelId}) failed/timed out. Falling back to flash. Error:`, initialErr);
               // Fallback to the reliable and fast flash model
-              actualModelUsed = "gemini-2.5-flash-image";
+              actualModelUsed = GEMINI_2_5_FLASH_IMAGE_MODEL_ID;
               imageResponse = await generateWithTimeout(actualModelUsed);
             }
 
@@ -464,7 +464,7 @@ export async function POST(req: NextRequest) {
         const encoder = new TextEncoder();
         let streamClosed = false;
         try {
-          const isProImage = targetModelId.includes('gemini-3-pro-image');
+          const isProImage = targetModelId.includes(GEMINI_3_PRO_IMAGE_MODEL_ID);
           const imageConfig: any = {
             responseModalities: ['TEXT', 'IMAGE'],
           };
@@ -495,7 +495,7 @@ export async function POST(req: NextRequest) {
           } catch (initialErr) {
             console.warn(`[Chat API] Guest primary image model (${targetModelId}) failed/timed out. Falling back to flash. Error:`, initialErr);
             // Fallback to the reliable and fast flash model
-            actualModelUsed = "gemini-2.5-flash-image";
+            actualModelUsed = GEMINI_2_5_FLASH_IMAGE_MODEL_ID;
             imageResponse = await generateWithTimeout(actualModelUsed);
           }
 

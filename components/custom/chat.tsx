@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
+import { DEFAULT_MODEL_ID, PRIMARY_MODEL_ID } from "@/ai";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoogleChat } from "@/hooks/use-google-chat";
 import { Message } from "@/lib/chat-utils";
+import { appConfig } from "@/lib/config";
 import { DEMO_ANNOTATIONS, DEMO_MESSAGES } from "@/lib/demo-data";
 
 const Canvas = dynamic(() => import("./canvas").then((mod) => mod.Canvas), {
@@ -46,7 +48,7 @@ export function Chat({
   isUserPro = false,
   isGuest = false,
   selectedText,
-  defaultModelId = "gemini-3-flash-preview",
+  defaultModelId = DEFAULT_MODEL_ID,
   api: apiOverride,
 }: {
   id: string;
@@ -72,8 +74,21 @@ export function Chat({
 
   const { selectedProjectId } = useSidebar();
 
-  // Model selection state
-  const [selectedModel, setSelectedModel] = useState<string>(defaultModelId);
+  // Model selection state – restore from localStorage, or use pro/free default
+  const LAST_MODEL_KEY = "lucidity-last-model";
+  const getInitialModel = (): string => {
+    if (typeof window === "undefined") return defaultModelId;
+    const stored = localStorage.getItem(LAST_MODEL_KEY);
+    // Only use stored model if it's still a valid selectable model
+    if (stored && appConfig.modelNames[stored]) return stored;
+    // Pro users default to the most advanced model
+    return isUserPro ? PRIMARY_MODEL_ID : defaultModelId;
+  };
+  const [selectedModel, setSelectedModelRaw] = useState<string>(getInitialModel);
+  const setSelectedModel = useCallback((modelId: string) => {
+    setSelectedModelRaw(modelId);
+    try { localStorage.setItem(LAST_MODEL_KEY, modelId); } catch {}
+  }, []);
   const [input, setInput] = useState("");
 
   const containerRef = useRef<HTMLDivElement>(null);

@@ -3,12 +3,19 @@
  * 1000 units = 400 INR cost to the application.
  */
 
+import {
+  GEMINI_2_5_FLASH_MODEL_ID,
+  GEMINI_2_5_PRO_MODEL_ID,
+  GEMINI_3_FLASH_MODEL_ID,
+  GEMINI_3_PRO_MODEL_ID,
+} from "@/ai";
+
 // Pricing per million tokens (USD) - based on Gemini pricing
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  "gemini-2.5-flash": { input: 0.075, output: 0.3 },
-  "gemini-2.5-pro": { input: 1.25, output: 10.0 },
-  "gemini-3-flash-preview": { input: 0.075, output: 0.3 },
-  "gemini-3-pro-preview": { input: 1.25, output: 10.0 },
+  [GEMINI_2_5_FLASH_MODEL_ID]: { input: 0.075, output: 0.3 },
+  [GEMINI_2_5_PRO_MODEL_ID]: { input: 1.25, output: 10.0 },
+  [GEMINI_3_FLASH_MODEL_ID]: { input: 0.075, output: 0.3 },
+  [GEMINI_3_PRO_MODEL_ID]: { input: 1.25, output: 10.0 },
 };
 
 // 1 unit = ~$0.0048 USD (400 INR / 1000 units, at ~83 INR/USD)
@@ -34,7 +41,7 @@ export function calculateUnitsFromTokens(
 ): number {
   // Default to flash pricing if model not found
   const pricing =
-    MODEL_PRICING[modelId] || MODEL_PRICING["gemini-3-flash-preview"];
+    MODEL_PRICING[modelId] || MODEL_PRICING[GEMINI_3_FLASH_MODEL_ID];
 
   // Calculate cost in USD
   const inputCost = (inputTokens / 1_000_000) * pricing.input;

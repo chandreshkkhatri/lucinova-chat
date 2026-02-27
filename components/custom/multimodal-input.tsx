@@ -49,6 +49,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { GEMINI_3_PRO_MODEL_ID } from "@/ai";
 import { appConfig } from "@/lib/config";
 
 import { Attachment } from "./types";
@@ -516,9 +517,9 @@ export function MultimodalInput({
                 <SelectContent className="bg-card border-border min-w-[200px]">
                   {Object.keys(appConfig.modelNames).map((modelId) => {
                     const isDisabled =
-                      modelId === "gemini-3-pro-preview" && !isUserPro;
+                      modelId === GEMINI_3_PRO_MODEL_ID && !isUserPro;
                     const showCrown =
-                      modelId === "gemini-3-pro-preview" && !isUserPro;
+                      modelId === GEMINI_3_PRO_MODEL_ID && !isUserPro;
 
                     return (
                       <SelectItem
