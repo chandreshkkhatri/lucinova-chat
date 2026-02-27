@@ -29,6 +29,7 @@ export const authConfig = {
         "/contact",
         "/manifest.json",
         "/images",
+        "/api/admin",
       ];
       const isPublicRoute =
         pathname === "/" ||
