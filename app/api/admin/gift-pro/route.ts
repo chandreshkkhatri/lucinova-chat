@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/app/(auth)/auth";
-import {
-  activateProSubscriptionByEmail,
-  getUserByEmail,
-} from "@/db/queries";
+import { activateProSubscriptionByEmail, getUserByEmail } from "@/db/queries";
+import { sendProGiftEmail, sendProGiftInvitationEmail } from "@/lib/email";
 
 /**
  * Gift Pro Subscription Endpoint
@@ -84,11 +81,7 @@ export async function POST(request: NextRequest) {
     }> = [];
 
     for (const addr of uniqueEmails) {
-      const user = await getUserByEmail(addr);
-      if (!user) {
-        results.push({ email: addr, success: false, error: "User not found" });
-        continue;
-      }
+      const existingUser = await getUserByEmail(addr);
 
       const updated = await activateProSubscriptionByEmail(
         addr,
@@ -103,6 +96,26 @@ export async function POST(request: NextRequest) {
           error: "Activation failed",
         });
         continue;
+      }
+
+      // --- Send Gift/Invitation Email ---
+      try {
+        if (existingUser) {
+          await sendProGiftEmail(addr, updated.displayName || addr, {
+            periodInDays,
+            currentPeriodEnd: updated.currentPeriodEnd!,
+            reason,
+          });
+        } else {
+          await sendProGiftInvitationEmail(addr, {
+            periodInDays,
+            currentPeriodEnd: updated.currentPeriodEnd!,
+            reason,
+          });
+        }
+      } catch (emailError) {
+        console.error(`[Gift Pro] Failed to send email to ${addr}:`, emailError);
+        // We don't fail the whole request for a failed email
       }
 
       console.log(

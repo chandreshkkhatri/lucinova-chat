@@ -195,10 +195,23 @@ export async function activateProSubscriptionByEmail(
   await ensureConnection();
   // Normalize email and check if user exists
   const normalizedEmail = String(email).trim().toLowerCase();
-  const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+  let existingUser = await User.findOne({ email: normalizedEmail }).lean();
+
   if (!existingUser || Array.isArray(existingUser)) {
-    console.error("User not found for email:", email);
-    return null;
+    if (provider === "gift") {
+      // Create a placeholder user for gifts
+      console.log(`[Queries] Creating placeholder user for gifted Pro: ${normalizedEmail}`);
+      const placeholder = await User.create({
+        email: normalizedEmail,
+        displayName: normalizedEmail.split("@")[0],
+        plan: "free",
+        isPro: false,
+      });
+      existingUser = placeholder.toObject();
+    } else {
+      console.error("User not found for email:", email);
+      return null;
+    }
   }
 
   const now = new Date();

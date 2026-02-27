@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+
 import { formatCurrencyForEmail } from "./currency";
 
 // Initialize Resend only if API key is available
@@ -179,6 +180,71 @@ export async function sendReferralSuccessEmail(
     return { success: true, data };
   } catch (error) {
     console.error("Error sending referral success email:", error);
+    return { success: false, error };
+  }
+}
+
+export async function sendProGiftEmail(
+  to: string,
+  displayName: string,
+  giftDetails: {
+    periodInDays: number;
+    currentPeriodEnd: Date;
+    reason?: string;
+  }
+) {
+  if (!resend) {
+    console.warn("RESEND_API_KEY not configured. Skipping gift email send.");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || "Lucidity <onboarding@resend.dev>",
+      to: [to],
+      subject: "🎁 A Special Gift for You: Lucidity Pro!",
+      html: getProGiftEmailTemplate(displayName, giftDetails),
+    });
+
+    if (error) {
+      console.error("Failed to send Pro gift email:", error);
+      return { success: false, error };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending Pro gift email:", error);
+    return { success: false, error };
+  }
+}
+
+export async function sendProGiftInvitationEmail(
+  to: string,
+  giftDetails: {
+    periodInDays: number;
+    currentPeriodEnd: Date;
+    reason?: string;
+  }
+) {
+  if (!resend) {
+    console.warn("RESEND_API_KEY not configured. Skipping gift invitation email send.");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || "Lucidity <onboarding@resend.dev>",
+      to: [to],
+      subject: "🎁 Someone sent you a gift: Lucidity Pro!",
+      html: getProGiftInvitationEmailTemplate(giftDetails),
+    });
+
+    if (error) {
+      console.error("Failed to send Pro gift invitation email:", error);
+      return { success: false, error };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending Pro gift invitation email:", error);
     return { success: false, error };
   }
 }
@@ -532,4 +598,118 @@ function getSubscriptionConfirmationEmailTemplate(
 </body>
 </html>
   `.trim();
+}
+
+function getProGiftEmailTemplate(
+  displayName: string,
+  giftDetails: {
+    periodInDays: number;
+    currentPeriodEnd: Date;
+    reason?: string;
+  }
+): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lucidity.chat";
+  const endDate = new Date(giftDetails.currentPeriodEnd).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <tr><td style="padding:40px 40px 20px;text-align:center;">
+          <div style="font-size:64px;margin-bottom:16px;">🎁</div>
+          <h1 style="margin:0;color:#1a1a1a;font-size:28px;font-weight:700;">A Special Gift for You!</h1>
+        </td></tr>
+        <tr><td style="padding:0 40px 30px;color:#4a5568;font-size:16px;line-height:1.6;">
+          <p>Hi ${displayName},</p>
+          <p>We have some exciting news! You've been gifted <strong>${giftDetails.periodInDays} days</strong> of <strong>Lucidity Pro</strong> access.</p>
+          ${giftDetails.reason ? `<p style="font-style: italic; color: #718096; border-left: 3px solid #e2e8f0; padding-left: 16px; margin: 20px 0;">"${giftDetails.reason}"</p>` : ""}
+          <p>You now have full access to all premium features, including unlimited threads, advanced learning tools, and priority support.</p>
+        </td></tr>
+        <tr><td style="padding:0 40px 30px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+            <tr><td style="padding:20px;color:#4a5568;font-size:15px;">
+              <p style="margin:0 0 8px;font-weight:600;">Subscription Details</p>
+              <p style="margin:8px 0;"><strong>Plan:</strong> Lucidity Pro (Gifted)</p>
+              <p style="margin:8px 0;"><strong>Duration:</strong> ${giftDetails.periodInDays} Days</p>
+              <p style="margin:8px 0;"><strong>Expires On:</strong> ${endDate}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:30px 40px;" align="center">
+          <a href="${appUrl}/" style="display:inline-block;padding:14px 32px;background-color:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-size:16px;">Start Exploring Pro</a>
+        </td></tr>
+        <tr><td style="padding:30px 40px;text-align:center;color:#718096;font-size:14px;border-top:1px solid #e2e8f0;">
+          <p style="margin:0 0 8px;">Think in threads, learn in layers</p>
+          <p style="margin:0;">&copy; ${new Date().getFullYear()} Lucidity. All rights reserved.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`.trim();
+}
+
+function getProGiftInvitationEmailTemplate(
+  giftDetails: {
+    periodInDays: number;
+    currentPeriodEnd: Date;
+    reason?: string;
+  }
+): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lucidity.chat";
+  const endDate = new Date(giftDetails.currentPeriodEnd).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <tr><td style="padding:40px 40px 20px;text-align:center;">
+          <div style="font-size:64px;margin-bottom:16px;">🎁</div>
+          <h1 style="margin:0;color:#1a1a1a;font-size:28px;font-weight:700;">A Surprise Gift!</h1>
+        </td></tr>
+        <tr><td style="padding:0 40px 30px;color:#4a5568;font-size:16px;line-height:1.6;">
+          <p>Hi there!</p>
+          <p>We're excited to let you know that someone has gifted you <strong>${giftDetails.periodInDays} days</strong> of <strong>Lucidity Pro</strong> access.</p>
+          ${giftDetails.reason ? `<p style="font-style: italic; color: #718096; border-left: 3px solid #e2e8f0; padding-left: 16px; margin: 20px 0;">"${giftDetails.reason}"</p>` : ""}
+          <p>Lucidity is an AI-powered chat assistant that helps you think in threads and learn in layers. With Pro, you get unlimited threads, advanced learning tools, and more.</p>
+        </td></tr>
+        <tr><td style="padding:0 40px 30px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fef3c7;border-radius:8px;border:1px solid #fcd34d;">
+            <tr><td style="padding:20px;color:#92400e;font-size:15px;">
+              <p style="margin:0 0 8px;font-weight:600;">How to Claim Your Gift</p>
+              <p style="margin:0;">Simply sign up for a Lucidity account using this email address. Your Pro access will be waiting for you!</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:30px 40px;" align="center">
+          <a href="${appUrl}/register" style="display:inline-block;padding:14px 32px;background-color:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-size:16px;">Claim My Pro Access</a>
+        </td></tr>
+        <tr><td style="padding:0 40px 30px;color:#718096;font-size:14px;text-align:center;">
+          <p>This gift is valid until ${endDate}.</p>
+        </td></tr>
+        <tr><td style="padding:30px 40px;text-align:center;color:#718096;font-size:14px;border-top:1px solid #e2e8f0;">
+          <p style="margin:0 0 8px;">Think in threads, learn in layers</p>
+          <p style="margin:0;">&copy; ${new Date().getFullYear()} Lucidity. All rights reserved.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`.trim();
 }
