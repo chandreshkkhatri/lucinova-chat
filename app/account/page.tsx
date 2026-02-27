@@ -38,6 +38,8 @@ export default async function AccountPage() {
         baseUser.subscriptionStatus = dbUser.subscriptionStatus || null;
         baseUser.subscriptionId = dbUser.subscriptionId || null;
         baseUser.badges = dbUser.badges || [];
+        baseUser.hasPassword = !!dbUser.password;
+        baseUser.oauthProvider = dbUser.oauthProvider || null;
 
         console.log("[Account Page] Enriched user data:", {
           email: baseUser.email,

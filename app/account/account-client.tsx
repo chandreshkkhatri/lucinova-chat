@@ -40,6 +40,8 @@ interface AccountClientProps {
     currentPeriodEnd?: string | Date | null;
     subscriptionStatus?: "active" | "inactive" | "canceled" | null;
     subscriptionId?: string | null;
+    hasPassword?: boolean;
+    oauthProvider?: string | null;
     badges?: Array<{
       badgeId: string;
       earnedAt: Date | string;
@@ -643,7 +645,7 @@ export default function AccountClient({ user }: AccountClientProps) {
         );
 
       case "security":
-        return <SecuritySection />;
+        return <SecuritySection hasPassword={user.hasPassword} oauthProvider={user.oauthProvider} />;
 
       case "pricing":
         return (
@@ -792,11 +794,51 @@ export default function AccountClient({ user }: AccountClientProps) {
   );
 }
 
-function SecuritySection() {
+function SecuritySection({ hasPassword, oauthProvider }: { hasPassword?: boolean; oauthProvider?: string | null }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordIsSet, setPasswordIsSet] = useState(!!hasPassword);
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/user/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Password set! You can now log in with email and password.");
+        setNewPassword("");
+        setConfirmPassword("");
+        setPasswordIsSet(true);
+      } else {
+        toast.error(data.error || "Failed to set password");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -840,6 +882,66 @@ function SecuritySection() {
   return (
     <div>
       <h2 className="text-2xl font-semibold text-foreground mb-6">Security</h2>
+
+      {/* Set Password section for OAuth-only users */}
+      {!passwordIsSet && (
+        <div className="bg-muted rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            Set Password
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            You signed in with {oauthProvider === "google" ? "Google" : "a social account"}. Set a password to also log in with your email and password.
+          </p>
+          <form onSubmit={handleSetPassword} className="space-y-4 max-w-md">
+            <div>
+              <label
+                htmlFor="setNewPassword"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                New Password
+              </label>
+              <input
+                type="password"
+                id="setNewPassword"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="setConfirmPassword"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="setConfirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 border border-border rounded-md bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground px-4 py-2 rounded-md transition-colors font-medium"
+            >
+              {isSubmitting ? "Setting..." : "Set Password"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Change Password section for users who already have a password */}
+      {passwordIsSet && (
       <div className="bg-muted rounded-lg p-6">
         <h3 className="text-lg font-medium text-foreground mb-4">
           Change Password
@@ -907,6 +1009,7 @@ function SecuritySection() {
           </button>
         </form>
       </div>
+      )}
     </div>
   );
 }

@@ -31,13 +31,16 @@ providers.push(
     async authorize({ email, password }: any) {
       const user = await getUserByEmail(email);
       if (!user || Array.isArray(user)) return null;
-      
-      // Validate password if it exists (for non-bot users)
-      if ('password' in user && user.password && !user.isBot) {
-        const isValid = await compare(password, user.password as string);
-        if (!isValid) return null;
-      }
-      
+
+      // Block credential login for OAuth-only accounts (no password set)
+      if (!('password' in user) || !user.password) return null;
+
+      // Skip password check for bot accounts
+      if (user.isBot) return null;
+
+      const isValid = await compare(password, user.password as string);
+      if (!isValid) return null;
+
       return user as any;
     },
   })
