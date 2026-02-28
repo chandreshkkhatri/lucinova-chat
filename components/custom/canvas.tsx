@@ -94,10 +94,10 @@ function CanvasGraph({
   }, [nodes]);
 
   // ── Saved positions from DB ──────────────────────────────────
-  const { data: posData, mutate: mutatePositions } = useSWR(
+  const { data: posData, mutate: mutatePositions, isLoading: positionsLoading } = useSWR(
     chatId && !props.isGuest ? `/api/chat/canvas-positions?chatId=${chatId}` : null,
     fetcher,
-    { revalidateOnFocus: false },
+    { revalidateOnFocus: false, revalidateOnMount: true, dedupingInterval: 0 },
   );
   const savedPositions = useMemo<Record<string, { x: number; y: number }>>(
     () => posData?.positions ?? {},
@@ -105,17 +105,31 @@ function CanvasGraph({
   );
   const hasSavedPositions = Object.keys(savedPositions).length > 0;
 
+  // Track whether saved positions have been applied to nodes already.
+  // `positionsAppliedRef` is a synchronous guard inside the sync effect
+  // (avoids adding it as a dep which would cause cascading re-runs).
+  // `autoLayoutOff` is state that triggers a re-render to disable the
+  // auto-layout hook after saved positions are applied.
+  const positionsAppliedRef = useRef(false);
+  const [autoLayoutOff, setAutoLayoutOff] = useState(false);
+
   // Track whether the user has dragged any node this session,
   // so we don't re-run auto-layout and override their positions.
   const [userDragged, setUserDragged] = useState(false);
 
-  // Only auto-layout when we have no saved positions and the user hasn't dragged yet
-  useAutoLayout("TB", !hasSavedPositions && !userDragged);
+  // Only auto-layout when we have no saved positions, the user hasn't
+  // dragged yet, AND positions have finished loading (avoids a race where
+  // auto-layout runs before SWR delivers saved positions).
+  const positionsResolved = props.isGuest || !positionsLoading;
+  const autoLayoutEnabled = positionsResolved && !hasSavedPositions && !userDragged && !autoLayoutOff;
+  useAutoLayout("TB", autoLayoutEnabled);
 
   // ── Reset layout to auto-generated positions ─────────────────
   const resetLayout = useCallback(() => {
-    // 1. Clear the "user has dragged" flag so auto-layout re-enables
+    // 1. Clear flags so auto-layout re-enables
     setUserDragged(false);
+    setAutoLayoutOff(false);
+    positionsAppliedRef.current = false;
 
     // 2. Delete saved positions from DB
     if (!props.isGuest && chatId) {
@@ -138,21 +152,29 @@ function CanvasGraph({
     (currentNodes: Node[]) => {
       if (props.isGuest || !chatId) return;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = setTimeout(async () => {
         const positions: Record<string, { x: number; y: number }> = {};
         currentNodes.forEach((n) => {
           positions[n.id] = { x: n.position.x, y: n.position.y };
         });
-        fetch("/api/chat/canvas-positions", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatId, positions }),
-        }).catch((err) =>
-          console.error("[Canvas] Position save error:", err),
-        );
+        try {
+          const res = await fetch("/api/chat/canvas-positions", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chatId, positions }),
+          });
+          if (res.ok) {
+            // Update SWR cache so future remounts (view switch, reload) serve
+            // the saved positions immediately instead of stale empty data.
+            // revalidate=false: don't re-fetch, just update cache in-place.
+            mutatePositions({ positions }, { revalidate: false });
+          }
+        } catch (err) {
+          console.error("[Canvas] Position save error:", err);
+        }
       }, 800);
     },
-    [chatId, props.isGuest],
+    [chatId, props.isGuest, mutatePositions],
   );
 
   // ── Drag handlers ────────────────────────────────────────────
@@ -178,15 +200,36 @@ function CanvasGraph({
 
   // Sync messages to nodes/edges
   useEffect(() => {
+    // Wait for SWR to resolve before building nodes (guest users skip this)
+    if (!props.isGuest && positionsLoading) {
+      return;
+    }
+
+    // Apply saved positions on first run when they exist; after that,
+    // existing node positions from React Flow state take priority.
+    const useSaved = hasSavedPositions && !positionsAppliedRef.current;
+    if (useSaved) {
+      positionsAppliedRef.current = true;
+      setAutoLayoutOff(true);
+    }
+
     // 1. Transform messages to nodes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newNodes: Node<any>[] = messages.map((msg, index) => {
-      // Priority: existing node position > saved position from DB > default
       const existingNode = nodesRef.current.find((n) => n.id === msg.id);
       const saved = savedPositions[msg.id];
-      const position =
-        existingNode?.position ||
-        (saved ? { x: saved.x, y: saved.y } : { x: 0, y: index * 400 });
+
+      // Priority: saved (if first apply) > existing > saved (stale) > default
+      let position: { x: number; y: number };
+      if (useSaved && saved) {
+        position = { x: saved.x, y: saved.y };
+      } else if (existingNode?.position) {
+        position = existingNode.position;
+      } else if (saved) {
+        position = { x: saved.x, y: saved.y };
+      } else {
+        position = { x: 0, y: index * 400 };
+      }
 
       const role =
         msg.role === "system"
@@ -264,14 +307,24 @@ function CanvasGraph({
         const savedAnn = savedPositions[annotationNodeId];
 
         // Annotation node — positioned to the right of its parent
+        let annPosition: { x: number; y: number };
+        if (useSaved && savedAnn) {
+          annPosition = { x: savedAnn.x, y: savedAnn.y };
+        } else if (existingAnnNode?.position) {
+          annPosition = existingAnnNode.position;
+        } else if (savedAnn) {
+          annPosition = { x: savedAnn.x, y: savedAnn.y };
+        } else {
+          annPosition = {
+            x: (parentNode?.position?.x ?? 0) + 500,
+            y: (parentNode?.position?.y ?? 0) + annIdx * 160,
+          };
+        }
+
         newNodes.push({
           id: annotationNodeId,
           type: "annotation-node",
-          position: existingAnnNode?.position ||
-            (savedAnn ? { x: savedAnn.x, y: savedAnn.y } : {
-              x: (parentNode?.position?.x ?? 0) + 500,
-              y: (parentNode?.position?.y ?? 0) + annIdx * 160,
-            }),
+          position: annPosition,
           ...(existingAnnNode?.measured ? { measured: existingAnnNode.measured } : {}),
           data: {
             annotation: ann,
@@ -307,6 +360,9 @@ function CanvasGraph({
     isThread,
     annotationsByMessage,
     savedPositions,
+    hasSavedPositions,
+    positionsLoading,
+    props.isGuest,
     props.onAskLucinova,
     props.onOpenAnnotation,
     props.onStartThread,
@@ -344,21 +400,21 @@ function CanvasGraph({
           color="hsl(var(--muted-foreground))"
           className="opacity-20"
         />
-        <Controls className="bg-background border-border text-foreground fill-foreground" />
+        <Controls
+          className="bg-background border-border text-foreground fill-foreground"
+          position="top-left"
+        />
 
         {/* Reset layout button */}
-        {(hasSavedPositions || userDragged) && (
-          <div className="absolute bottom-3 left-14 z-10">
-            <button
-              onClick={resetLayout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm transition-colors"
-              title="Reset to auto layout"
-            >
-              <RotateCcw className="size-3.5" />
-              Reset Layout
-            </button>
-          </div>
-        )}
+        <div className="absolute top-[140px] left-2 z-10">
+          <button
+            onClick={resetLayout}
+            className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm transition-colors"
+            title="Reset to auto layout"
+          >
+            <RotateCcw className="size-3.5" />
+          </button>
+        </div>
       </ReactFlow>
     </div>
   );

@@ -73,19 +73,22 @@ export const CanvasNodeComponent = memo(({ data: rawData, id: nodeId }: NodeProp
   // diagrams) finishes loading and changes the DOM height.
   const updateNodeInternals = useUpdateNodeInternals();
   const nodeRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const prevHeightRef = useRef<number>(0);
 
   // Measure annotation handle offsets after content renders.
   // Each handle should sit at the vertical midpoint of its selected text.
   const measureAnnotationOffsets = useCallback(() => {
-    const el = nodeRef.current;
-    if (!el || annotations.length === 0) return;
+    const nodeEl = nodeRef.current;
+    const contentEl = contentRef.current;
+    if (!nodeEl || !contentEl || annotations.length === 0) return;
 
-    const nodeRect = el.getBoundingClientRect();
+    const nodeRect = nodeEl.getBoundingClientRect();
     const offsets: Record<string, number> = {};
 
     annotations.forEach((ann) => {
-      const yPos = findTextVerticalCenter(el, ann.selectedText, nodeRect);
+      // Search within the content area but compute offset relative to node top
+      const yPos = findTextVerticalCenter(contentEl, ann.selectedText, nodeRect);
       if (yPos !== null) {
         offsets[ann.id] = yPos;
       }
@@ -151,6 +154,7 @@ export const CanvasNodeComponent = memo(({ data: rawData, id: nodeId }: NodeProp
     // Default: text node
     return (
       <div
+        ref={contentRef}
         className={`inline-block w-full ${role === "user" ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3" : "bg-muted rounded-2xl rounded-tl-sm px-4 py-3"}`}
       >
         <div className="flex items-start gap-2">
@@ -353,12 +357,15 @@ export const CanvasNodeComponent = memo(({ data: rawData, id: nodeId }: NodeProp
 
 /**
  * Walk the DOM inside `container` looking for `searchText`, return the
- * vertical center of the first match relative to `containerRect.top`.
+ * vertical center of the first match relative to `refRect.top`.
+ *
+ * Falls back to normalised-whitespace and then case-insensitive substring
+ * matching so we still find text inside rendered markdown.
  */
 function findTextVerticalCenter(
   container: HTMLElement,
   searchText: string,
-  containerRect: DOMRect,
+  refRect: DOMRect,
 ): number | null {
   if (!searchText) return null;
 
@@ -380,18 +387,38 @@ function findTextVerticalCenter(
     fullText += currentNode.textContent || "";
   }
 
-  // Try strict match first, then normalised whitespace
-  let startGlobal = fullText.indexOf(searchText);
-  let matchLen = searchText.length;
+  // Try multiple matching strategies in order of specificity
+  let startGlobal = -1;
+  let matchLen = 0;
 
+  // 1. Exact match
+  startGlobal = fullText.indexOf(searchText);
+  matchLen = searchText.length;
+
+  // 2. Normalised whitespace
   if (startGlobal === -1) {
     const nFull = fullText.replace(/\s+/g, " ");
     const nSearch = searchText.replace(/\s+/g, " ");
-    const nIdx = nFull.indexOf(nSearch);
-    if (nIdx === -1) return null;
-    startGlobal = nIdx;
+    startGlobal = nFull.indexOf(nSearch);
     matchLen = nSearch.length;
   }
+
+  // 3. Case-insensitive
+  if (startGlobal === -1) {
+    const lFull = fullText.toLowerCase();
+    const lSearch = searchText.replace(/\s+/g, " ").toLowerCase();
+    startGlobal = lFull.indexOf(lSearch);
+    matchLen = lSearch.length;
+  }
+
+  // 4. First 40 chars as a prefix match (handles truncation)
+  if (startGlobal === -1 && searchText.length > 40) {
+    const prefix = searchText.slice(0, 40).replace(/\s+/g, " ").toLowerCase();
+    startGlobal = fullText.toLowerCase().indexOf(prefix);
+    matchLen = prefix.length;
+  }
+
+  if (startGlobal === -1) return null;
 
   const endGlobal = startGlobal + matchLen;
 
@@ -414,10 +441,10 @@ function findTextVerticalCenter(
     const rects = Array.from(range.getClientRects());
     if (rects.length === 0) return null;
 
-    // Vertical center of the matched text, relative to the node's top
+    // Vertical center of the matched text, relative to refRect.top
     const minY = Math.min(...rects.map((r) => r.top));
     const maxY = Math.max(...rects.map((r) => r.bottom));
-    return (minY + maxY) / 2 - containerRect.top;
+    return (minY + maxY) / 2 - refRect.top;
   } catch {
     return null;
   }

@@ -412,17 +412,29 @@ export async function toggleChatPin(chatId: string, isPinned: boolean) {
 
 export async function saveCanvasPositions(
   chatId: string,
-  positions: Record<string, { x: number; y: number }>,
+  positions: Record<string, { x: number; y: number }> | null,
 ) {
   await ensureConnection();
-  await Chat.findByIdAndUpdate(chatId, { canvasPositions: positions });
+  // Use the native MongoDB driver to bypass Mongoose's strict mode.
+  // In dev with hot-reload, the Chat model may have been compiled before
+  // canvasPositions was added to the schema, causing findByIdAndUpdate
+  // to silently strip the field update.
+  await Chat.collection.updateOne(
+    { _id: new mongoose.Types.ObjectId(chatId) },
+    { $set: { canvasPositions: positions } },
+  );
 }
 
 export async function getCanvasPositions(
   chatId: string,
 ): Promise<Record<string, { x: number; y: number }> | null> {
   await ensureConnection();
-  const chat = await Chat.findById(chatId).select("canvasPositions").lean();
+  // Use native driver for consistency — lean() would also work since it
+  // returns raw docs, but native avoids any schema-related surprises.
+  const chat = await Chat.collection.findOne(
+    { _id: new mongoose.Types.ObjectId(chatId) },
+    { projection: { canvasPositions: 1 } },
+  );
   return (chat as any)?.canvasPositions ?? null;
 }
 
