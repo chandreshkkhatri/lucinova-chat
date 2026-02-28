@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
-import { DEFAULT_MODEL_ID, PRIMARY_MODEL_ID } from "@/ai";
+import { DEFAULT_MODEL_ID, PRIMARY_MODEL_ID } from "@/ai/models";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoogleChat } from "@/hooks/use-google-chat";
 import { Message } from "@/lib/chat-utils";

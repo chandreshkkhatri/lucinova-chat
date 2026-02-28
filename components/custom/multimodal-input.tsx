@@ -49,7 +49,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { GEMINI_3_PRO_MODEL_ID } from "@/ai";
+import { GEMINI_3_PRO_MODEL_ID } from "@/ai/models";
 import { appConfig } from "@/lib/config";
 
 import { Attachment } from "./types";

@@ -91,7 +91,9 @@ export function ChatList({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("text");
-  const { threadCounts, refresh: refreshThreadCounts } = useThreadCounts(chatId);
+  // Only fetch thread counts when chat has messages (chat exists in DB)
+  const hasMessages = messages.length > 0;
+  const { threadCounts, refresh: refreshThreadCounts } = useThreadCounts(hasMessages ? chatId : "");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
   useEffect(() => {

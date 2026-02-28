@@ -7,11 +7,12 @@ import { DEFAULT_COUNTRY_CODE, getCountryByCode, validatePhone } from "@/lib/cou
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.email) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await ensureConnection();
-  const user = await User.findOne({ email: session.user.email })
+  const user = await User.findById(userId)
     .select("email displayName name phone countryCode")
     .lean();
   return NextResponse.json({ user });
@@ -19,7 +20,8 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   const session = await auth();
-  if (!session?.user?.email) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -69,7 +71,7 @@ export async function PUT(request: NextRequest) {
     // Check if phone number is already used by another user
     const existingUser = await User.findOne({
       phone: phoneDigits,
-      email: { $ne: session.user.email },
+      _id: { $ne: userId },
     }).select("_id phoneVerifiedAt").lean();
 
     if (existingUser) {
@@ -96,13 +98,17 @@ export async function PUT(request: NextRequest) {
     updateOp.$unset = unsetFields;
   }
 
-  const updated = await User.findOneAndUpdate(
-    { email: session.user.email },
+  const updated = await User.findByIdAndUpdate(
+    userId,
     updateOp,
     { new: true }
   )
     .select("email displayName name phone countryCode termsAcceptedAt")
     .lean();
+
+  if (!updated) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ user: updated });
 }

@@ -5,7 +5,7 @@ import {
   GEMINI_3_FLASH_MODEL_ID,
   GEMINI_3_PRO_IMAGE_MODEL_ID,
   GEMINI_3_PRO_MODEL_ID,
-} from "@/ai";
+} from "@/ai/models";
 
 /**
  * Supported currency codes for pricing

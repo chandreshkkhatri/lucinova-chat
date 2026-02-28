@@ -1,21 +1,17 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/app/(auth)/auth";
-import { getUserByEmail, getProjectsByUserId, createProject } from "@/db/queries";
+import { getProjectsByUserId, createProject } from "@/db/queries";
 
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    const userId = session?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const dbUser: any = await getUserByEmail(session.user.email);
-    if (!dbUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const projects = await getProjectsByUserId(dbUser._id.toString());
+    const projects = await getProjectsByUserId(userId);
     return NextResponse.json(projects);
   } catch (error) {
     console.error("[Projects] GET error:", error);
@@ -29,13 +25,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    const userId = session?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const dbUser: any = await getUserByEmail(session.user.email);
-    if (!dbUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -49,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const project = await createProject(
-      dbUser._id.toString(),
+      userId,
       name.trim(),
       color
     );

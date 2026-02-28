@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/app/(auth)/auth";
-import { getUserByEmail, getProjectById, updateProject, deleteProject } from "@/db/queries";
+import { getProjectById, updateProject, deleteProject } from "@/db/queries";
 
 export async function PATCH(
   request: Request,
@@ -9,19 +9,16 @@ export async function PATCH(
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    const userId = session?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
-    const dbUser: any = await getUserByEmail(session.user.email);
-    if (!dbUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // Verify project belongs to user
     const project: any = await getProjectById(id);
-    if (!project || project.userId.toString() !== dbUser._id.toString()) {
+    if (!project || project.userId.toString() !== userId) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
@@ -58,19 +55,16 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    const userId = session?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
-    const dbUser: any = await getUserByEmail(session.user.email);
-    if (!dbUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // Verify project belongs to user
     const project: any = await getProjectById(id);
-    if (!project || project.userId.toString() !== dbUser._id.toString()) {
+    if (!project || project.userId.toString() !== userId) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 

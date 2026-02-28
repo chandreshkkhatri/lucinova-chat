@@ -8,7 +8,7 @@ import {
   GEMINI_2_5_PRO_MODEL_ID,
   GEMINI_3_FLASH_MODEL_ID,
   GEMINI_3_PRO_MODEL_ID,
-} from "@/ai";
+} from "@/ai/models";
 
 // Pricing per million tokens (USD) - based on Gemini pricing
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
