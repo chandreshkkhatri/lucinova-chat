@@ -2,9 +2,9 @@
 
 import { Message } from "@/lib/chat-utils";
 import Image from "next/image";
-import { useState, memo } from "react";
+import { useState, memo, useRef, useEffect, useCallback, useMemo } from "react";
 import { Reply, ChevronRight, Pencil, RefreshCw } from "lucide-react";
-import { Handle, Position, NodeProps } from "@xyflow/react";
+import { Handle, Position, NodeProps, useUpdateNodeInternals } from "@xyflow/react";
 
 import { useThreadCount } from "@/components/custom/use-thread-count";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -40,7 +40,7 @@ export type CanvasNodeData = {
   role: "user" | "assistant" | "system" | "data";
 };
 
-export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
+export const CanvasNodeComponent = memo(({ data: rawData, id: nodeId }: NodeProps) => {
   const data = rawData as CanvasNodeData;
   const {
     message,
@@ -64,6 +64,71 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
   const { threadCount } = useThreadCount(message.id, chatId);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
+
+  // Track vertical offsets for each annotation's right-side handle.
+  // Keys are annotation IDs, values are top-offsets in px relative to node.
+  const [annHandleOffsets, setAnnHandleOffsets] = useState<Record<string, number>>({});
+
+  // Tell React Flow to re-measure this node when async content (images,
+  // diagrams) finishes loading and changes the DOM height.
+  const updateNodeInternals = useUpdateNodeInternals();
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const prevHeightRef = useRef<number>(0);
+
+  // Measure annotation handle offsets after content renders.
+  // Each handle should sit at the vertical midpoint of its selected text.
+  const measureAnnotationOffsets = useCallback(() => {
+    const el = nodeRef.current;
+    if (!el || annotations.length === 0) return;
+
+    const nodeRect = el.getBoundingClientRect();
+    const offsets: Record<string, number> = {};
+
+    annotations.forEach((ann) => {
+      const yPos = findTextVerticalCenter(el, ann.selectedText, nodeRect);
+      if (yPos !== null) {
+        offsets[ann.id] = yPos;
+      }
+    });
+
+    setAnnHandleOffsets((prev) => {
+      // Only update if actually changed to avoid re-render loops
+      const changed = annotations.some(
+        (a) => prev[a.id] !== offsets[a.id],
+      );
+      return changed ? offsets : prev;
+    });
+  }, [annotations]);
+
+  // Watch for any descendant image loads or DOM mutations that change height
+  useEffect(() => {
+    const el = nodeRef.current;
+    if (!el) return;
+
+    const check = () => {
+      const h = el.getBoundingClientRect().height;
+      if (Math.abs(h - prevHeightRef.current) > 2) {
+        prevHeightRef.current = h;
+        updateNodeInternals(nodeId);
+      }
+      measureAnnotationOffsets();
+    };
+
+    // Initial measurement
+    measureAnnotationOffsets();
+
+    // Listen for <img> load events bubbling up
+    el.addEventListener("load", check, true);
+
+    // MutationObserver catches mermaid SVG injection or markdown rendering
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      el.removeEventListener("load", check, true);
+      mo.disconnect();
+    };
+  }, [nodeId, updateNodeInternals, measureAnnotationOffsets]);
 
   const getMessageText = (msg: Message): string => {
     const textPart = msg.parts?.find((p: any) => p.type === "text");
@@ -102,7 +167,7 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
   };
 
   return (
-    <div className="group relative max-w-[600px] min-w-[300px]">
+    <div ref={nodeRef} className="group relative max-w-[600px] min-w-[300px]">
       {/* Input Handle (Target) - for incoming connections (replies) */}
       <Handle
         type="target"
@@ -251,15 +316,108 @@ export const CanvasNodeComponent = memo(({ data: rawData }: NodeProps) => {
         id="bottom"
       />
 
-      {/* Right Handle (Source) - for annotation branches */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!bg-purple-400/60 !w-2.5 !h-2.5 !-right-1"
-        id="right"
-      />
+      {/* Per-annotation right-side source handles, positioned at the
+          vertical center of each annotation's selected text */}
+      {annotations.map((ann) => {
+        const top = annHandleOffsets[ann.id];
+        return (
+          <Handle
+            key={`ann-${ann.id}`}
+            type="source"
+            position={Position.Right}
+            className="!bg-purple-400/60 !w-2.5 !h-2.5 !-right-1"
+            id={`ann-${ann.id}`}
+            style={top != null ? { top } : undefined}
+          />
+        );
+      })}
+
+      {/* Fallback right handle when there are no annotations (keeps the
+          port available for future annotation edges during streaming) */}
+      {annotations.length === 0 && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!bg-purple-400/60 !w-2.5 !h-2.5 !-right-1 !opacity-0"
+          id="right"
+        />
+      )}
     </div>
   );
 });
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Walk the DOM inside `container` looking for `searchText`, return the
+ * vertical center of the first match relative to `containerRect.top`.
+ */
+function findTextVerticalCenter(
+  container: HTMLElement,
+  searchText: string,
+  containerRect: DOMRect,
+): number | null {
+  if (!searchText) return null;
+
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    null,
+  );
+  const textNodes: { node: Node; start: number; length: number }[] = [];
+  let fullText = "";
+  let currentNode: Node | null;
+
+  while ((currentNode = walker.nextNode())) {
+    textNodes.push({
+      node: currentNode,
+      start: fullText.length,
+      length: currentNode.textContent?.length || 0,
+    });
+    fullText += currentNode.textContent || "";
+  }
+
+  // Try strict match first, then normalised whitespace
+  let startGlobal = fullText.indexOf(searchText);
+  let matchLen = searchText.length;
+
+  if (startGlobal === -1) {
+    const nFull = fullText.replace(/\s+/g, " ");
+    const nSearch = searchText.replace(/\s+/g, " ");
+    const nIdx = nFull.indexOf(nSearch);
+    if (nIdx === -1) return null;
+    startGlobal = nIdx;
+    matchLen = nSearch.length;
+  }
+
+  const endGlobal = startGlobal + matchLen;
+
+  try {
+    const range = document.createRange();
+    const startNodeInfo = textNodes.find(
+      (n) => startGlobal >= n.start && startGlobal < n.start + n.length,
+    );
+    const endNodeInfo = textNodes.find(
+      (n) => endGlobal > n.start && endGlobal <= n.start + n.length,
+    );
+    if (!startNodeInfo || !endNodeInfo) return null;
+
+    range.setStart(startNodeInfo.node, startGlobal - startNodeInfo.start);
+    range.setEnd(
+      endNodeInfo.node,
+      Math.min(endGlobal - endNodeInfo.start, endNodeInfo.length),
+    );
+
+    const rects = Array.from(range.getClientRects());
+    if (rects.length === 0) return null;
+
+    // Vertical center of the matched text, relative to the node's top
+    const minY = Math.min(...rects.map((r) => r.top));
+    const maxY = Math.max(...rects.map((r) => r.bottom));
+    return (minY + maxY) / 2 - containerRect.top;
+  } catch {
+    return null;
+  }
+}
 
 CanvasNodeComponent.displayName = "CanvasNodeComponent";

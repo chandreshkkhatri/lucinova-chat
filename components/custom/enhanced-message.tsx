@@ -161,14 +161,21 @@ export const EnhancedMessage = memo(function EnhancedMessage({
           <div className="flex flex-wrap gap-3 mt-3">
             {message.generatedImages.map((img, i) => {
               const imgSrc = img.url || `data:${img.mimeType};base64,${img.data}`;
+              // Use stored dimensions when available for instant correct sizing
+              const knownWidth = img.width || 1024;
+              const knownHeight = img.height || 1024;
               return (
-                <div key={i} className="relative group/img max-w-[512px] w-full" style={{ aspectRatio: '1 / 1' }}>
+                <div
+                  key={i}
+                  className="relative group/img max-w-[512px] w-full"
+                  style={{ aspectRatio: `${knownWidth} / ${knownHeight}` }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={imgSrc}
                     alt={`Generated image ${i + 1}`}
-                    width={1024}
-                    height={1024}
+                    width={knownWidth}
+                    height={knownHeight}
                     className="rounded-xl w-full h-auto object-contain border border-white/10 shadow-lg"
                     onLoad={(e) => {
                       // Remove placeholder aspect-ratio once real dimensions are known

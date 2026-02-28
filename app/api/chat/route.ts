@@ -19,6 +19,7 @@ import {
 import { appConfig } from "@/lib/config";
 import { checkUsageLimit } from "@/lib/usage-service";
 import { generateSimpleText } from "@/lib/ai-utils";
+import { getImageDimensions } from "@/lib/image-dimensions";
 
 // Local compatibility types
 interface UIMessage {
@@ -311,7 +312,7 @@ export async function POST(req: NextRequest) {
 
             const parts = imageResponse.candidates?.[0]?.content?.parts || [];
             let fullResponseText = "";
-            const imageFiles: Array<{ name: string; url: string; mime: string; modelName?: string }> = [];
+            const imageFiles: Array<{ name: string; url: string; mime: string; modelName?: string; width?: number; height?: number }> = [];
 
             for (const part of parts) {
               if (part.text) {
@@ -323,16 +324,18 @@ export async function POST(req: NextRequest) {
                 const filename = `generated-${Date.now()}-${imageFiles.length}.${ext}`;
                 try {
                   const buffer = Buffer.from(part.inlineData.data!, 'base64');
+                  const dims = getImageDimensions(buffer);
                   const blob = await put(`chat-images/${filename}`, buffer, {
                     access: 'public',
                     contentType: part.inlineData.mimeType || 'image/png',
                   });
-                  imageFiles.push({ name: filename, url: blob.url, mime: part.inlineData.mimeType || 'image/png', modelName: modelDisplayName });
+                  imageFiles.push({ name: filename, url: blob.url, mime: part.inlineData.mimeType || 'image/png', modelName: modelDisplayName, ...dims });
                   // Send blob URL to client (persistent, smaller payload than base64)
                   controller.enqueue(encoder.encode(`1:${JSON.stringify({
                     mimeType: part.inlineData.mimeType,
                     url: blob.url,
                     modelName: modelDisplayName,
+                    ...(dims && { width: dims.width, height: dims.height }),
                   })}\n`));
                 } catch (uploadErr) {
                   console.error("[Chat API] Blob upload error, falling back to base64:", uploadErr);
@@ -510,10 +513,14 @@ export async function POST(req: NextRequest) {
             if (part.text) {
               controller.enqueue(encoder.encode(`0:${part.text}\n`));
             } else if (part.inlineData) {
+              const dims = part.inlineData.data
+                ? getImageDimensions(Buffer.from(part.inlineData.data, 'base64'))
+                : null;
               controller.enqueue(encoder.encode(`1:${JSON.stringify({
                 mimeType: part.inlineData.mimeType,
                 data: part.inlineData.data,
                 modelName: modelDisplayName,
+                ...(dims && { width: dims.width, height: dims.height }),
               })}\n`));
             }
           }

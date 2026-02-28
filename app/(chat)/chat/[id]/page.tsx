@@ -122,7 +122,7 @@ export default async function Page({
 
     // Reconstruct generatedImages from stored image files (for assistant messages only)
     const generatedImages = isAssistant && imageFiles.length > 0
-      ? imageFiles.map((f: any) => ({ mimeType: f.mime, url: f.url, modelName: f.modelName }))
+      ? imageFiles.map((f: any) => ({ mimeType: f.mime, url: f.url, modelName: f.modelName, width: f.width, height: f.height }))
       : undefined;
 
     // Build parts array (SDK v6 format)

@@ -147,6 +147,8 @@ export interface IChat extends Document {
   summary?: string;
   category?: string;
   isPinned?: boolean;
+  /** Persisted canvas node positions keyed by node ID */
+  canvasPositions?: Record<string, { x: number; y: number }>;
   lastMsgAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -162,6 +164,7 @@ const chatSchema = new Schema<IChat>(
     summary: { type: String },
     category: { type: String },
     isPinned: { type: Boolean, default: false },
+    canvasPositions: { type: Schema.Types.Mixed, default: null },
     lastMsgAt: { type: Date, default: Date.now, required: true },
   },
   { timestamps: true },
@@ -178,7 +181,7 @@ export interface IMessage extends Document {
   senderId: mongoose.Types.ObjectId | string;
   parentMsgId?: string | null;
   body: string;
-  files: Array<{ name: string; url: string; mime: string; modelName?: string }>;
+  files: Array<{ name: string; url: string; mime: string; modelName?: string; width?: number; height?: number }>;
   reactions: Array<{ userId: string; emoji: string }>;
   createdAt: Date;
   editedAt?: Date;
@@ -190,7 +193,7 @@ const messageSchema = new Schema<IMessage>(
     senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     parentMsgId: { type: String, default: null },
     body: { type: String, required: true },
-    files: [{ name: String, url: String, mime: String, modelName: String }],
+    files: [{ name: String, url: String, mime: String, modelName: String, width: Number, height: Number }],
     reactions: [
       {
         userId: { type: Schema.Types.ObjectId, ref: "User", required: true },

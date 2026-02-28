@@ -9,11 +9,15 @@ import {
   Edge,
   Node,
   ReactFlowProvider,
+  type NodeDragHandler,
+  type OnNodesChange,
+  applyNodeChanges,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState, useRef } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState, useRef, useCallback } from "react";
+import useSWR from "swr";
 
 import { Message } from "@/lib/chat-utils";
 
@@ -70,6 +74,8 @@ const nodeTypes = {
   "annotation-node": AnnotationCanvasNode,
 };
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
 function CanvasGraph({
   messages,
   status,
@@ -81,23 +87,86 @@ function CanvasGraph({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nodes, setNodes] = useNodesState<Node<any>>([]);
   const [edges, setEdges] = useEdgesState<Edge>([]);
-  // fitView removed as unused
 
   const nodesRef = useRef(nodes);
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
 
-  // Auto layout hook
-  useAutoLayout("TB");
+  // ── Saved positions from DB ──────────────────────────────────
+  const { data: posData } = useSWR(
+    chatId && !props.isGuest ? `/api/chat/canvas-positions?chatId=${chatId}` : null,
+    fetcher,
+    { revalidateOnFocus: false },
+  );
+  const savedPositions = useMemo<Record<string, { x: number; y: number }>>(
+    () => posData?.positions ?? {},
+    [posData],
+  );
+  const hasSavedPositions = Object.keys(savedPositions).length > 0;
+
+  // Track whether the user has dragged any node this session,
+  // so we don't re-run auto-layout and override their positions.
+  const [userDragged, setUserDragged] = useState(false);
+
+  // Only auto-layout when we have no saved positions and the user hasn't dragged yet
+  useAutoLayout("TB", !hasSavedPositions && !userDragged);
+
+  // ── Debounced position save ──────────────────────────────────
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savePositions = useCallback(
+    (currentNodes: Node[]) => {
+      if (props.isGuest || !chatId) return;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        const positions: Record<string, { x: number; y: number }> = {};
+        currentNodes.forEach((n) => {
+          positions[n.id] = { x: n.position.x, y: n.position.y };
+        });
+        fetch("/api/chat/canvas-positions", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId, positions }),
+        }).catch((err) =>
+          console.error("[Canvas] Position save error:", err),
+        );
+      }, 800);
+    },
+    [chatId, props.isGuest],
+  );
+
+  // ── Drag handlers ────────────────────────────────────────────
+  const onNodeDragStop: NodeDragHandler = useCallback(
+    (_event, _node, draggedNodes) => {
+      setUserDragged(true);
+      // Save all current node positions (including the just-dragged ones)
+      const allNodes = nodesRef.current.map((n) => {
+        const dragged = draggedNodes.find((d) => d.id === n.id);
+        return dragged ?? n;
+      });
+      savePositions(allNodes);
+    },
+    [savePositions],
+  );
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+    },
+    [setNodes],
+  );
 
   // Sync messages to nodes/edges
   useEffect(() => {
     // 1. Transform messages to nodes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newNodes: Node<any>[] = messages.map((msg, index) => {
-      // Find existing node to preserve position if it exists
+      // Priority: existing node position > saved position from DB > default
       const existingNode = nodesRef.current.find((n) => n.id === msg.id);
+      const saved = savedPositions[msg.id];
+      const position =
+        existingNode?.position ||
+        (saved ? { x: saved.x, y: saved.y } : { x: 0, y: index * 400 });
 
       const role =
         msg.role === "system"
@@ -125,7 +194,7 @@ function CanvasGraph({
       return {
         id: msg.id,
         type: "canvas-node",
-        position: existingNode?.position || { x: 0, y: index * 200 },
+        position,
         // Preserve measured dimensions so React Flow doesn't re-measure unnecessarily
         ...(existingNode?.measured ? { measured: existingNode.measured } : {}),
         data: {
@@ -172,15 +241,17 @@ function CanvasGraph({
         const existingAnnNode = nodesRef.current.find(
           (n) => n.id === annotationNodeId,
         );
+        const savedAnn = savedPositions[annotationNodeId];
 
         // Annotation node — positioned to the right of its parent
         newNodes.push({
           id: annotationNodeId,
           type: "annotation-node",
-          position: existingAnnNode?.position || {
-            x: (parentNode?.position?.x ?? 0) + 500,
-            y: (parentNode?.position?.y ?? 0) + annIdx * 140,
-          },
+          position: existingAnnNode?.position ||
+            (savedAnn ? { x: savedAnn.x, y: savedAnn.y } : {
+              x: (parentNode?.position?.x ?? 0) + 500,
+              y: (parentNode?.position?.y ?? 0) + annIdx * 160,
+            }),
           ...(existingAnnNode?.measured ? { measured: existingAnnNode.measured } : {}),
           data: {
             annotation: ann,
@@ -188,7 +259,7 @@ function CanvasGraph({
           },
         });
 
-        // Edge: parent message → annotation (from right handle)
+        // Edge: parent message → annotation (from per-annotation right handle)
         newEdges.push({
           id: `${messageId}-${annotationNodeId}`,
           source: messageId,
@@ -200,18 +271,22 @@ function CanvasGraph({
             opacity: 0.6,
             strokeDasharray: "6 3",
           },
-          sourceHandle: "right",
+          sourceHandle: `ann-${ann.id}`,
         });
       });
     });
 
     setNodes(newNodes);
     setEdges(newEdges);
+  // NOTE: savedPositions is intentionally read from a ref (not a dep) to
+  // avoid infinite re-render loops — useMemo already keeps it stable, but
+  // adding object deps to effects that call setNodes is fragile.
   }, [
     messages,
     chatId,
     isThread,
     annotationsByMessage,
+    savedPositions,
     props.onAskLucinova,
     props.onOpenAnnotation,
     props.onStartThread,
@@ -227,17 +302,18 @@ function CanvasGraph({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onNodeDragStop={onNodeDragStop}
         fitView
         minZoom={0.1}
         maxZoom={4}
         defaultEdgeOptions={{ type: "smoothstep" }}
         proOptions={{ hideAttribution: true }}
-        /* ── Read-only: disable all editing interactions ── */
-        nodesDraggable={false}
+        nodesDraggable
         nodesConnectable={false}
-        elementsSelectable={false}
+        elementsSelectable
         edgesFocusable={false}
-        nodesFocusable={false}
+        nodesFocusable
         panOnDrag
         zoomOnScroll
         preventScrolling

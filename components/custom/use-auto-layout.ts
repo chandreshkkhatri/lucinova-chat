@@ -14,9 +14,9 @@ import dagre from "dagre";
 type Direction = "TB" | "LR";
 
 // Gap between parent message right edge and annotation nodes
-const ANNOTATION_X_GAP = 160;
+const ANNOTATION_X_GAP = 200;
 // Vertical spacing between stacked annotation nodes
-const ANNOTATION_Y_STEP = 140;
+const ANNOTATION_Y_STEP = 160;
 
 /**
  * Hybrid two-pass layout:
@@ -49,13 +49,14 @@ const getLayoutedElements = (
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   const isHorizontal = direction === "LR";
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 120 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 });
 
   messageNodes.forEach((node) => {
-    // Use actual measured dimensions if available, otherwise fallback
-    // We add a small buffer to the height to ensure edges don't overlap
+    // Use actual measured dimensions if available, otherwise fallback.
+    // Add a buffer to the height to account for action buttons, handles,
+    // and to guarantee breathing room so nodes never overlap.
     const width = node.measured?.width ?? 400;
-    const height = (node.measured?.height ?? 150) + 20;
+    const height = (node.measured?.height ?? 200) + 60;
     dagreGraph.setNode(node.id, { width, height });
   });
 
@@ -71,12 +72,12 @@ const getLayoutedElements = (
   const layoutedMessageNodes = messageNodes.map((node) => {
     const dagreNode = dagreGraph.node(node.id);
     const w = node.measured?.width ?? 400;
-    const h = node.measured?.height ?? 150;
-    // Dagre returns the center point, we need top-left
-    // Note: we used h + 20 for dagre layout, but we use actual h for positioning
+    const h = node.measured?.height ?? 200;
+    // Dagre returns the center point, we need top-left.
+    // dagreHeight = h + 60 (the buffer we added). Centering must match.
     const pos = {
       x: dagreNode.x - w / 2,
-      y: dagreNode.y - (h + 20) / 2,
+      y: dagreNode.y - (h + 60) / 2,
     };
     messagePositions[node.id] = { ...pos, w, h };
 
@@ -107,15 +108,20 @@ const getLayoutedElements = (
     const parent = messagePositions[parentId];
     if (!parent) return;
 
-    // Calculate total height of all annotations for this parent to center them vertically
-    const totalAnnHeight = anns.length * ANNOTATION_Y_STEP - (ANNOTATION_Y_STEP - 90);
+    // Use measured heights for accurate stacking, with a gap between each
+    const ANN_GAP = 20;
+    const annHeights = anns.map((a) => a.measured?.height ?? 120);
+    const totalAnnHeight = annHeights.reduce((s, h) => s + h, 0) + ANN_GAP * (anns.length - 1);
+    // Center the annotation stack vertically relative to the parent node
     const startY = parent.y + (parent.h / 2) - (totalAnnHeight / 2);
 
+    let cumulativeY = Math.max(parent.y, startY);
     anns.forEach((aNode, idx) => {
       const annPos = {
         x: parent.x + parent.w + ANNOTATION_X_GAP,
-        y: Math.max(parent.y, startY) + idx * ANNOTATION_Y_STEP,
+        y: cumulativeY,
       };
+      cumulativeY += annHeights[idx] + ANN_GAP;
 
       layoutedAnnotationNodes.push({
         ...aNode,
@@ -135,21 +141,21 @@ const getLayoutedElements = (
   return { nodes: allNodes, edges };
 };
 
-export function useAutoLayout(direction: Direction = "TB") {
+export function useAutoLayout(direction: Direction = "TB", enabled: boolean = true) {
   const { getNodes, getEdges, setNodes, setEdges, fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
 
   // Subscribe to store so the effect re-runs when nodes/edges change
   const nodeCount = useStore((s) => s.nodes.length);
   const edgeCount = useStore((s) => s.edges.length);
-  // Subscribe to measured dimensions so we re-layout when nodes resize
-  // We use 10px buckets to react promptly to image loads while avoiding jitter
+  // Subscribe to measured dimensions so we re-layout when nodes resize.
+  // We use 5px buckets to react promptly to image / diagram loads while
+  // avoiding excessive jitter during text streaming.
   const dimensionKey = useStore((s) =>
     s.nodes
-      .filter((n) => n.type === "canvas-node")
       .map(
         (n) =>
-          `${n.id}:${Math.round((n.measured?.width ?? 0) / 10)}x${Math.round((n.measured?.height ?? 0) / 10)}`,
+          `${n.id}:${Math.round((n.measured?.width ?? 0) / 5)}x${Math.round((n.measured?.height ?? 0) / 5)}`,
       )
       .join("|"),
   );
@@ -158,7 +164,7 @@ export function useAutoLayout(direction: Direction = "TB") {
   const prevFingerprintRef = useRef("");
 
   useEffect(() => {
-    if (!nodesInitialized) return;
+    if (!nodesInitialized || !enabled) return;
 
     const nodes = getNodes();
     const edges = getEdges();
@@ -167,10 +173,9 @@ export function useAutoLayout(direction: Direction = "TB") {
     // Build fingerprint from IDs + rounded dimensions
     // This ensures layout re-runs when node content causes a size change
     const fingerprint = nodes
-      .filter((n) => n.type === "canvas-node")
       .map(
         (n) =>
-          `${n.id}:${Math.round((n.measured?.width ?? 0) / 10)}x${Math.round((n.measured?.height ?? 0) / 10)}`,
+          `${n.id}:${Math.round((n.measured?.width ?? 0) / 5)}x${Math.round((n.measured?.height ?? 0) / 5)}`,
       )
       .sort()
       .join(",");
@@ -189,6 +194,7 @@ export function useAutoLayout(direction: Direction = "TB") {
     });
   }, [
     nodesInitialized,
+    enabled,
     nodeCount,
     edgeCount,
     dimensionKey,

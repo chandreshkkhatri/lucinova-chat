@@ -172,6 +172,8 @@ export function Chat({
                               mimeType: f.mime,
                               url: f.url,
                               modelName: f.modelName,
+                              width: f.width,
+                              height: f.height,
                             }));
                           }
                         }

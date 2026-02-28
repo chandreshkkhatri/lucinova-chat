@@ -410,6 +410,22 @@ export async function toggleChatPin(chatId: string, isPinned: boolean) {
   return { ...chat, id: (chat as any)._id.toString() };
 }
 
+export async function saveCanvasPositions(
+  chatId: string,
+  positions: Record<string, { x: number; y: number }>,
+) {
+  await ensureConnection();
+  await Chat.findByIdAndUpdate(chatId, { canvasPositions: positions });
+}
+
+export async function getCanvasPositions(
+  chatId: string,
+): Promise<Record<string, { x: number; y: number }> | null> {
+  await ensureConnection();
+  const chat = await Chat.findById(chatId).select("canvasPositions").lean();
+  return (chat as any)?.canvasPositions ?? null;
+}
+
 // Message functions
 export async function createMessage({
   chatId,
