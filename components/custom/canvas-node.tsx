@@ -96,9 +96,14 @@ export const CanvasNodeComponent = memo(({ data: rawData, id: nodeId }: NodeProp
       const changed = annotations.some(
         (a) => prev[a.id] !== offsets[a.id],
       );
-      return changed ? offsets : prev;
+      if (changed) {
+        // Tell React Flow about the new / moved handles
+        requestAnimationFrame(() => updateNodeInternals(nodeId));
+        return offsets;
+      }
+      return prev;
     });
-  }, [annotations]);
+  }, [annotations, nodeId, updateNodeInternals]);
 
   // Watch for any descendant image loads or DOM mutations that change height
   useEffect(() => {
@@ -332,16 +337,14 @@ export const CanvasNodeComponent = memo(({ data: rawData, id: nodeId }: NodeProp
         );
       })}
 
-      {/* Fallback right handle when there are no annotations (keeps the
-          port available for future annotation edges during streaming) */}
-      {annotations.length === 0 && (
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!bg-purple-400/60 !w-2.5 !h-2.5 !-right-1 !opacity-0"
-          id="right"
-        />
-      )}
+      {/* Hidden fallback handle — always rendered so any edge referencing
+          the generic "right" id (e.g. during a render transition) finds it */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!bg-purple-400/60 !w-2.5 !h-2.5 !-right-1 !opacity-0"
+        id="right"
+      />
     </div>
   );
 });

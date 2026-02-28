@@ -44,9 +44,9 @@ export async function PUT(request: NextRequest) {
   const body = await request.json();
   const { chatId, positions } = body;
 
-  if (!chatId || !positions || typeof positions !== "object") {
+  if (!chatId) {
     return NextResponse.json(
-      { error: "chatId and positions required" },
+      { error: "chatId required" },
       { status: 400 },
     );
   }
@@ -57,6 +57,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await saveCanvasPositions(chatId, positions);
+  // positions === null clears saved positions (reset to auto-layout)
+  await saveCanvasPositions(chatId, positions ?? null);
   return NextResponse.json({ ok: true });
 }

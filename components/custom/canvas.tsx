@@ -14,7 +14,7 @@ import {
   applyNodeChanges,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Sparkles, Reply, MessageSquare, FileCode } from "lucide-react";
+import { Sparkles, Reply, MessageSquare, FileCode, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import useSWR from "swr";
@@ -94,7 +94,7 @@ function CanvasGraph({
   }, [nodes]);
 
   // ── Saved positions from DB ──────────────────────────────────
-  const { data: posData } = useSWR(
+  const { data: posData, mutate: mutatePositions } = useSWR(
     chatId && !props.isGuest ? `/api/chat/canvas-positions?chatId=${chatId}` : null,
     fetcher,
     { revalidateOnFocus: false },
@@ -111,6 +111,26 @@ function CanvasGraph({
 
   // Only auto-layout when we have no saved positions and the user hasn't dragged yet
   useAutoLayout("TB", !hasSavedPositions && !userDragged);
+
+  // ── Reset layout to auto-generated positions ─────────────────
+  const resetLayout = useCallback(() => {
+    // 1. Clear the "user has dragged" flag so auto-layout re-enables
+    setUserDragged(false);
+
+    // 2. Delete saved positions from DB
+    if (!props.isGuest && chatId) {
+      fetch("/api/chat/canvas-positions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId, positions: null }),
+      }).catch((err) =>
+        console.error("[Canvas] Position reset error:", err),
+      );
+    }
+
+    // 3. Optimistically update the SWR cache so hasSavedPositions becomes false
+    mutatePositions({ positions: {} }, false);
+  }, [chatId, props.isGuest, mutatePositions]);
 
   // ── Debounced position save ──────────────────────────────────
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -325,6 +345,20 @@ function CanvasGraph({
           className="opacity-20"
         />
         <Controls className="bg-background border-border text-foreground fill-foreground" />
+
+        {/* Reset layout button */}
+        {(hasSavedPositions || userDragged) && (
+          <div className="absolute bottom-3 left-14 z-10">
+            <button
+              onClick={resetLayout}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm transition-colors"
+              title="Reset to auto layout"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset Layout
+            </button>
+          </div>
+        )}
       </ReactFlow>
     </div>
   );
