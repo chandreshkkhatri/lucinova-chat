@@ -9,7 +9,7 @@ import {
   Edge,
   Node,
   ReactFlowProvider,
-  type NodeDragHandler,
+  type OnNodeDrag,
   type OnNodesChange,
   applyNodeChanges,
 } from "@xyflow/react";
@@ -178,7 +178,7 @@ function CanvasGraph({
   );
 
   // ── Drag handlers ────────────────────────────────────────────
-  const onNodeDragStop: NodeDragHandler = useCallback(
+  const onNodeDragStop: OnNodeDrag = useCallback(
     (_event, _node, draggedNodes) => {
       setUserDragged(true);
       // Save all current node positions (including the just-dragged ones)
