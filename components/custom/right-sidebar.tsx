@@ -1,7 +1,7 @@
 "use client";
 
 import { MessagesSquare, Sparkles, X } from "lucide-react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Message } from "@/lib/chat-utils";
@@ -98,11 +98,28 @@ export function RightSidebar({
     }
   }, [activeAnnotation, pendingAnnotation, activeThread]);
 
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus the textarea when a thread or annotation opens so the user
+  // can start typing immediately without an extra tap/click.
+  const annotationId = activeAnnotation?.id ?? null;
+  const threadId = activeThread?.parentMessage?.id ?? null;
+  useEffect(() => {
+    if (!annotationId && !threadId) return;
+    // Wait for the sidebar animation (300 ms) and any async rendering to finish.
+    const timer = setTimeout(() => {
+      const textarea = sidebarRef.current?.querySelector<HTMLTextAreaElement>("textarea");
+      textarea?.focus();
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [annotationId, threadId]);
+
   if (!hasMultipleTabs) {
     return null;
   }
 
   return (
+    <div ref={sidebarRef} className="flex flex-col size-full">
     <Tabs
       value={activeTab || ""}
       onValueChange={setActiveTab}
@@ -225,5 +242,6 @@ export function RightSidebar({
         </TabsContent>
       )}
     </Tabs>
+    </div>
   );
 }

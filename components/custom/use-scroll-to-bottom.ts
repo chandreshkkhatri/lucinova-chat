@@ -39,7 +39,13 @@ export function useScrollToBottom<T extends HTMLElement>(): [
           return false;
         });
 
-        if (hasRelevantAddedNodes) {
+        // Only auto-scroll if the user is already near the bottom (within 100px).
+        // This prevents involuntary scrolling when annotation dots or other
+        // non-message nodes are added while the user is reading older content.
+        const isNearBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+
+        if (hasRelevantAddedNodes && isNearBottom) {
           end.scrollIntoView({ behavior: "instant", block: "end" });
         }
       });
