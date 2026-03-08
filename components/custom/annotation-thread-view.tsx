@@ -17,6 +17,7 @@ interface AnnotationThreadViewProps {
   onDelete?: () => void;
   className?: string;
   modelId?: string;
+  isNew?: boolean;
 }
 
 export function AnnotationThreadView({
@@ -28,13 +29,15 @@ export function AnnotationThreadView({
   onDelete,
   className = "",
   modelId,
+  isNew,
 }: AnnotationThreadViewProps) {
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isNew);
   const initialMessageSentRef = useRef(false);
 
-  // Load existing messages for this annotation
+  // Load existing messages for this annotation (skip for newly created ones)
   useEffect(() => {
+    if (isNew) return;
     async function loadMessages() {
       try {
         const res = await fetch(`/api/annotations/${annotationId}`);
@@ -55,7 +58,7 @@ export function AnnotationThreadView({
       }
     }
     loadMessages();
-  }, [annotationId]);
+  }, [annotationId, isNew]);
 
   // If there's an initial message and no existing messages, seed it as the first user message
   const effectiveInitialMessages =

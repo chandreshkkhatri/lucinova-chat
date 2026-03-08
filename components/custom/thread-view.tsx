@@ -1,11 +1,14 @@
 import { X, MessageSquare, Trash, Copy, Check } from "lucide-react";
-import { useState, useEffect } from "react";
-import { mutate as revalidateSWR } from "swr";
+import { useState } from "react";
+import useSWR, { mutate as revalidateSWR } from "swr";
 
 import { Button } from "@/components/ui/button";
 import { Message } from "@/lib/chat-utils";
 
 import { Chat } from "./chat";
+
+const threadFetcher = (url: string) =>
+  fetch(url).then((r) => (r.ok ? r.json() : { threads: [] }));
 
 interface ThreadViewProps {
   parentMessage: Message;
@@ -24,7 +27,15 @@ export function ThreadView({
   className = "",
   modelId,
 }: ThreadViewProps) {
-  const [threadMessages, setThreadMessages] = useState<Message[]>([]);
+  // Fetch existing replies – uses SWR so prefetched data is served instantly
+  const { data: threadData } = useSWR(
+    !selectedText
+      ? `/api/threads?parentMessageId=${parentMessage.id}&mainChatId=${mainChatId}`
+      : null,
+    threadFetcher,
+    { revalidateOnFocus: false }
+  );
+  const threadMessages: Message[] = threadData?.threads ?? [];
 
   const handleNewReply = () => {
     // Revalidate the single thread count (for this specific message)
@@ -69,29 +80,6 @@ export function ThreadView({
       }
     }
   };
-
-  // Load existing replies for this thread only if no selected text
-  useEffect(() => {
-    // If there's selected text, we want a fresh thread
-    if (selectedText) {
-      setThreadMessages([]);
-      return;
-    }
-
-    async function loadThread() {
-      try {
-        const res = await fetch(
-          `/api/threads?parentMessageId=${parentMessage.id}&mainChatId=${mainChatId}`
-        );
-        if (!res.ok) return;
-        const { threads } = await res.json();
-        setThreadMessages(threads);
-      } catch {
-        // ignore errors
-      }
-    }
-    loadThread();
-  }, [parentMessage.id, mainChatId, selectedText]);
 
   return (
     <div

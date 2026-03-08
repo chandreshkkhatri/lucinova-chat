@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { preload } from "swr";
 
 import { fetchUserSuggestions, fetchContextualSuggestions } from "@/app/actions/suggestions";
 import { Message } from "@/lib/chat-utils";
@@ -26,6 +27,9 @@ import { useThreadCounts } from "./use-thread-counts";
 
 import type { Attachment } from "./types";
 import type { NodeType } from "@/lib/message-to-nodes";
+
+const threadFetcher = (url: string) =>
+  fetch(url).then((r) => (r.ok ? r.json() : { threads: [] }));
 
 interface ChatListProps {
   messages: Message[];
@@ -94,6 +98,22 @@ export function ChatList({
   // Only fetch thread counts when chat has messages (chat exists in DB)
   const hasMessages = messages.length > 0;
   const { threadCounts, refresh: refreshThreadCounts } = useThreadCounts(hasMessages ? chatId : "");
+
+  // Prefetch thread messages for all messages that have threads
+  const prefetchedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!chatId || !threadCounts) return;
+    Object.entries(threadCounts).forEach(([messageId, count]) => {
+      if (count > 0 && !prefetchedRef.current.has(messageId)) {
+        prefetchedRef.current.add(messageId);
+        preload(
+          `/api/threads?parentMessageId=${messageId}&mainChatId=${chatId}`,
+          threadFetcher
+        );
+      }
+    });
+  }, [threadCounts, chatId]);
+
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
   useEffect(() => {

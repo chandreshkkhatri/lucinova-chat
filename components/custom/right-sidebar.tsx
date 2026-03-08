@@ -26,7 +26,7 @@ interface RightSidebarProps {
 
   // Sidebar content state
   activeThread: { parentMessage: Message; selectedText?: string } | null;
-  activeAnnotation: { id: string; selectedText: string; initialMessage?: string } | null;
+  activeAnnotation: { id: string; selectedText: string; initialMessage?: string; isNew?: boolean } | null;
   pendingAnnotation: { messageId: string; selectedText: string; isLoading?: boolean } | null;
 
   // Sidebar actions
@@ -195,6 +195,7 @@ export function RightSidebar({
               onDelete={onAnnotationDeleted}
               className="size-full"
               modelId={selectedModel}
+              isNew={activeAnnotation.isNew}
             />
           ) : pendingAnnotation?.isLoading ? (
             <div className="flex flex-col bg-secondary h-full min-h-full">

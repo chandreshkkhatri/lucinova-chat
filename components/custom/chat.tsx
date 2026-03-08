@@ -330,6 +330,7 @@ export function Chat({
     id: string;
     selectedText: string;
     initialMessage?: string;
+    isNew?: boolean;
   } | null>(null);
 
   // Pending annotation
@@ -407,6 +408,7 @@ export function Chat({
         setActiveAnnotation({
           id: annotation.id,
           selectedText: annotation.selectedText,
+          isNew: true,
         });
         setPendingAnnotation(null);
       } catch (error) {
